@@ -1,0 +1,31 @@
+# Xcode
+*.xcworkspace
+xcuserdata/
+build/
+
+# OSX
+.DS_Store
+
+# iOS
+*.ipa
+*.xcarchive
+
+# Android
+bin/
+gen/
+libs/
+obj/
+build.xml
+local.properties
+project.properties
+proguard.cfg
+proguard-project.txt
+
+# Visual Studio
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+Debug/
+Release/
+ipch/
