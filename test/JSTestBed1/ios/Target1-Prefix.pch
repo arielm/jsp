@@ -1,0 +1,8 @@
+#if defined( __OBJC__ )
+	#import <UIKit/UIKit.h>
+	#import <Foundation/Foundation.h>
+#endif
+
+//#define DISCARD_LOGI
+#define FORCE_LOGD
+//#define FORCE_SYSLOG
