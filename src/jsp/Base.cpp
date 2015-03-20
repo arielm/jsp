@@ -14,24 +14,22 @@ using namespace chr;
 namespace jsp
 {
     /*
-     * TODO: MAP INSTEAD VIA JS GLOBAL-OBJECT
+     * TODO: THERE SHOULD BE ONE DISTINCT INSTANCE PER JS GLOBAL-OBJECT
      */
-
-    map<string, unique_ptr<Base>> Base::instances {};
-
-    Base* Base::instance(const string &name)
+    
+    namespace base
     {
-        auto found = instances.find(name);
-        
-        if (found != instances.end())
+        shared_ptr<Base> instance;
+    }
+
+    Base* Base::instance()
+    {
+        if (!base::instance)
         {
-            return found->second.get();
+            base::instance = shared_ptr<Base>(new Base);
         }
         
-        auto instance = new Base();
-        instances.emplace(name, unique_ptr<Base>(instance));
-        
-        return instance;
+        return base::instance.get();
     }
 
 #pragma mark ---------------------------------------- EVALUATION ----------------------------------------

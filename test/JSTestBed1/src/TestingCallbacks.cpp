@@ -76,10 +76,10 @@ void TestingCallbacks::testMethodDispatch1()
 
 void TestingCallbacks::testMethodDispatch2()
 {
-    RootedFunction customMethodC(cx, defineFunction(globalHandle(), "customMethodC", methodDispatch));
+    RootedFunction customMethodC(cx, JS_DefineFunction(cx, globalHandle(), "customMethodC", methodDispatch, 0, 0));
     callFunction(globalHandle(), customMethodC);
     
-    defineFunction(globalHandle(), "customMethodD", methodDispatch);
+    JS_DefineFunction(cx, globalHandle(), "customMethodD", methodDispatch, 0, 0);
     executeScript("customMethodD();");
 }
 

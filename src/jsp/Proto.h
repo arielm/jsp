@@ -114,8 +114,6 @@ namespace jsp
         
         // ---
         
-        JSFunction* defineFunction(HandleObject object, const char *name, JSNative call, unsigned nargs = 0, unsigned attrs = 0);
-        
         /*
          * TODO:
          *
@@ -164,10 +162,14 @@ namespace jsp
         virtual bool deleteProperty(HandleObject object, const char *name) = 0;
 
         /*
-         * TODO: ADOPTING PARTS OF THE SPIDERMONKEY'S Proxy PROTOCOL?
-         *
+         * TODO:
+         
+         * HOW ABOUT ADOPTING PART OF THE SPIDERMONKEY'S Proxy PROTOCOL?
          * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsproxy.h#L175-224
-         * - NOTE: SOME SIMILARITIES WITH (NOW DEPRECATED) /js/ipc/JavascriptParent.h
+         * - NOTE: SOME SIMILARITIES WITH /js/ipc/JavascriptParent.h (NOW DEPRECATED)
+         *
+         * THE NEW Reflect OBJECT DEFINED IN ECMA-6 SEEMS TO BE AN EVER BETTER CANDIDATE:
+         * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect
          */
         
         virtual bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) = 0;

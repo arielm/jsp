@@ -71,17 +71,10 @@ namespace jsp
         return evaluateObject(utils::readText<string>(inputSource), inputSource->getFilePathHint());
     }
     
-#pragma mark ---------------------------------------- FUNCTIONS ----------------------------------------
-    
-    JSFunction* Proto::defineFunction(HandleObject object, const char *name, JSNative call, unsigned nargs, unsigned attrs)
-    {
-        return JS_DefineFunction(cx, object, name, call, nargs, attrs);
-    }
-
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
 
     /*
-     * TODO: MAP INSTEAD VIA JS GLOBAL-OBJECT
+     * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER JS GLOBAL-OBJECT
      */
     
     vector<Callback> Proto::callbacks {};

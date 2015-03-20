@@ -42,7 +42,7 @@ namespace jsp
         
         virtual bool createRuntime();
         virtual bool createContext();
-        virtual bool createGlobal(JSPrincipals *principals = nullptr);
+        virtual bool createGlobal();
         
     protected:
         bool initialized = false;

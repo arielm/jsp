@@ -32,7 +32,7 @@ namespace jsp
     const JSClass Manager::global_class =
     {
         "global",
-        JSCLASS_GLOBAL_FLAGS,
+        JSCLASS_GLOBAL_FLAGS | JSCLASS_HAS_PRIVATE,
         JS_PropertyStub,
         JS_DeletePropertyStub,
         JS_PropertyStub,
@@ -45,12 +45,6 @@ namespace jsp
         nullptr,
         nullptr,
         JS_GlobalObjectTraceHook
-    };
-    
-    const JSFunctionSpec Manager::global_functions[]
-    {
-        JS_FS("print", print, 0, 0),
-        JS_FS_END
     };
     
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
@@ -172,7 +166,9 @@ namespace jsp
         {
             if (performInit() && jsp::postInit())
             {
-                JS_DefineFunctions(cx, globalHandle(), global_functions);
+                JS_DefineFunction(cx, globalHandle(), "print", print, 0, 0);
+                
+                JS_SetPrivate(globalHandle(), this); // XXX
                 
                 // ---
                 
@@ -275,12 +271,12 @@ namespace jsp
         return false;
     }
     
-    bool Manager::createGlobal(JSPrincipals *principals)
+    bool Manager::createGlobal()
     {
         CompartmentOptions options;
         options.setVersion(JSVersion::JSVERSION_LATEST);
         
-        global = JS_NewGlobalObject(cx, &global_class, principals, FireOnNewGlobalHook, options);
+        global = JS_NewGlobalObject(cx, &global_class, nullptr, FireOnNewGlobalHook, options);
         
         if (global)
         {

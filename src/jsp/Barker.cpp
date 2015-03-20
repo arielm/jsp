@@ -78,7 +78,8 @@ namespace jsp
     
     const JSClass Barker::clazz =
     {
-        "Barker", JSCLASS_HAS_PRIVATE,
+        "Barker",
+        JSCLASS_HAS_PRIVATE,
         JS_PropertyStub,
         JS_DeletePropertyStub,
         JS_PropertyStub,
