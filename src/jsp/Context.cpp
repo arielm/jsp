@@ -373,8 +373,6 @@ namespace jsp
 
 #pragma mark ---------------------------------------- JSP NAMESPACE ----------------------------------------
 
-using namespace jsp;
-
 namespace JSP
 {
     namespace intern
@@ -755,13 +753,13 @@ namespace JSP
     
 #pragma mark ---------------------------------------- GC AND ROOTING ----------------------------------------
     
-    void forceGC(JSRuntime *rt)
+    void forceGC()
     {
         JS_SetGCParameter(rt, JSGC_MODE, JSGC_MODE_GLOBAL);
         JS_GC(rt);
     }
     
-    void setGCZeal(JSContext *cx, uint8_t zeal, uint32_t frequency)
+    void setGCZeal(uint8_t zeal, uint32_t frequency)
     {
 #if defined(JS_GC_ZEAL)
         JS_SetGCZeal(cx, zeal, frequency);
@@ -814,7 +812,7 @@ namespace JSP
         return intern::lookupHTMLColor(c, &result) ? result : defaultValue;
     }
     
-    uint32_t toHTMLColor(JSContext *cx, HandleValue &&value, uint32_t defaultValue)
+    uint32_t toHTMLColor(HandleValue &&value, uint32_t defaultValue)
     {
         if (value.isString())
         {

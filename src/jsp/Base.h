@@ -12,11 +12,15 @@
 
 #include "chronotext/Exception.h"
 
+#include <map>
+
 namespace jsp
 {
     class Base : public Proto
     {
     public:
+        static Base* instance(const std::string &name = "");
+
         /*
          * EVALUATION
          */
@@ -70,5 +74,8 @@ namespace jsp
         bool setElement(HandleObject array, uint32_t index, HandleValue value) override;
         
         bool deleteElement(HandleObject array, uint32_t index) override;
+        
+    protected:
+        static std::map<std::string, std::unique_ptr<Base>> instances;
     };
 }

@@ -7,12 +7,13 @@
  */
 
 #include "Sketch.h"
-#include "Context.h"
 
 #include "TestingJS.h"
 #include "TestingWrappedValue.h"
 #include "TestingRooting2.h"
 #include "TestingCallbacks.h"
+
+#include "jsp/Manager.h"
 
 #include "chronotext/utils/GLUtils.h"
 
@@ -22,10 +23,6 @@ using namespace chr;
 
 void Sketch::setup()
 {
-    context::setup();
-    
-    // ---
-    
     /*
      * SOME OF THE TESTS ARE ONLY INTENDED FOR OSX + DEBUG:
      *
@@ -33,14 +30,19 @@ void Sketch::setup()
      * - stderr "CAPTURE" MUST BE SUPPORTED
      * - ETC.
      */
-    
+
+    jsp::Manager manager;
+    {
+        manager.init();
+        
 #if defined(CINDER_MAC) && defined(DEBUG)
-    TestingBase::execute<TestingWrappedValue>(true);
-    TestingBase::execute<TestingRooting2>(true);
+        TestingBase::execute<TestingWrappedValue>(true);
+        TestingBase::execute<TestingRooting2>(true);
 #endif
-    
-    TestingBase::execute<TestingJS>(true);
-    TestingBase::execute<TestingCallbacks>(true);
+        
+        TestingBase::execute<TestingJS>(true);
+        TestingBase::execute<TestingCallbacks>(true);
+    }
     
     // ---
     
@@ -49,11 +51,6 @@ void Sketch::setup()
     
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
-}
-
-void Sketch::shutdown()
-{
-    context::shutdown();
 }
 
 void Sketch::draw()

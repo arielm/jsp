@@ -13,6 +13,27 @@ using namespace chr;
 
 namespace jsp
 {
+    /*
+     * TODO: MAP INSTEAD VIA JS GLOBAL-OBJECT
+     */
+
+    map<string, unique_ptr<Base>> Base::instances {};
+
+    Base* Base::instance(const string &name)
+    {
+        auto found = instances.find(name);
+        
+        if (found != instances.end())
+        {
+            return found->second.get();
+        }
+        
+        auto instance = new Base();
+        instances.emplace(name, unique_ptr<Base>(instance));
+        
+        return instance;
+    }
+
 #pragma mark ---------------------------------------- EVALUATION ----------------------------------------
     
     bool Base::exec(const string &source, const ReadOnlyCompileOptions &options)

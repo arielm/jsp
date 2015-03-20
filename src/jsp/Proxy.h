@@ -22,8 +22,6 @@ namespace jsp
     {
     public:
         Proxy(Proto *target)
-        :
-        handler(nullptr)
         {
             if (!setTarget(target))
             {
@@ -32,8 +30,6 @@ namespace jsp
         }
         
         Proxy(Proxy *target)
-        :
-        handler(nullptr)
         {
             if (!setTarget(target))
             {
@@ -43,7 +39,7 @@ namespace jsp
         
         bool setTarget(Proto *target)
         {
-            if ((target != this) && (target != handler))
+            if (target && (target != this) && (target != handler))
             {
                 this->target = target;
                 return true;
@@ -54,7 +50,7 @@ namespace jsp
         
         bool setTarget(Proxy *target)
         {
-            if (target->target != this)
+            if (target && (target->target != this))
             {
                 return setTarget(static_cast<Proto*>(target));
             }
@@ -189,8 +185,8 @@ namespace jsp
         }
         
     protected:
-        Proto *target;
-        Proto *handler;
+        Proto *target = nullptr;
+        Proto *handler = nullptr;
     };
 }
 

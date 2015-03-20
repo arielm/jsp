@@ -80,8 +80,12 @@ namespace jsp
 
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
 
-    vector<Callback> Proto::callbacks {};
+    /*
+     * TODO: MAP INSTEAD VIA JS GLOBAL-OBJECT
+     */
     
+    vector<Callback> Proto::callbacks {};
+
     bool Proto::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);

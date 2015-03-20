@@ -287,7 +287,7 @@ namespace js
 
 namespace JSP
 {
-    using namespace JS;
+    using namespace jsp;
     
     // ---
     
@@ -416,8 +416,8 @@ namespace JSP
 
     // ---
     
-    void forceGC(JSRuntime *rt);
-    void setGCZeal(JSContext *cx, uint8_t zeal, uint32_t frequency = 100);
+    void forceGC();
+    void setGCZeal(uint8_t zeal, uint32_t frequency = 100);
     
     // ---
     
@@ -426,5 +426,5 @@ namespace JSP
      */
 
     uint32_t toHTMLColor(const std::string &c, uint32_t defaultValue = 0x000000);
-    uint32_t toHTMLColor(JSContext *cx, HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
+    uint32_t toHTMLColor(HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
 };

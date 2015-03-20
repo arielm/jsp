@@ -23,9 +23,6 @@ public:
     void testReservedSlots();
     void testJSID();
 
-    void testGetProperty();
-    void testGetElement();
-
     void dumpIds(JSObject *object);
     
     JSObject* createObject1();

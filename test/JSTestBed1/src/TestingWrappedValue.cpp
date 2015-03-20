@@ -7,13 +7,13 @@
  */
 
 #include "TestingWrappedValue.h"
-#include "Context.h"
+
+#include "chronotext/Context.h"
 
 using namespace std;
 using namespace ci;
 using namespace chr;
 
-using namespace context;
 using namespace jsp;
 
 void TestingWrappedValue::setup()
@@ -94,7 +94,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     wrapped = toValue("assigned-to-value");
     JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[W]")); // I.E. TENURED
     
-    forceGC();
+    JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
 }
 
@@ -125,7 +125,7 @@ void TestingWrappedValue::testAutomaticConversion()
     wrapped = "assigned-to-value";
     JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[W]")); // I.E. TENURED
     
-    forceGC();
+    JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
 }
 
@@ -153,7 +153,7 @@ void TestingWrappedValue::testStringStackRooting1()
     RootedString rootedString(cx, toJSString("stack-rooted standalone"));
     WrappedValue wrapped(StringValue(rootedString));
     
-    forceGC();
+    JSP::forceGC();
     
     if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
     {
@@ -165,7 +165,7 @@ void TestingWrappedValue::testStringStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, toValue("stack-rooted via-value"));
     
-    forceGC();
+    JSP::forceGC();
     
     if (JSP_CHECK(JSP::isHealthy(rootedWrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
     {

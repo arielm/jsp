@@ -56,7 +56,6 @@
 		A8702C621A5B4B4E00EF9E9E /* SystemManagerBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8702C5D1A5B4B4E00EF9E9E /* SystemManagerBase.cpp */; };
 		A8702C651A5B4B5800EF9E9E /* FileHelper.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8702C641A5B4B5800EF9E9E /* FileHelper.mm */; };
 		A874A5121A2B7200009A60A0 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A874A5111A2B7200009A60A0 /* main.cpp */; };
-		A8AD3E431A23FA2100EAF144 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8AD3E421A23FA2100EAF144 /* Context.cpp */; };
 		A8BFF88019E42A06004BB2E3 /* TestingJS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8BFF87E19E42A06004BB2E3 /* TestingJS.cpp */; };
 		A8C579481A1E076200717A57 /* TestingWrappedValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C579461A1E076200717A57 /* TestingWrappedValue.cpp */; };
 		A8D947641A883885007FB546 /* CinderDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8D947621A883885007FB546 /* CinderDelegate.mm */; };
@@ -165,7 +164,6 @@
 		A869FFFD1A0292FA00D2C9F3 /* NSDictionary+DefautValues.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+DefautValues.m"; sourceTree = "<group>"; };
 		A869FFFE1A0292FA00D2C9F3 /* NSMutableDictionary+Merge.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSMutableDictionary+Merge.h"; sourceTree = "<group>"; };
 		A869FFFF1A0292FA00D2C9F3 /* NSMutableDictionary+Merge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSMutableDictionary+Merge.m"; sourceTree = "<group>"; };
-		A86AC95A19EF39B50044A5CD /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Context.h; path = ../src/Context.h; sourceTree = "<group>"; };
 		A8702C4F1A5B4B4E00EF9E9E /* DisplayHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayHelper.h; sourceTree = "<group>"; };
 		A8702C501A5B4B4E00EF9E9E /* DisplayHelperBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DisplayHelperBase.cpp; sourceTree = "<group>"; };
 		A8702C511A5B4B4E00EF9E9E /* DisplayHelperBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DisplayHelperBase.h; sourceTree = "<group>"; };
@@ -185,7 +183,6 @@
 		A8702C631A5B4B5800EF9E9E /* FileHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileHelper.h; sourceTree = "<group>"; };
 		A8702C641A5B4B5800EF9E9E /* FileHelper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileHelper.mm; sourceTree = "<group>"; };
 		A874A5111A2B7200009A60A0 /* main.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = main.cpp; path = ../src/main.cpp; sourceTree = "<group>"; };
-		A8AD3E421A23FA2100EAF144 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Context.cpp; path = ../src/Context.cpp; sourceTree = "<group>"; };
 		A8BFF87B19E4267C004BB2E3 /* TestingBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingBase.h; path = ../src/TestingBase.h; sourceTree = "<group>"; };
 		A8BFF87E19E42A06004BB2E3 /* TestingJS.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestingJS.cpp; path = ../src/TestingJS.cpp; sourceTree = "<group>"; };
 		A8BFF87F19E42A06004BB2E3 /* TestingJS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingJS.h; path = ../src/TestingJS.h; sourceTree = "<group>"; };
@@ -230,7 +227,6 @@
 			isa = PBXGroup;
 			children = (
 				A8BFF87D19E426BC004BB2E3 /* Testing */,
-				A83B7EDB19EEDC0100095A55 /* Context */,
 				A874A5111A2B7200009A60A0 /* main.cpp */,
 				A82C910916E02DAA00FF519C /* Sketch.h */,
 				A82C910816E02DAA00FF519C /* Sketch.cpp */,
@@ -346,15 +342,6 @@
 				A82DCB5D1A57040600295247 /* Timing.h */,
 			);
 			path = utils;
-			sourceTree = "<group>";
-		};
-		A83B7EDB19EEDC0100095A55 /* Context */ = {
-			isa = PBXGroup;
-			children = (
-				A86AC95A19EF39B50044A5CD /* Context.h */,
-				A8AD3E421A23FA2100EAF144 /* Context.cpp */,
-			);
-			name = Context;
 			sourceTree = "<group>";
 		};
 		A840012C1ABA391F00C90EF0 /* jsp */ = {
@@ -716,7 +703,6 @@
 				A86900D11A0292FA00D2C9F3 /* NSString+JSON.m in Sources */,
 				A84001431ABA391F00C90EF0 /* Manager.cpp in Sources */,
 				A85977421A2FA7170080C906 /* MemoryManager.mm in Sources */,
-				A8AD3E431A23FA2100EAF144 /* Context.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

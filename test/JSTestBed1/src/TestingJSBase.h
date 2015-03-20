@@ -21,10 +21,6 @@ public:
     void shutdown() override;
     void run(bool force) override {}
     
-    void forceGC();
-    void beginGCZeal(bool gcBefore = false);
-    void endGCZeal(bool gcAfter = false);
-    
     static bool fail(const std::string &file = "", int line = 0, const std::string &reason = "");
 };
 
@@ -32,6 +28,6 @@ public:
 
 #define JSP_BEGIN(TITLE) LOGI << TITLE << std::endl;
 #define JSP_END() LOGI << std::endl;
-#define JSP_TEST(CONDITION, FN) if ((CONDITION)) { JSP_BEGIN(#FN); forceGC(); FN(); JSP_END(); }
+#define JSP_TEST(CONDITION, FN) if ((CONDITION)) { JSP_BEGIN(#FN); JSP::forceGC(); FN(); JSP_END(); }
 
 #define JSP_CHECK(CONDITION, ...) (CONDITION) ? true : TestingJSBase::fail(__FILE__, __LINE__, ##__VA_ARGS__)

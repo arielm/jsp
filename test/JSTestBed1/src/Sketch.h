@@ -14,7 +14,5 @@ class Sketch : public chr::CinderSketch
 {
 public:
     void setup() final;
-    void shutdown() final;
-    
     void draw() final;
 };

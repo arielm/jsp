@@ -7,13 +7,13 @@
  */
 
 #include "TestingRooting2.h"
-#include "Context.h"
+
+#include "chronotext/Context.h"
 
 using namespace std;
 using namespace ci;
 using namespace chr;
 
-using namespace context;
 using namespace jsp;
 
 void TestingRooting2::setup()
@@ -60,7 +60,7 @@ void TestingRooting2::run(bool force)
 
 void TestingRooting2::handleObject1(HandleObject object, const string &source)
 {
-    forceGC();
+    JSP::forceGC();
     
     if (JSP_CHECK(JSP::isHealthy(object.get()), "HEALTHY OBJECT"))
     {
@@ -215,14 +215,14 @@ void TestingRooting2::testHeapWrappedObject1()
         }
         else
         {
-            forceGC(); // object WILL BE FINALIZED
+            JSP::forceGC(); // object WILL BE FINALIZED
             JSP_CHECK(!JSP::isHealthy(object), "UNHEALTHY OBJECT");
             
             return;
         }
     }
     
-    forceGC();
+    JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(object), "UNHEALTHY OBJECT");
 }
 

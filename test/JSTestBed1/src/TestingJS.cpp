@@ -7,13 +7,13 @@
  */
 
 #include "TestingJS.h"
-#include "Context.h"
+
+#include "chronotext/Context.h"
 
 using namespace std;
 using namespace ci;
 using namespace chr;
 
-using namespace context;
 using namespace jsp;
 
 void TestingJS::run(bool force)
@@ -69,8 +69,6 @@ void TestingJS::run(bool force)
         testAtoms();
         testReservedSlots();
         testJSID();
-        testGetProperty();
-        testGetElement();
     }
 }
 
@@ -280,154 +278,6 @@ void TestingJS::testJSID()
      */
     LOGI << JSP::write(id1) << endl; // PRINTS: jsid 0x3 = 1
     LOGI << JSP::write(id2) << endl; // PRINTS: jsid 0x5 = 2
-}
-
-#pragma mark ---------------------------------------- JS_GetProperty AND JS_GetElement ----------------------------------------
-
-/*
- * HOW SPIDERMONKEY IS FETCHING A VALUE FROM A JS OBJECT, STEP-BY-STEP:
- *
- *
- * bool JS_GetProperty(JSContext *cx, JSObject *objArg, const char *name, MutableHandleValue vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsapi.cpp#L3408-3414
- *
- * JSAtom* js::Atomize(ExclusiveContext *cx, const char *bytes, size_t length, InternBehavior ib)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsatom.cpp#L354-380
- *
- * jsid AtomToId(JSAtom *atom)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsatominlines.h#L31-41
- *
- * bool JS_GetPropertyById(JSContext *cx, JSObject *objArg, jsid idArg, MutableHandleValue vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsapi.cpp#L3346-3350
- *
- * bool JS_ForwardGetPropertyTo(JSContext *cx, JSObject *objArg, jsid idArg, JSObject *onBehalfOfArg, MutableHandleValue vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsapi.cpp#L3352-3367
- *
- *   IN COMMON WITH JS_GetElement:
- *
- *   bool getGeneric(JSContext *cx, js::HandleObject obj, js::HandleObject receiver, js::HandleId id, js::MutableHandleValue vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.h#L996-1009
- *
- *   bool baseops::GetProperty(JSContext *cx, HandleObject obj, HandleObject receiver, HandleId id, MutableHandleValue vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L4277-4282
- *
- *   bool GetPropertyHelperInline(JSContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType receiver,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        typename MaybeRooted<Value, allowGC>::MutableHandleType vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L4172-4275
- *
- *   bool LookupPropertyWithFlagsInline(ExclusiveContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        unsigned flags,
- *        typename MaybeRooted<JSObject*, allowGC>::MutableHandleType objp,
- *        typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L3802-3846
- *
- *   bool LookupOwnPropertyWithFlagsInline(ExclusiveContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        unsigned flags,
- *        typename MaybeRooted<JSObject*, allowGC>::MutableHandleType objp,
- *        typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp,
- *        bool *donep)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L3728-3786
- *
- * Shape* js::ObjectImpl::nativeLookup(ExclusiveContext *cx, jsid id)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/ObjectImpl.cpp#L318-324
- *
- * bool NativeGetInline(JSContext *cx,
- *      typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *      typename MaybeRooted<JSObject*, allowGC>::HandleType receiver,
- *      typename MaybeRooted<JSObject*, allowGC>::HandleType pobj,
- *      typename MaybeRooted<Shape*, allowGC>::HandleType shape,
- *      typename MaybeRooted<Value, allowGC>::MutableHandleType vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L4037-4096
- *
- * bool hasSlot() const
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/Shape.h#L1161
- *
- * const Value &nativeGetSlot(uint32_t slot) const
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/ObjectImpl.h#L1353-1356
- */
-
-void TestingJS::testGetProperty()
-{
-    RootedObject object(cx, createObject2());
-    RootedValue value(cx);
-    
-    if (JS_GetProperty(cx, object, "property1", &value))
-    {
-        LOGI << JSP::writeDetailed(value) << endl;
-    }
-}
-
-/*
- * HOW SPIDERMONKEY IS FETCHING A VALUE FROM A JS ARRAY, STEP-BY-STEP:
- *
- *
- * bool JS_GetElement(JSContext *cx, JSObject *objArg, uint32_t index, MutableHandleValue vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsapi.cpp#L3369-L3373
- *
- * bool JS_GetElementIfPresent(JSContext *cx, JSObject *objArg, uint32_t index, JSObject *onBehalfOfArg, MutableHandleValue vp, bool* present)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsapi.cpp#L3375-3387
- *
- * bool JSObject::getElement(JSContext *cx, js::HandleObject obj, js::HandleObject receiver, uint32_t index, js::MutableHandleValue vp)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobjinlines.h#L558-570
- *
- *   IN COMMON WITH JS_GetProperty:
- *
- *   bool getGeneric(JSContext *cx, js::HandleObject obj, js::HandleObject receiver, js::HandleId id, js::MutableHandleValue vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.h#L996-1009
- *
- *   bool baseops::GetProperty(JSContext *cx, HandleObject obj, HandleObject receiver, HandleId id, MutableHandleValue vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L4277-4282
- *
- *   bool GetPropertyHelperInline(JSContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType receiver,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        typename MaybeRooted<Value, allowGC>::MutableHandleType vp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L4172-4275
- *
- *   bool LookupPropertyWithFlagsInline(ExclusiveContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        unsigned flags,
- *        typename MaybeRooted<JSObject*, allowGC>::MutableHandleType objp,
- *        typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L3802-3846
- *
- *   bool LookupOwnPropertyWithFlagsInline(ExclusiveContext *cx,
- *        typename MaybeRooted<JSObject*, allowGC>::HandleType obj,
- *        typename MaybeRooted<jsid, allowGC>::HandleType id,
- *        unsigned flags,
- *        typename MaybeRooted<JSObject*, allowGC>::MutableHandleType objp,
- *        typename MaybeRooted<Shape*, allowGC>::MutableHandleType propp,
- *        bool *donep)
- *   https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/jsobj.cpp#L3728-3786
- *
- * bool containsDenseElement(uint32_t idx)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/ObjectImpl.h#L1023-1026
- *
- * bool IsImplicitDenseElement(Shape *prop)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/Shape.h#L1675-1679
- *
- * const Value &getDenseElement(uint32_t idx)
- * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/ObjectImpl.h#L1018-1022
- */
-
-void TestingJS::testGetElement()
-{
-    RootedObject array(cx, createArray());
-    RootedValue value(cx);
-    
-    if (JS_GetElement(cx, array, 2, &value))
-    {
-        LOGI << JSP::writeDetailed(value) << endl;
-    }
 }
 
 #pragma mark ---------------------------------------- MISC ----------------------------------------

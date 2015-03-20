@@ -12,8 +12,6 @@
 
 #include "chronotext/utils/Utils.h"
 
-#include <map>
-
 using namespace std;
 using namespace chr;
 
@@ -152,7 +150,7 @@ namespace jsp
          *
          * ALTERNATIVES:
          *
-         * 1) INSTEAD OF PASSING BY Barker::gc, A "CHAIN OF REGISTERABLE FINALIZER CALLBACKS"
+         * 1) INSTEAD OF PASSING BY Barker::forceGC(): A "CHAIN OF REGISTERABLE FINALIZER CALLBACKS"
          *    COULD BE MANAGED, E.G. VIA JSP::forceGC()
          *
          * 2) SPIDERMONKEY'S "GC CALLBACK" COULD BE USED
@@ -161,7 +159,7 @@ namespace jsp
         LOGD << "Barker GC-BEGIN" << endl;
         
         JS_SetFinalizeCallback(rt, Barker::finalizeCallback);
-        JSP::forceGC(rt);
+        JSP::forceGC();
         JS_SetFinalizeCallback(rt, nullptr);
         
         LOGD << "Barker GC-END" << endl;
@@ -374,8 +372,7 @@ namespace jsp
     {
         if (!barker::classInstance)
         {
-            RootedObject global(cx, CurrentGlobalOrNull(cx));
-            barker::classInstance = JS_InitClass(cx, global, NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, nullptr);
+            barker::classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, nullptr);
             
             if (barker::classInstance)
             {

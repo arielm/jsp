@@ -7,13 +7,13 @@
  */
 
 #include "TestingCallbacks.h"
-#include "Context.h"
+
+#include "chronotext/Context.h"
 
 using namespace std;
 using namespace ci;
 using namespace chr;
 
-using namespace context;
 using namespace jsp;
 
 void TestingCallbacks::setup()
