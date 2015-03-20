@@ -26,20 +26,6 @@
 
 namespace jsp
 {
-    class Proto;
-    
-    struct Callback
-    {
-        Proto *proto;
-        std::function<bool(JS::CallArgs args)> fn;
-        
-        Callback(Proto *proto, std::function<bool(JS::CallArgs args)> fn)
-        :
-        proto(proto),
-        fn(fn)
-        {}
-    };
-    
     class Proto
     {
     public:
@@ -127,27 +113,7 @@ namespace jsp
         
         // ---
         
-        /*
-         * TODO:
-         *
-         * - ENSURE PROPER-ROOTING OF THE TARGET JS-OBJECT (AND THE DEFINED JS-FUNCTION)
-         * - ADD unregisterCallback():
-         *   - SHOULD BE CALLED AUTOMATICALLY IN Proto DESTRUCTOR
-         *   - JS-SIDE INVOCATION SHOULD FAIL IF "UNREGISTRATION" TOOK PLACE
-         * - registerCallback():
-         *   - SHOULD FAIL IF "ALREADY REGISTERED"
-         *   - OR MAYBE SIMPLY "REPLACE" THE EXISTING CALLBACK?
-         */
-        
-        void registerCallback(JS::HandleObject object, const std::string &name, std::function<bool(JS::CallArgs args)> fn);
-        
-        template<class I, class F>
-        inline void registerCallback(I&& i, JS::HandleObject object, const std::string &name, F&& f)
-        {
-            registerCallback(object, name, std::bind(std::forward<F>(f), std::forward<I>(i), std::placeholders::_1));
-        }
-        
-        virtual bool invokeCallback(std::function<bool(JS::CallArgs args)> &fn, JS::CallArgs args) = 0;
+        virtual bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) = 0;
 
         // ---
         
@@ -251,9 +217,5 @@ namespace jsp
             
             return true;
         }
-        
-    protected:
-        static std::vector<Callback> callbacks;
-        static bool dispatchCallback(JSContext *cx, unsigned argc, JS::Value *vp);
     };
 }

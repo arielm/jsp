@@ -71,35 +71,6 @@ namespace jsp
         return evaluateObject(utils::readText<string>(inputSource), inputSource->getFilePathHint());
     }
     
-#pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
-
-    /*
-     * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER JS GLOBAL-OBJECT
-     */
-    
-    vector<Callback> Proto::callbacks {};
-
-    bool Proto::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        JSObject &callee = args.callee();
-        
-        JSFunction *function = &callee.as<JSFunction>();
-        int32_t key = GetFunctionNativeReserved(function, 0).toInt32();
-        
-        auto &callback = callbacks[key];
-        return callback.proto->invokeCallback(callback.fn, args);
-    }
-    
-    void Proto::registerCallback(HandleObject object, const string &name, function<bool(CallArgs args)> fn)
-    {
-        int32_t key = callbacks.size();
-        callbacks.emplace_back(this, fn);
-        
-        RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
-        SetFunctionNativeReserved(function, 0, NumberValue(key));
-    }
-    
 #pragma mark ---------------------------------------- PROPERTY GETTERS (SAFE) ----------------------------------------
     
     template <>

@@ -38,7 +38,7 @@ namespace jsp
          * CALLBACKS
          */
         
-        bool invokeCallback(std::function<bool(JS::CallArgs args)> &fn, JS::CallArgs args) override;
+        bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) override;
 
         /*
          * OBJECTS AND PROPERTIES

@@ -127,7 +127,7 @@ namespace jsp
 
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
 
-    bool Base::invokeCallback(std::function<bool(JS::CallArgs args)> &fn, JS::CallArgs args)
+    bool Base::invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args)
     {
         return fn(args);
     }

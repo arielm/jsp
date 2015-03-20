@@ -18,6 +18,20 @@
 
 namespace jsp
 {
+    class Proxy;
+    
+    struct Callback
+    {
+        Proxy *target;
+        std::function<bool(CallArgs args)> fn;
+        
+        Callback(Proxy *target, std::function<bool(CallArgs args)> fn)
+        :
+        target(target),
+        fn(fn)
+        {}
+    };
+    
     class Proxy : public Proto
     {
     public:
@@ -110,7 +124,25 @@ namespace jsp
         
         // ---
         
-        inline bool invokeCallback(std::function<bool(JS::CallArgs args)> &fn, JS::CallArgs args) final
+        /*
+         * TODO:
+         *
+         * - ENSURE PROPER-ROOTING OF THE TARGET JS-OBJECT (AND THE DEFINED JS-FUNCTION)
+         * - ADD unregisterCallback():
+         *   - SHOULD BE CALLED AUTOMATICALLY IN Proxy DESTRUCTOR
+         *   - JS-SIDE INVOCATION SHOULD FAIL IF "UNREGISTRATION" TOOK PLACE
+         * - registerCallback():
+         *   - SHOULD FAIL IF "ALREADY REGISTERED"
+         *   - OR MAYBE SIMPLY "REPLACE" THE EXISTING CALLBACK?
+         */
+        
+        template<class I, class F>
+        inline void registerCallback(I&& i, JS::HandleObject object, const std::string &name, F&& f)
+        {
+            registerCallback(object, name, std::bind(std::forward<F>(f), std::forward<I>(i), std::placeholders::_1));
+        }
+        
+        inline bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) final
         {
             return FORWARD(invokeCallback, fn, args);
         }
@@ -185,8 +217,13 @@ namespace jsp
         }
         
     protected:
+        static std::vector<Callback> callbacks;
+        
         Proto *target = nullptr;
         Proto *handler = nullptr;
+        
+        void registerCallback(JS::HandleObject object, const std::string &name, std::function<bool(CallArgs args)> fn);
+        static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
     };
 }
 
