@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Proto.h"
+#include "jsp/Proto.h"
 
 #include "chronotext/Exception.h"
 
@@ -30,15 +30,15 @@ namespace jsp
          * FUNCTIONS
          */
         
-        Value callFunction(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) override;
-        Value callFunction(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) override;
-        Value callFunction(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) override;
+        Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) override;
+        Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) override;
+        Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) override;
         
         /*
-         * CALLBACKS
+         * NATIVE-CALLBACKS
          */
         
-        bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) override;
+        bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) override;
 
         /*
          * OBJECTS AND PROPERTIES

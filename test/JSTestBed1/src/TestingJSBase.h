@@ -10,6 +10,10 @@
 
 #include "TestingBase.h"
 
+#include "jsp/WrappedObject.h"
+#include "jsp/WrappedValue.h"
+#include "jsp/CloneBuffer.h"
+#include "jsp/Barker.h"
 #include "jsp/Proxy.h"
 
 class TestingJSBase : public TestingBase, public jsp::Proxy

@@ -6,26 +6,90 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "Proxy.h"
+#include "jsp/Proxy.h"
 
 #include "chronotext/utils/Utils.h"
 
 using namespace std;
-using namespace ci;
 using namespace chr;
 
 namespace jsp
 {
+    Proxy::Proxy(Proto *target)
+    {
+        if (!setTarget(target))
+        {
+            throw EXCEPTION(Proxy, "INVALID TARGET");
+        }
+    }
+    
+    Proxy::Proxy(Proxy *target)
+    {
+        if (!setTarget(target))
+        {
+            throw EXCEPTION(Proxy, "INVALID TARGET");
+        }
+    }
+    
+    bool Proxy::setTarget(Proto *target)
+    {
+        if (target && (target != this) && (target != handler))
+        {
+            this->target = target;
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Proxy::setTarget(Proxy *target)
+    {
+        if (target && (target->target != this))
+        {
+            return setTarget(static_cast<Proto*>(target));
+        }
+        
+        return false;
+    }
+    
+    bool Proxy::setHandler(Proto *handler)
+    {
+        if ((handler != this) && (handler != target))
+        {
+            this->handler = handler;
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Proxy::setHandler(Proxy *handler)
+    {
+        if (handler->target != this)
+        {
+            return setHandler(static_cast<Proto*>(handler));
+        }
+        
+        return false;
+    }
+    
+    Proxy::~Proxy()
+    {
+        // TODO: UNREGISTER ASSOCIATED NATIVE-CALLBACKS
+    }
+    
+    // ---
+    
     /*
-     * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER JS GLOBAL-OBJECT
+     * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER GLOBAL-OBJECT (I.E. PER COMPARTMENT)
      */
     
     vector<Callback> Proxy::callbacks {};
     
-    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn)
+    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn, Proxy *proxy)
     {
         int32_t key = callbacks.size();
-        callbacks.emplace_back(fn, this);
+        callbacks.emplace_back(fn, proxy);
         
         RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
         SetFunctionNativeReserved(function, 0, NumberValue(key));
@@ -40,6 +104,6 @@ namespace jsp
         int32_t key = GetFunctionNativeReserved(function, 0).toInt32();
         
         auto &callback = callbacks[key];
-        return callback.proxy->invokeCallback(callback.fn, args);
+        return callback.proxy->applyCallback(callback.fn, args);
     }
 }

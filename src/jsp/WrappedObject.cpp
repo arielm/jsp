@@ -6,7 +6,7 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "WrappedObject.h"
+#include "jsp/WrappedObject.h"
 
 #include "chronotext/Log.h"
 

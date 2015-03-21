@@ -75,14 +75,14 @@ void TestingCallbacks::testMethodDispatch1()
     RootedFunction customMethodA(cx, JS_NewFunction(cx, methodDispatch, 0, 0, globalHandle(), "customMethodA"));
     RootedFunction customMethodB(cx, JS_NewFunction(cx, methodDispatch, 0, 0, globalHandle(), "customMethodB"));
     
-    callFunction(globalHandle(), customMethodA);
-    callFunction(globalHandle(), customMethodB);
+    call(globalHandle(), customMethodA);
+    call(globalHandle(), customMethodB);
 }
 
 void TestingCallbacks::testMethodDispatch2()
 {
     RootedFunction customMethodC(cx, JS_DefineFunction(cx, globalHandle(), "customMethodC", methodDispatch, 0, 0));
-    callFunction(globalHandle(), customMethodC);
+    call(globalHandle(), customMethodC);
     
     JS_DefineFunction(cx, globalHandle(), "customMethodD", methodDispatch, 0, 0);
     executeScript("customMethodD();");
@@ -118,7 +118,7 @@ void TestingCallbacks::testMethodDispatchExtended()
     RootedFunction customMethodE(cx, DefineFunctionWithReserved(cx, globalHandle(), "customMethodE", methodDispatchExtended, 0, 0));
     
     SetFunctionNativeReserved(customMethodE, 0, NumberValue(12345));
-    callFunction(globalHandle(), customMethodE);
+    call(globalHandle(), customMethodE);
     
     SetFunctionNativeReserved(customMethodE, 0, NumberValue(999));
     executeScript("customMethodE();");
@@ -194,8 +194,8 @@ bool TestingCallbacks::instanceMethod2(CallArgs args)
 
 void TestingCallbacks::testInstanceMethod2()
 {
-    registerCallback(globalHandle(), "instanceMethod2", &TestingCallbacks::instanceMethod2, this);
-    executeScript("print(instanceMethod2(33))");
+//  registerCallback(globalHandle(), "instanceMethod2", &TestingCallbacks::instanceMethod2, this);
+//  executeScript("print(instanceMethod2(33))");
 }
 
 // ---
@@ -229,8 +229,6 @@ void TestingCallbacks::testDefinedFunctionRooting2()
 }
 
 // ---
-
-#define REGISTER_CALLBACK(TARGET, CLASS, METHOD) registerCallback(TARGET, #METHOD, &CLASS::METHOD, this)
 
 void TestingCallbacks::testRegistrationMacro()
 {

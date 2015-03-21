@@ -358,7 +358,7 @@ void TestingRooting2::testBarkerPassedToJS1()
         AutoValueVector args(cx);
         args.append(Barker::construct("PASSED-TO-JS 1").as<Value>());
         
-        callFunction(globalHandle(), "handleBarker1", args);
+        call(globalHandle(), "handleBarker1", args);
         
         /*
          * DISABLE THE FOLLOWING BLOCK IN ORDER TO WITNESS A RARE EVENT:

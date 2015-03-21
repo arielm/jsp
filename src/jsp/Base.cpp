@@ -6,7 +6,7 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "Base.h"
+#include "jsp/Base.h"
 
 using namespace std;
 using namespace chr;
@@ -14,7 +14,7 @@ using namespace chr;
 namespace jsp
 {
     /*
-     * TODO: THERE SHOULD BE ONE DISTINCT INSTANCE PER JS GLOBAL-OBJECT
+     * TODO: THERE SHOULD BE ONE DISTINCT INSTANCE PER GLOBAL-OBJECT (I.E. PER COMPARTMENT)
      */
     
     namespace base
@@ -63,7 +63,7 @@ namespace jsp
     
 #pragma mark ---------------------------------------- FUNCTIONS ----------------------------------------
     
-    Value Base::callFunction(HandleObject object, const char *name, const HandleValueArray& args)
+    Value Base::call(HandleObject object, const char *name, const HandleValueArray& args)
     {
         RootedValue result(cx);
         bool success = JS_CallFunctionName(cx, object, name, args, &result);
@@ -82,7 +82,7 @@ namespace jsp
         throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
     }
     
-    Value Base::callFunction(HandleObject object, HandleValue function, const HandleValueArray& args)
+    Value Base::call(HandleObject object, HandleValue function, const HandleValueArray& args)
     {
         if (!isFunction(function))
         {
@@ -106,7 +106,7 @@ namespace jsp
         throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
     }
     
-    Value Base::callFunction(HandleObject object, HandleFunction function, const HandleValueArray& args)
+    Value Base::call(HandleObject object, HandleFunction function, const HandleValueArray& args)
     {
         RootedValue result(cx);
         bool success = JS_CallFunction(cx, object, function, args, &result);
@@ -127,7 +127,7 @@ namespace jsp
 
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
 
-    bool Base::invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args)
+    bool Base::applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args)
     {
         return fn(args);
     }

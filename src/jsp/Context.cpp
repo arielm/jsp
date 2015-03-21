@@ -6,10 +6,10 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "Context.h"
-#include "WrappedObject.h"
-#include "WrappedValue.h"
-#include "Barker.h"
+#include "jsp/Context.h"
+#include "jsp/WrappedObject.h"
+#include "jsp/WrappedValue.h"
+#include "jsp/Barker.h"
 
 #include "chronotext/incubator/utils/FileCapture.h"
 

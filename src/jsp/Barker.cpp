@@ -6,9 +6,9 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "Barker.h"
-#include "WrappedObject.h"
-#include "WrappedValue.h"
+#include "jsp/Barker.h"
+#include "jsp/WrappedObject.h"
+#include "jsp/WrappedValue.h"
 
 #include "chronotext/utils/Utils.h"
 

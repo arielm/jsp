@@ -6,7 +6,7 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "Proto.h"
+#include "jsp/Proto.h"
 
 #include "chronotext/utils/Utils.h"
 

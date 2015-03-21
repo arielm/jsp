@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include "Proto.h"
-
-#include "chronotext/Exception.h"
+#include "jsp/Proto.h"
 
 #define TARGET(FN, ...) target->FN(__VA_ARGS__)
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
+
+#define REGISTER_CALLBACK(OBJECT, CLASS, METHOD) Proxy::registerCallback(OBJECT, #METHOD, std::bind(&CLASS::METHOD, this, std::placeholders::_1), this)
 
 namespace jsp
 {
@@ -35,64 +35,17 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
-        Proxy(Proto *target)
-        {
-            if (!setTarget(target))
-            {
-                throw EXCEPTION(Proxy, "INVALID TARGET");
-            }
-        }
+        Proxy(Proto *target);
+        Proxy(Proxy *target);
+
+        bool setTarget(Proto *target);
+        bool setTarget(Proxy *target);
         
-        Proxy(Proxy *target)
-        {
-            if (!setTarget(target))
-            {
-                throw EXCEPTION(Proxy, "INVALID TARGET");
-            }
-        }
-        
-        bool setTarget(Proto *target)
-        {
-            if (target && (target != this) && (target != handler))
-            {
-                this->target = target;
-                return true;
-            }
-            
-            return false;
-        }
-        
-        bool setTarget(Proxy *target)
-        {
-            if (target && (target->target != this))
-            {
-                return setTarget(static_cast<Proto*>(target));
-            }
-            
-            return false;
-        }
-        
-        bool setHandler(Proto *handler)
-        {
-            if ((handler != this) && (handler != target))
-            {
-                this->handler = handler;
-                return true;
-            }
-            
-            return false;
-        }
-        
-        bool setHandler(Proxy *handler)
-        {
-            if (handler->target != this)
-            {
-                return setHandler(static_cast<Proto*>(handler));
-            }
-            
-            return false;
-        }
-        
+        bool setHandler(Proto *handler);
+        bool setHandler(Proxy *handler);
+
+        ~Proxy();
+
         // ---
         
         inline bool exec(const std::string &source, const ReadOnlyCompileOptions &options) final
@@ -107,26 +60,26 @@ namespace jsp
         
         // ---
         
-        inline Value callFunction(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(callFunction, object, name, args);
+            return FORWARD(call, object, name, args);
         }
         
-        inline Value callFunction(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(callFunction, object, function, args);
+            return FORWARD(call, object, function, args);
         }
         
-        inline Value callFunction(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(callFunction, object, function, args);
+            return FORWARD(call, object, function, args);
         }
         
         // ---
         
-        inline bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) final
+        inline bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) final
         {
-            return FORWARD(invokeCallback, fn, args);
+            return FORWARD(applyCallback, fn, args);
         }
         
         // ---
@@ -220,17 +173,7 @@ namespace jsp
          *     - OR THE EXISTING CALLBACK BE REPLACED?
          */
         
-        template<class C, class I>
-        inline void registerCallback(JS::HandleObject object, const std::string &name, C&& callback, I&& instance)
-        {
-            /*
-             * NOT CALLING registerCallback() DIRECTLY, ENSURING AT COMPILE-TIME THAT instance IS A Proxy
-             */
-            std::forward<I>(instance)->registerCallback(object, name, std::bind(std::forward<C>(callback), std::forward<I>(instance), std::placeholders::_1));
-        }
-        
-        void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn);
-        
+        static void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn, Proxy *proxy);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
     };
 }

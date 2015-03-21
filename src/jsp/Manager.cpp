@@ -12,7 +12,7 @@
  * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsapi-tests/tests.h
  */
 
-#include "Manager.h"
+#include "jsp/Manager.h"
 
 #include "chronotext/utils/Utils.h"
 

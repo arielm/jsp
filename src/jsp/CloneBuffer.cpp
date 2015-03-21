@@ -6,7 +6,7 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "CloneBuffer.h"
+#include "jsp/CloneBuffer.h"
 
 #include "js/StructuredClone.h"
 

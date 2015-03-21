@@ -16,11 +16,7 @@
 
 #pragma once
 
-#include "Context.h"
-#include "WrappedObject.h"
-#include "WrappedValue.h"
-#include "CloneBuffer.h"
-#include "Barker.h"
+#include "jsp/Context.h"
 
 #include "chronotext/InputSource.h"
 
@@ -38,7 +34,7 @@ namespace jsp
          * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
          *
          * bool exec<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         virtual bool exec(const std::string &source, const ReadOnlyCompileOptions &options) = 0;
         
@@ -46,7 +42,7 @@ namespace jsp
          * TODO INSTEAD:
          *
          * bool exec<Maybe>(const std::string &source); // UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
-         * bool exec<CanThrow>(const std::string &source); // UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * bool exec<CanThrow>(const std::string &source); // UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         void executeScript(const std::string &source, const std::string &file = "", int line = 1);
         
@@ -59,7 +55,7 @@ namespace jsp
          *
          * bool exec<CanThrow>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         void executeScript(chr::InputSource::Ref inputSource);
         
@@ -70,7 +66,7 @@ namespace jsp
          * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
          *
          * bool eval<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         virtual bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result) = 0;
         
@@ -81,7 +77,7 @@ namespace jsp
          * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS "UNDEFINED" WrappedValue
          *
          * WrappedValue eval<CanThrow>(const std::string &source);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         JSObject* evaluateObject(const std::string &source, const std::string &file = "", int line = 1);
         
@@ -94,7 +90,7 @@ namespace jsp
          *
          * WrappedValue eval<CanThrow>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH "JS ERROR" EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
          */
         JSObject* evaluateObject(chr::InputSource::Ref inputSource);
         
@@ -103,17 +99,16 @@ namespace jsp
         /*
          * TODO:
          *
-         * - DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN THE "FORTHCOMING PLANS" FOR evaluateObject()
-         * - CHECK POSSIBLE "OVERLAP" WITH SPIDERMONKEY'S Proxy::call() AND/OR Proxy::nativeCall()
+         * - DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
          */
         
-        virtual Value callFunction(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) = 0;
-        virtual Value callFunction(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
-        virtual Value callFunction(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
         
         // ---
         
-        virtual bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) = 0;
+        virtual bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) = 0;
 
         // ---
         
@@ -129,8 +124,8 @@ namespace jsp
 
         /*
          * TODO:
-         
-         * HOW ABOUT ADOPTING PART OF THE SPIDERMONKEY'S Proxy PROTOCOL?
+         *
+         * HOW ABOUT ADOPTING PART OF SPIDERMONKEY'S Proxy PROTOCOL?
          * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsproxy.h#L175-224
          * - NOTE: SOME SIMILARITIES WITH /js/ipc/JavascriptParent.h (NOW DEPRECATED)
          *

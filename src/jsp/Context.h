@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "Types.h"
+#include "jsp/Types.h"
 
 #include "jsapi.h"
 #include "jsfriendapi.h"

@@ -28,7 +28,7 @@ void TestingJS::run(bool force)
     
     if (true)
     {
-        callFunction(globalHandle(), "start");
+        call(globalHandle(), "start");
         LOGI << JSP::writeDetailed(get<OBJECT>(globalHandle(), "foo")) << endl;
     }
 
@@ -406,7 +406,7 @@ void TestingJS::testFunctionScope()
          * IF containerObject, OR NullPtr(), OR NOTHING (I.E. THE GLOBAL-OBJECT) IS PROVIDED:
          * someGlobalThing WILL BE PROPERLY RESOLVED
          */
-        JS::RootedValue result1(cx, callFunction(NullPtr(), function1, args));
+        JS::RootedValue result1(cx, call(NullPtr(), function1, args));
         LOGI << "RESULT 1: " << JSP::write(result1) << endl; // RESULT: 0
     }
     
@@ -416,14 +416,14 @@ void TestingJS::testFunctionScope()
          * IF containerObject IS PROVIDED:
          * this.someAmbiguousThing WILL RESOLVE TO THE "LOCAL VALUE"
          */
-        RootedValue result2A(cx, callFunction(containerObject, function2, args));
+        RootedValue result2A(cx, call(containerObject, function2, args));
         LOGI << "RESULT 2A: " << JSP::write(result2A) << endl; // RESULT: 99
         
         /*
          * IF nullptr OR NOTHING (I.E. THE GLOBAL-OBJECT) IS PROVIDED:
          * this.someAmbiguousThing WILL RESOLVE TO THE "GLOBAL VALUE"
          */
-        RootedValue result2B(cx, callFunction(NullPtr(), function2, args));
+        RootedValue result2B(cx, call(NullPtr(), function2, args));
         LOGI << "RESULT 2B: " << JSP::write(result2B) << endl; // RESULT: 66
     }
 }
