@@ -40,7 +40,6 @@
 		A84C58AC1A7F9F09007D0BCC /* TestingJSBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84C58A31A7F9F09007D0BCC /* TestingJSBase.cpp */; };
 		A84C58AE1A7F9F09007D0BCC /* TestingRooting2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84C58A71A7F9F09007D0BCC /* TestingRooting2.cpp */; };
 		A84C58AF1A7F9F09007D0BCC /* TestingWrappedValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84C58A91A7F9F09007D0BCC /* TestingWrappedValue.cpp */; };
-		A84C58C51A7F9F87007D0BCC /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84C58C11A7F9F87007D0BCC /* Context.cpp */; };
 		A84E430E1A2A1DFB00EE6AC1 /* InputSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84E42BA1A2A1DFA00EE6AC1 /* InputSource.cpp */; };
 		A84E430F1A2A1DFB00EE6AC1 /* Log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84E42BC1A2A1DFA00EE6AC1 /* Log.cpp */; };
 		A84E43101A2A1DFB00EE6AC1 /* Handler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84E42BF1A2A1DFB00EE6AC1 /* Handler.cpp */; };
@@ -70,6 +69,7 @@
 		A8994D441726E33900C8851E /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8994D431726E33900C8851E /* GLKit.framework */; };
 		A8994D481726E51E00C8851E /* Application.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8994D471726E51E00C8851E /* Application.mm */; };
 		A8C16EA01A2A4A7300551905 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C16E9F1A2A4A7300551905 /* main.cpp */; };
+		A8C294A31ABDC7C700FD36C9 /* Proxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */; };
 		A8CDB6631A2DD16A0043A5E5 /* MemoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */; };
 		A8CDB6641A2DD16A0043A5E5 /* NSDictionary+DefautValues.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65E1A2DD16A0043A5E5 /* NSDictionary+DefautValues.m */; };
 		A8CDB6651A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB6601A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m */; };
@@ -163,8 +163,6 @@
 		A84C58A81A7F9F09007D0BCC /* TestingRooting2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingRooting2.h; path = ../src/TestingRooting2.h; sourceTree = "<group>"; };
 		A84C58A91A7F9F09007D0BCC /* TestingWrappedValue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestingWrappedValue.cpp; path = ../src/TestingWrappedValue.cpp; sourceTree = "<group>"; };
 		A84C58AA1A7F9F09007D0BCC /* TestingWrappedValue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingWrappedValue.h; path = ../src/TestingWrappedValue.h; sourceTree = "<group>"; };
-		A84C58C11A7F9F87007D0BCC /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Context.cpp; path = ../src/Context.cpp; sourceTree = "<group>"; };
-		A84C58C21A7F9F87007D0BCC /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Context.h; path = ../src/Context.h; sourceTree = "<group>"; };
 		A84E42941A2A1DFA00EE6AC1 /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Exception.h; sourceTree = "<group>"; };
 		A84E42BA1A2A1DFA00EE6AC1 /* InputSource.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InputSource.cpp; sourceTree = "<group>"; };
 		A84E42BB1A2A1DFA00EE6AC1 /* InputSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InputSource.h; sourceTree = "<group>"; };
@@ -236,6 +234,7 @@
 		A8994D461726E51E00C8851E /* Application.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Application.h; sourceTree = "<group>"; };
 		A8994D471726E51E00C8851E /* Application.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Application.mm; sourceTree = "<group>"; };
 		A8C16E9F1A2A4A7300551905 /* main.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = main.cpp; path = ../src/main.cpp; sourceTree = "<group>"; };
+		A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Proxy.cpp; sourceTree = "<group>"; };
 		A8CDB65A1A2DD16A0043A5E5 /* MemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryManager.h; sourceTree = "<group>"; };
 		A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryManager.mm; sourceTree = "<group>"; };
 		A8CDB65D1A2DD16A0043A5E5 /* NSDictionary+DefautValues.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+DefautValues.h"; sourceTree = "<group>"; };
@@ -346,7 +345,6 @@
 			isa = PBXGroup;
 			children = (
 				A84C589F1A7F9EE8007D0BCC /* Testing */,
-				A84C58C01A7F9F71007D0BCC /* Context */,
 				A8C16E9F1A2A4A7300551905 /* main.cpp */,
 				A8DB3EC516E0B96C00504D27 /* Sketch.h */,
 				A8DB3EC416E0B96C00504D27 /* Sketch.cpp */,
@@ -429,6 +427,7 @@
 				A84001501ABA3BA000C90EF0 /* Manager.cpp */,
 				A84001531ABA3BA000C90EF0 /* Proto.h */,
 				A84001541ABA3BA000C90EF0 /* Proxy.h */,
+				A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */,
 				A84001521ABA3BA000C90EF0 /* Proto.cpp */,
 				A840014B1ABA3BA000C90EF0 /* Base.h */,
 				A840014A1ABA3BA000C90EF0 /* Base.cpp */,
@@ -508,15 +507,6 @@
 				A8DC40A91A9EA1DA0033953E /* TestingCallbacks.cpp */,
 			);
 			name = Testing;
-			sourceTree = "<group>";
-		};
-		A84C58C01A7F9F71007D0BCC /* Context */ = {
-			isa = PBXGroup;
-			children = (
-				A84C58C21A7F9F87007D0BCC /* Context.h */,
-				A84C58C11A7F9F87007D0BCC /* Context.cpp */,
-			);
-			name = Context;
 			sourceTree = "<group>";
 		};
 		A84E42901A2A1DFA00EE6AC1 /* cinder */ = {
@@ -828,6 +818,7 @@
 				A84E43511A2A1F2300EE6AC1 /* UIView+StringTag.m in Sources */,
 				A8CDB6651A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m in Sources */,
 				A84E43221A2A1DFB00EE6AC1 /* Utils.cpp in Sources */,
+				A8C294A31ABDC7C700FD36C9 /* Proxy.cpp in Sources */,
 				A8702ABE1A5B0A5900EF9E9E /* DisplayHelperBase.cpp in Sources */,
 				A84001601ABA3BA000C90EF0 /* WrappedObject.cpp in Sources */,
 				A84E43191A2A1DFB00EE6AC1 /* Texture.cpp in Sources */,
@@ -859,7 +850,6 @@
 				A84E434E1A2A1F2300EE6AC1 /* GLViewController.mm in Sources */,
 				A8CDB6661A2DD16A0043A5E5 /* NSString+JSON.m in Sources */,
 				A84C58801A7F9E88007D0BCC /* FontManager.cpp in Sources */,
-				A84C58C51A7F9F87007D0BCC /* Context.cpp in Sources */,
 				A84E430E1A2A1DFB00EE6AC1 /* InputSource.cpp in Sources */,
 				A84C587F1A7F9E88007D0BCC /* ActualFont.cpp in Sources */,
 				A84E43101A2A1DFB00EE6AC1 /* Handler.cpp in Sources */,

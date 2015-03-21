@@ -124,25 +124,6 @@ namespace jsp
         
         // ---
         
-        /*
-         * TODO:
-         *
-         * - ADD unregisterCallback():
-         *   - SHOULD (HOW?) BE CALLED IF HOST JS-OBJECT IS FINALIZED
-         *   - SHOULD (HOW?) BE CALLED IF TARGET CPP-OBJECT IS DESTRUCTED
-         *   - SHOULD DELETE THE PREVIOUSLY-DEFINED FUNCTION PROPERTY IN THE HOST JS-OBJECT
-         * - registerCallback():
-         *   - HOW TO DETECT IF "ALREADY REGISTERED"?
-         *   - IF DETECTED: SHOULD IT FAIL?
-         *     - OR THE EXISTING CALLBACK BE REPLACED?
-         */
-        
-        template<class F, class I>
-        inline void registerCallback(JS::HandleObject object, const std::string &name, F&& f, I&& i)
-        {
-            registerCallback(object, name, std::bind(std::forward<F>(f), std::forward<I>(i), std::placeholders::_1));
-        }
-        
         inline bool invokeCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) final
         {
             return FORWARD(invokeCallback, fn, args);
@@ -223,7 +204,33 @@ namespace jsp
         Proto *target = nullptr;
         Proto *handler = nullptr;
         
+        /*
+         * TODO:
+         *
+         * - ADD unregisterCallback():
+         *   - SHOULD BE CALLED IF HOST JS-OBJECT IS FINALIZED:
+         *     - POSSIBILITY: IN DEFINED-FUNCTION'S FINALIZER?
+         *   - SHOULD BE CALLED IF instance IS DESTROYED
+         *     - POSSIBILITY: IN Proxy's DESTRUCTOR (ASSUMING instance IS ALWAYS A Proxy)
+         *   - SHOULD DELETE THE PREVIOUSLY-DEFINED FUNCTION PROPERTY IN THE HOST JS-OBJECT
+         * - registerCallback():
+         *   - HOW TO DETECT IF "ALREADY REGISTERED"?
+         *     - POSSIBILITY: USING A KEY MADE OF THE ADDRESS OF instance AND name
+         *   - IF DETECTED: SHOULD IT FAIL?
+         *     - OR THE EXISTING CALLBACK BE REPLACED?
+         */
+        
+        template<class C, class I>
+        inline void registerCallback(JS::HandleObject object, const std::string &name, C&& callback, I&& instance)
+        {
+            /*
+             * NOT CALLING registerCallback() DIRECTLY, ENSURING AT COMPILE-TIME THAT instance IS A Proxy
+             */
+            std::forward<I>(instance)->registerCallback(object, name, std::bind(std::forward<C>(callback), std::forward<I>(instance), std::placeholders::_1));
+        }
+        
         void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn);
+        
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
     };
 }

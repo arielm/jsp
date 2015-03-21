@@ -39,8 +39,10 @@ void TestingCallbacks::run(bool force)
         JSP_TEST(force || false, testInstanceMethod1);
         JSP_TEST(force || false, testInstanceMethod2);
         
-        JSP_TEST(force || true, testDefinedFunctionRooting1);
-        JSP_TEST(force || true, testDefinedFunctionRooting2);
+        JSP_TEST(force || false, testDefinedFunctionRooting1);
+        JSP_TEST(force || false, testDefinedFunctionRooting2);
+        
+        JSP_TEST(force || true, testRegistrationMacro);
     }
 }
 
@@ -215,7 +217,7 @@ void TestingCallbacks::testDefinedFunctionRooting2()
     JSFunction *customMethodF2 = nullptr;
     
     {
-        RootedObject object(cx, Barker::construct("F2"));
+        RootedObject object(cx, Barker::construct("HOST-OBJECT"));
         customMethodF2 = JS_DefineFunction(cx, object, "customMethodF2", methodDispatch, 0, 0);
         
         Barker::forceGC(); // WILL NOT AFFECT (ROOTED) BARKER
@@ -224,4 +226,14 @@ void TestingCallbacks::testDefinedFunctionRooting2()
     
     Barker::forceGC(); // WILL FINALIZE BARKER
     JSP_CHECK(boost::ends_with(JSP::writeDetailed(customMethodF2), "[P]")); // DEFINED-FUNCTION IS DEAD
+}
+
+// ---
+
+#define REGISTER_CALLBACK(TARGET, CLASS, METHOD) registerCallback(TARGET, #METHOD, &CLASS::METHOD, this)
+
+void TestingCallbacks::testRegistrationMacro()
+{
+    REGISTER_CALLBACK(globalHandle(), TestingCallbacks, instanceMethod2);
+    executeScript("print(instanceMethod2(44))");
 }

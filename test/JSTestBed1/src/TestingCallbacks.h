@@ -46,4 +46,8 @@ public:
     
     void testDefinedFunctionRooting1();
     void testDefinedFunctionRooting2();
+    
+    // ---
+    
+    void testRegistrationMacro();
 };
