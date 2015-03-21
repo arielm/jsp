@@ -36,8 +36,11 @@ void TestingCallbacks::run(bool force)
         JSP_TEST(force || false, testMethodDispatch2);
         JSP_TEST(force || false, testMethodDispatchExtended);
         
-        JSP_TEST(force || true, testInstanceMethod1);
-        JSP_TEST(force || true, testInstanceMethod2);
+        JSP_TEST(force || false, testInstanceMethod1);
+        JSP_TEST(force || false, testInstanceMethod2);
+        
+        JSP_TEST(force || true, testDefinedFunctionRooting1);
+        JSP_TEST(force || true, testDefinedFunctionRooting2);
     }
 }
 
@@ -173,7 +176,7 @@ void TestingCallbacks::testInstanceMethod1()
 // ---
 
 /*
- * TODO: SEE THE FEW TODO'S IN Proto.h (BEFORE THE DECLARATION OF registerCallback(), ETC.)
+ * TODO: SEE TODO-LIST IN Proxy.h (BEFORE THE DECLARATION OF registerCallback(), ETC.)
  */
 
 bool TestingCallbacks::instanceMethod2(CallArgs args)
@@ -189,6 +192,36 @@ bool TestingCallbacks::instanceMethod2(CallArgs args)
 
 void TestingCallbacks::testInstanceMethod2()
 {
-    registerCallback(this, globalHandle(), "instanceMethod2", &TestingCallbacks::instanceMethod2);
+    registerCallback(globalHandle(), "instanceMethod2", &TestingCallbacks::instanceMethod2, this);
     executeScript("print(instanceMethod2(33))");
+}
+
+// ---
+
+/*
+ * DEMONSTRATING THAT A DEFINED-FUNCTION IS ROOTED AS-LONG-AS THE HOST-OBJECT IS ALIVE
+ */
+
+void TestingCallbacks::testDefinedFunctionRooting1()
+{
+    JSFunction *customMethodF1 = JS_DefineFunction(cx, globalHandle(), "customMethodF1", methodDispatch, 0, 0);
+    
+    JSP::forceGC(); // WILL NOT AFFECT GLOBAL-OBJECT
+    JSP_CHECK(boost::ends_with(JSP::writeDetailed(customMethodF1), "[B]")); // DEFINED-FUNCTION IS ALIVE
+}
+
+void TestingCallbacks::testDefinedFunctionRooting2()
+{
+    JSFunction *customMethodF2 = nullptr;
+    
+    {
+        RootedObject object(cx, Barker::construct("F2"));
+        customMethodF2 = JS_DefineFunction(cx, object, "customMethodF2", methodDispatch, 0, 0);
+        
+        Barker::forceGC(); // WILL NOT AFFECT (ROOTED) BARKER
+        JSP_CHECK(boost::ends_with(JSP::writeDetailed(customMethodF2), "[B]")); // DEFINED-FUNCTION IS ALIVE
+    }
+    
+    Barker::forceGC(); // WILL FINALIZE BARKER
+    JSP_CHECK(boost::ends_with(JSP::writeDetailed(customMethodF2), "[P]")); // DEFINED-FUNCTION IS DEAD
 }

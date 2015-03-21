@@ -22,13 +22,13 @@ namespace jsp
     
     struct Callback
     {
-        Proxy *target;
         std::function<bool(CallArgs args)> fn;
+        Proxy *proxy;
         
-        Callback(Proxy *target, std::function<bool(CallArgs args)> fn)
+        Callback(const std::function<bool(CallArgs args)> &fn, Proxy *proxy)
         :
-        target(target),
-        fn(fn)
+        fn(fn),
+        proxy(proxy)
         {}
     };
     
@@ -127,17 +127,18 @@ namespace jsp
         /*
          * TODO:
          *
-         * - ENSURE PROPER-ROOTING OF THE TARGET JS-OBJECT (AND THE DEFINED JS-FUNCTION)
          * - ADD unregisterCallback():
-         *   - SHOULD BE CALLED AUTOMATICALLY IN Proxy DESTRUCTOR
-         *   - JS-SIDE INVOCATION SHOULD FAIL IF "UNREGISTRATION" TOOK PLACE
+         *   - SHOULD (HOW?) BE CALLED IF HOST JS-OBJECT IS FINALIZED
+         *   - SHOULD (HOW?) BE CALLED IF TARGET CPP-OBJECT IS DESTRUCTED
+         *   - SHOULD DELETE THE PREVIOUSLY-DEFINED FUNCTION PROPERTY IN THE HOST JS-OBJECT
          * - registerCallback():
-         *   - SHOULD FAIL IF "ALREADY REGISTERED"
-         *   - OR MAYBE SIMPLY "REPLACE" THE EXISTING CALLBACK?
+         *   - HOW TO DETECT IF "ALREADY REGISTERED"?
+         *   - IF DETECTED: SHOULD IT FAIL?
+         *     - OR THE EXISTING CALLBACK BE REPLACED?
          */
         
-        template<class I, class F>
-        inline void registerCallback(I&& i, JS::HandleObject object, const std::string &name, F&& f)
+        template<class F, class I>
+        inline void registerCallback(JS::HandleObject object, const std::string &name, F&& f, I&& i)
         {
             registerCallback(object, name, std::bind(std::forward<F>(f), std::forward<I>(i), std::placeholders::_1));
         }
@@ -222,7 +223,7 @@ namespace jsp
         Proto *target = nullptr;
         Proto *handler = nullptr;
         
-        void registerCallback(JS::HandleObject object, const std::string &name, std::function<bool(CallArgs args)> fn);
+        void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
     };
 }

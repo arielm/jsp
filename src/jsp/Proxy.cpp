@@ -22,10 +22,10 @@ namespace jsp
     
     vector<Callback> Proxy::callbacks {};
     
-    void Proxy::registerCallback(HandleObject object, const string &name, function<bool(CallArgs args)> fn)
+    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn)
     {
         int32_t key = callbacks.size();
-        callbacks.emplace_back(this, fn);
+        callbacks.emplace_back(fn, this);
         
         RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
         SetFunctionNativeReserved(function, 0, NumberValue(key));
@@ -40,6 +40,6 @@ namespace jsp
         int32_t key = GetFunctionNativeReserved(function, 0).toInt32();
         
         auto &callback = callbacks[key];
-        return callback.target->invokeCallback(callback.fn, args);
+        return callback.proxy->invokeCallback(callback.fn, args);
     }
 }

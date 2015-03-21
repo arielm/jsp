@@ -41,4 +41,9 @@ public:
     double instanceValue2 = 2;
     bool instanceMethod2(JS::CallArgs args);
     void testInstanceMethod2();
+    
+    // ---
+    
+    void testDefinedFunctionRooting1();
+    void testDefinedFunctionRooting2();
 };
