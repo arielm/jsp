@@ -15,6 +15,48 @@ using namespace chr;
 
 namespace jsp
 {
+    namespace proxy
+    {
+        map<int32_t, Proxy*> registeredProxies;
+        int32_t lastRegisteredProxyId = 0;
+        
+        Proxy* getRegisteredProxy(int32_t proxyId);
+        int32_t getRegisteredProxyId(Proxy *proxy);
+        int32_t nextRegisteredProxyId();
+    }
+    
+    Proxy* proxy::getRegisteredProxy(int32_t proxyId)
+    {
+        auto found = registeredProxies.find(proxyId);
+        
+        if (found != registeredProxies.end())
+        {
+            return found->second;
+        }
+        
+        return nullptr;
+    }
+    
+    int32_t proxy::getRegisteredProxyId(Proxy *proxy)
+    {
+        for (auto &element : registeredProxies)
+        {
+            if (proxy == element.second)
+            {
+                return element.first;
+            }
+        }
+        
+        return -1;
+    }
+    
+    int32_t proxy::nextRegisteredProxyId()
+    {
+        return lastRegisteredProxyId++;
+    }
+    
+    // ---
+    
     Proxy::Proxy(Proto *target)
     {
         if (!setTarget(target))
@@ -84,26 +126,97 @@ namespace jsp
      * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER GLOBAL-OBJECT (I.E. PER COMPARTMENT)
      */
     
-    vector<Callback> Proxy::callbacks {};
+    Callback* Proxy::getCallback(int32_t callbackId)
+    {
+        auto found = callbacks.find(callbackId);
+        
+        if (found != callbacks.end())
+        {
+            return &found->second;
+        }
+        
+        return nullptr;
+    }
+    
+    int32_t Proxy::getCallbackId(const std::string &name)
+    {
+        for (auto &element : callbacks)
+        {
+            if (name == element.second.name)
+            {
+                return element.first;
+            }
+        }
+        
+        return -1;
+    }
+    
+    int32_t Proxy::nextCallbackId()
+    {
+        return lastCallbackId++;
+    }
     
     void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn, Proxy *proxy)
     {
-        int32_t key = callbacks.size();
-        callbacks.emplace_back(fn, proxy);
-        
-        RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
-        SetFunctionNativeReserved(function, 0, NumberValue(key));
+        if (proxy)
+        {
+            auto proxyId = proxy::getRegisteredProxyId(proxy);
+            auto callbackId = proxy->getCallbackId(name);
+            
+            if (proxyId == -1)
+            {
+                proxyId = proxy::nextRegisteredProxyId();
+                proxy::registeredProxies.emplace(proxyId, proxy);
+                
+                if (callbackId == -1)
+                {
+                    callbackId = proxy->nextCallbackId();
+                    proxy->callbacks.emplace(callbackId, Callback(name, fn));
+                }
+                else
+                {
+                    // TODO: HANDLE ALREADY-REGISTERED name
+                }
+            }
+            else
+            {
+                // TODO: HANDLE ALREADY-REGISTERED proxy
+            }
+            
+            /*
+             * TODO: HANDLE ALREADY-DEFINED JSFunction IN object
+             */
+            
+            RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
+            SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
+            SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+        }
     }
     
     bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
         JSObject &callee = args.callee();
-        
         JSFunction *function = &callee.as<JSFunction>();
-        int32_t key = GetFunctionNativeReserved(function, 0).toInt32();
         
-        auto &callback = callbacks[key];
-        return callback.proxy->applyCallback(callback.fn, args);
+        auto proxyId = GetFunctionNativeReserved(function, 0).toInt32();
+        auto proxy = proxy::getRegisteredProxy(proxyId);
+        
+        if (proxy)
+        {
+            auto callbackId = GetFunctionNativeReserved(function, 1).toInt32();
+            auto callback = proxy->getCallback(callbackId);
+            
+            if (callback)
+            {
+                return proxy->applyCallback(callback->fn, args);
+            }
+        }
+        
+        /*
+         * TODO: REPORT JS-ERROR
+         */
+        
+        return false;
     }
 }

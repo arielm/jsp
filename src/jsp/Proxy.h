@@ -10,6 +10,8 @@
 
 #include "jsp/Proto.h"
 
+#include <map>
+
 #define TARGET(FN, ...) target->FN(__VA_ARGS__)
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
@@ -18,17 +20,15 @@
 
 namespace jsp
 {
-    class Proxy;
-    
     struct Callback
     {
+        std::string name;
         std::function<bool(CallArgs args)> fn;
-        Proxy *proxy;
         
-        Callback(const std::function<bool(CallArgs args)> &fn, Proxy *proxy)
+        Callback(const std::string &name, const std::function<bool(CallArgs args)> &fn)
         :
-        fn(fn),
-        proxy(proxy)
+        name(name),
+        fn(fn)
         {}
     };
     
@@ -152,8 +152,6 @@ namespace jsp
         }
         
     protected:
-        static std::vector<Callback> callbacks;
-        
         Proto *target = nullptr;
         Proto *handler = nullptr;
         
@@ -163,15 +161,20 @@ namespace jsp
          * - ADD unregisterCallback():
          *   - SHOULD BE CALLED IF HOST JS-OBJECT IS FINALIZED:
          *     - POSSIBILITY: IN DEFINED-FUNCTION'S FINALIZER?
-         *   - SHOULD BE CALLED IF instance IS DESTROYED
-         *     - POSSIBILITY: IN Proxy's DESTRUCTOR (ASSUMING instance IS ALWAYS A Proxy)
+         *   - SHOULD BE CALLED IF Proxy IS DESTROYED
+         *     - POSSIBILITY: IN Proxy's DESTRUCTOR
          *   - SHOULD DELETE THE PREVIOUSLY-DEFINED FUNCTION PROPERTY IN THE HOST JS-OBJECT
          * - registerCallback():
-         *   - HOW TO DETECT IF "ALREADY REGISTERED"?
-         *     - POSSIBILITY: USING A KEY MADE OF THE ADDRESS OF instance AND name
          *   - IF DETECTED: SHOULD IT FAIL?
          *     - OR THE EXISTING CALLBACK BE REPLACED?
          */
+        
+        std::map<int32_t, Callback> callbacks;
+        int32_t lastCallbackId = 0;
+        
+        Callback* getCallback(int32_t callbackId);
+        int32_t getCallbackId(const std::string &name);
+        int32_t nextCallbackId();
         
         static void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn, Proxy *proxy);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
