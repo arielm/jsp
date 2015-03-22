@@ -18,11 +18,11 @@ namespace jsp
     namespace proxy
     {
         map<int32_t, Proxy*> registeredProxies;
-        int32_t lastRegisteredProxyId = 0;
+        int32_t lastRegisteredProxyId = -1;
         
         Proxy* getRegisteredProxy(int32_t proxyId);
         int32_t getRegisteredProxyId(Proxy *proxy);
-        int32_t nextRegisteredProxyId();
+        int32_t registerProxy(Proxy *proxy);
     }
     
     Proxy* proxy::getRegisteredProxy(int32_t proxyId)
@@ -50,9 +50,10 @@ namespace jsp
         return -1;
     }
     
-    int32_t proxy::nextRegisteredProxyId()
+    int32_t proxy::registerProxy(Proxy *proxy)
     {
-        return lastRegisteredProxyId++;
+        registeredProxies.emplace(++lastRegisteredProxyId, proxy);
+        return lastRegisteredProxyId;
     }
     
     // ---
@@ -117,14 +118,10 @@ namespace jsp
     
     Proxy::~Proxy()
     {
-        // TODO: UNREGISTER ASSOCIATED NATIVE-CALLBACKS
+        // TODO: REMOVE INSTANCE FROM proxies::registeredProxies
     }
     
     // ---
-    
-    /*
-     * TODO: CALLBACK-MAPPING SHOULD TAKE PLACE PER GLOBAL-OBJECT (I.E. PER COMPARTMENT)
-     */
     
     Callback* Proxy::getCallback(int32_t callbackId)
     {
@@ -151,9 +148,10 @@ namespace jsp
         return -1;
     }
     
-    int32_t Proxy::nextCallbackId()
+    int32_t Proxy::registerCallback(const string &name, const function<bool(CallArgs args)> &fn)
     {
-        return lastCallbackId++;
+        callbacks.emplace(++lastCallbackId, Callback(name, fn));
+        return lastCallbackId;
     }
     
     void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn, Proxy *proxy)
@@ -161,43 +159,47 @@ namespace jsp
         if (proxy)
         {
             auto proxyId = proxy::getRegisteredProxyId(proxy);
-            auto callbackId = proxy->getCallbackId(name);
             
             if (proxyId == -1)
             {
-                proxyId = proxy::nextRegisteredProxyId();
-                proxy::registeredProxies.emplace(proxyId, proxy);
-                
-                if (callbackId == -1)
-                {
-                    callbackId = proxy->nextCallbackId();
-                    proxy->callbacks.emplace(callbackId, Callback(name, fn));
-                }
-                else
-                {
-                    // TODO: HANDLE ALREADY-REGISTERED name
-                }
+                proxyId = proxy::registerProxy(proxy);
+            }
+            
+            // ---
+            
+            auto callbackId = proxy->getCallbackId(name);
+            
+            if (callbackId == -1)
+            {
+                callbackId = proxy->registerCallback(name, fn);
             }
             else
             {
-                // TODO: HANDLE ALREADY-REGISTERED proxy
+                // TODO: FAIL (I.E. unregisterCallback() SHOULD BE CALLED FIRST)
             }
             
-            /*
-             * TODO: HANDLE ALREADY-DEFINED JSFunction IN object
-             */
+            // ---
             
-            RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0));
-            SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
-            SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+            auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
+            
+            if (function)
+            {
+                SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
+                SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+            }
+            else
+            {
+                /*
+                 * TODO: FAIL (E.G. name PROPERTY IS NOT SETTABLE)
+                 */
+            }
         }
     }
     
     bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
-        JSObject &callee = args.callee();
-        JSFunction *function = &callee.as<JSFunction>();
+        auto function = &args.callee().as<JSFunction>();
         
         auto proxyId = GetFunctionNativeReserved(function, 0).toInt32();
         auto proxy = proxy::getRegisteredProxy(proxyId);

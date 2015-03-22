@@ -39,8 +39,10 @@ void TestingCallbacks::run(bool force)
         JSP_TEST(force || false, testInstanceMethod1);
         JSP_TEST(force || false, testInstanceMethod2);
         
+#if defined(CINDER_MAC) && defined(DEBUG)
         JSP_TEST(force || false, testDefinedFunctionRooting1);
         JSP_TEST(force || false, testDefinedFunctionRooting2);
+#endif
         
         JSP_TEST(force || true, testRegistrationMacro);
     }
@@ -202,6 +204,9 @@ void TestingCallbacks::testInstanceMethod2()
 
 /*
  * DEMONSTRATING THAT A DEFINED-FUNCTION IS ROOTED AS-LONG-AS THE HOST-OBJECT IS ALIVE
+ * LIMITATION: FOR OSX + DEBUG ONLY
+ *
+ * TODO: FIND-OUT WHY JSP::isHealthy(JSFunction*) IS NOT WORKING
  */
 
 void TestingCallbacks::testDefinedFunctionRooting1()

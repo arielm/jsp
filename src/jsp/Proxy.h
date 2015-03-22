@@ -158,23 +158,22 @@ namespace jsp
         /*
          * TODO:
          *
-         * - ADD unregisterCallback():
-         *   - SHOULD BE CALLED IF HOST JS-OBJECT IS FINALIZED:
-         *     - POSSIBILITY: IN DEFINED-FUNCTION'S FINALIZER?
-         *   - SHOULD BE CALLED IF Proxy IS DESTROYED
-         *     - POSSIBILITY: IN Proxy's DESTRUCTOR
-         *   - SHOULD DELETE THE PREVIOUSLY-DEFINED FUNCTION PROPERTY IN THE HOST JS-OBJECT
-         * - registerCallback():
-         *   - IF DETECTED: SHOULD IT FAIL?
-         *     - OR THE EXISTING CALLBACK BE REPLACED?
+         * 1) ADD unregisterCallback(JS::HandleObject object, const std::string &name):
+         *    - SHOULD DELETE THE PROPERTY ASSOCIATED WITH name IN object
+         *    - SHOULD REMOVE THE Callback ASSOCIATED WITH name IN INSTANCE'S callbacks
+         * 2) registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn, Proxy *proxy):
+         *    - DECIDE WHICH "FAILURE POLICY" TO ADOPT:
+         *      - RETURNING A bool OR THROWING?
+         *    - SHOULD FAIL IF A CALLBACK ASSOCIATED WITH name IS ALREADY REGISTERED IN proxy's callbacks
+         * 3) CALLBACK MANAGEMENT SHOULD TAKE PLACE AT THE "JS COMPARTMENT LEVEL"
          */
         
         std::map<int32_t, Callback> callbacks;
-        int32_t lastCallbackId = 0;
+        int32_t lastCallbackId = -1;
         
         Callback* getCallback(int32_t callbackId);
         int32_t getCallbackId(const std::string &name);
-        int32_t nextCallbackId();
+        int32_t registerCallback(const std::string &name, const std::function<bool(CallArgs args)> &fn);
         
         static void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn, Proxy *proxy);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
