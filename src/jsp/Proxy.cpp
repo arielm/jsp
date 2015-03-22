@@ -18,11 +18,9 @@ namespace jsp
     namespace proxy
     {
         map<int32_t, Proxy*> registeredProxies;
-        int32_t lastRegisteredProxyId = -1;
+        int32_t lastProxyId = -1;
         
         Proxy* getRegisteredProxy(int32_t proxyId);
-        int32_t getRegisteredProxyId(Proxy *proxy);
-        int32_t registerProxy(Proxy *proxy);
     }
     
     Proxy* proxy::getRegisteredProxy(int32_t proxyId)
@@ -35,25 +33,6 @@ namespace jsp
         }
         
         return nullptr;
-    }
-    
-    int32_t proxy::getRegisteredProxyId(Proxy *proxy)
-    {
-        for (auto &element : registeredProxies)
-        {
-            if (proxy == element.second)
-            {
-                return element.first;
-            }
-        }
-        
-        return -1;
-    }
-    
-    int32_t proxy::registerProxy(Proxy *proxy)
-    {
-        registeredProxies.emplace(++lastRegisteredProxyId, proxy);
-        return lastRegisteredProxyId;
     }
     
     // ---
@@ -118,10 +97,26 @@ namespace jsp
     
     Proxy::~Proxy()
     {
-        // TODO: REMOVE INSTANCE FROM proxies::registeredProxies
+        unregisterProxy();
     }
     
     // ---
+    
+    int32_t Proxy::registerProxy()
+    {
+        if (proxyId == -1)
+        {
+            proxy::registeredProxies.emplace(++proxy::lastProxyId, this);
+            proxyId = proxy::lastProxyId;
+        }
+        
+        return proxyId;
+    }
+    
+    void Proxy::unregisterProxy()
+    {
+        proxy::registeredProxies.erase(proxyId);
+    }
     
     Callback* Proxy::getCallback(int32_t callbackId)
     {
@@ -154,48 +149,33 @@ namespace jsp
         return lastCallbackId;
     }
     
+    // ---
+    
     void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn, Proxy *proxy)
     {
-        if (proxy)
+        auto proxyId = proxy->registerProxy();
+        auto callbackId = proxy->getCallbackId(name);
+        
+        if (callbackId != -1)
         {
-            auto proxyId = proxy::getRegisteredProxyId(proxy);
-            
-            if (proxyId == -1)
-            {
-                proxyId = proxy::registerProxy(proxy);
-            }
-            
-            // ---
-            
-            auto callbackId = proxy->getCallbackId(name);
-            
-            if (callbackId == -1)
-            {
-                callbackId = proxy->registerCallback(name, fn);
-            }
-            else
-            {
-                // TODO: FAIL (I.E. unregisterCallback() SHOULD BE CALLED FIRST)
-            }
-            
-            // ---
-            
-            auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
-            
-            if (function)
-            {
-                SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
-                SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
-            }
-            else
-            {
-                /*
-                 * TODO: FAIL (E.G. name PROPERTY IS NOT SETTABLE)
-                 */
-            }
+            throw EXCEPTION(Proxy, "UNABLE TO REGISTER CALLBACK | REASON: " + name + " IS ALREADY DEFINED AT Proxy LEVEL");
         }
+        
+        // ---
+        
+        auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
+        
+        if (!function)
+        {
+            throw EXCEPTION(Proxy, "UNABLE TO REGISTER CALLBACK | REASON: " + name + " CAN'T BE DEFINED AT JSObject LEVEL");
+        }
+        
+        callbackId = proxy->registerCallback(name, fn);
+        
+        SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
+        SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
     }
-    
+
     bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);

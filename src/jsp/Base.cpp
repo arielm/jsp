@@ -13,10 +13,6 @@ using namespace chr;
 
 namespace jsp
 {
-    /*
-     * TODO: THERE SHOULD BE ONE DISTINCT INSTANCE PER GLOBAL-OBJECT (I.E. PER COMPARTMENT)
-     */
-    
     namespace base
     {
         shared_ptr<Base> instance;
