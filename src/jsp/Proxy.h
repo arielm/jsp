@@ -16,7 +16,8 @@
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
 
-#define REGISTER_CALLBACK(OBJECT, CLASS, METHOD) Proxy::registerCallback(OBJECT, #METHOD, std::bind(&CLASS::METHOD, this, std::placeholders::_1), this)
+#define REGISTER_CALLBACK(OBJECT, CLASS, METHOD) registerCallback(OBJECT, #METHOD, std::bind(&CLASS::METHOD, this, std::placeholders::_1))
+#define UNREGISTER_CALLBACK(OBJECT, METHOD) unregisterCallback(OBJECT, #METHOD)
 
 namespace jsp
 {
@@ -35,8 +36,8 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
-        Proxy(Proto *target);
-        Proxy(Proxy *target);
+        Proxy(Proto *target); // CAN THROW
+        Proxy(Proxy *target); // CAN THROW
 
         bool setTarget(Proto *target);
         bool setTarget(Proxy *target);
@@ -155,7 +156,8 @@ namespace jsp
         Proto *target = nullptr;
         Proto *handler = nullptr;
         
-        static void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn, Proxy *proxy);
+        void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn); // CAN THROW
+        void unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
     private:
@@ -172,9 +174,7 @@ namespace jsp
         int32_t lastCallbackId = -1;
         std::map<int32_t, Callback> callbacks;
         
-        int32_t registerProxy();
-        void unregisterProxy();
-        
+        int32_t getProxyId();
         Callback* getCallback(int32_t callbackId);
         int32_t getCallbackId(const std::string &name);
         int32_t registerCallback(const std::string &name, const std::function<bool(CallArgs args)> &fn);

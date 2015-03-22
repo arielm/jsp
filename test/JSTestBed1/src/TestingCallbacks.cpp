@@ -239,4 +239,9 @@ void TestingCallbacks::testRegistrationMacro()
 {
     REGISTER_CALLBACK(globalHandle(), TestingCallbacks, instanceMethod2);
     executeScript("print(instanceMethod2(44))");
+    
+    UNREGISTER_CALLBACK(globalHandle(), instanceMethod2);
+    
+    REGISTER_CALLBACK(globalHandle(), TestingCallbacks, instanceMethod2);
+    executeScript("print(instanceMethod2(-44))");
 }

@@ -97,12 +97,15 @@ namespace jsp
     
     Proxy::~Proxy()
     {
-        unregisterProxy();
+        if (proxyId != -1)
+        {
+            proxy::registeredProxies.erase(proxyId);
+        }
     }
     
     // ---
     
-    int32_t Proxy::registerProxy()
+    int32_t Proxy::getProxyId()
     {
         if (proxyId == -1)
         {
@@ -111,11 +114,6 @@ namespace jsp
         }
         
         return proxyId;
-    }
-    
-    void Proxy::unregisterProxy()
-    {
-        proxy::registeredProxies.erase(proxyId);
     }
     
     Callback* Proxy::getCallback(int32_t callbackId)
@@ -148,13 +146,12 @@ namespace jsp
         callbacks.emplace(++lastCallbackId, Callback(name, fn));
         return lastCallbackId;
     }
-    
+
     // ---
     
-    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn, Proxy *proxy)
+    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn)
     {
-        auto proxyId = proxy->registerProxy();
-        auto callbackId = proxy->getCallbackId(name);
+        auto callbackId = getCallbackId(name);
         
         if (callbackId != -1)
         {
@@ -170,10 +167,33 @@ namespace jsp
             throw EXCEPTION(Proxy, "UNABLE TO REGISTER CALLBACK | REASON: " + name + " CAN'T BE DEFINED AT JSObject LEVEL");
         }
         
-        callbackId = proxy->registerCallback(name, fn);
+        // ---
+
+        auto proxyId = getProxyId();
+        callbackId = registerCallback(name, fn);
         
         SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
         SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+    }
+    
+    void Proxy::unregisterCallback(JS::HandleObject object, const std::string &name)
+    {
+        auto callbackId = getCallbackId(name);
+        
+        if (callbackId != -1)
+        {
+            callbacks.erase(callbackId);
+            
+            /*
+             * TODO: SOME CONDITIONS SHOULD BE MET IN ORDER TO DELETE
+             *
+             * 1) object HAS A name PROPERTY CONTAINING A JSFunction
+             * 2) JSFunction HAS 2 NATIVE-RESERVED SLOTS
+             * 3) SLOT 1 CONTAINS VALUE EQUAL TO proxyId
+             * 4) SLOT 2 CONTAINS VALUE EQUAL TO callbackId
+             */
+            JS_DeleteProperty(cx, object, name.data());
+        }
     }
 
     bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
