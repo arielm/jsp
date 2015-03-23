@@ -161,11 +161,15 @@ namespace jsp
          *
          * 1) EACH Proxy SHOULD BE ASSOCIATED WITH A JS-PEER:
          *    - CREATED DURING Proxy CONSTRUCTION:
-         *      - ASSOCIATED WITH A NAME
-         *      - E.G. SomeProxy proxy(Base::instance(), "someProxy");
+         *      - ASSOCIATED WITH A NAME:
+         *        - COULD BE AUTOMATICALLY GENERATED VIA "CLASS-NAME DEMANGLING"
+         *          - E.G. SomeProxy proxy(Base::instance());
+         *      - ASSOCIATED WITH AN AUTOMATICALLY INCREMENTED INDEX
+         *        - I.E. proxy WOULD HAVE AN INDEX OF 0
+         *        - SomeProxy anotherProxy(...) WOULD HAVE AN INDEX OF 1
          *    - GLOBALLY-ACCESSIBLE FROM THE JS-SIDE:
-         *      - E.G. Peers.someProxy OR peers.someProxy
-         *      - PEERS SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
+         *      - E.G. Peers.SomeProxy[0] OR peers.SomeProxy[0]
+         *      - THE GLOBAL Peers (OR peers) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
          * 2) registerCallback(HandleObject object, ...) AND unregisterCallback(HandleObject object, ...)
          *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
          *    - proxy.registerCallback("method1", BIND_STATIC_CALLBACK(staticMethod1));
@@ -178,9 +182,8 @@ namespace jsp
          *      - proxy.connect(globalHandle, "method1");
          *        proxy.disconnect(globalHandle, "method1");
          *    - OR FROM THE JS-SIDE, E.G.
-         *      - var foo = {}; foo.method1 = peers.someProxy.method1; foo.method1(123);
-         *        - peers.someProxy.method1 SHOULD BE A READ-ONLY PROPERTY
-         *      - LIKELY MORE COMPLEX THAN IT SOUNDS DUE TO JSPROP_NATIVE_ACCESSORS, ETC.
+         *      - var foo = {}; foo.method1 = peers.SomeProxy.method1; foo.method1(123);
+         *        - peers.SomeProxy.method1 SHOULD BE A READ-ONLY PROPERTY
          */
 
         void registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn); // CAN THROW

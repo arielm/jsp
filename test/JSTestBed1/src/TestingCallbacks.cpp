@@ -44,7 +44,8 @@ void TestingCallbacks::run(bool force)
         JSP_TEST(force || false, testDefinedFunctionRooting2);
 #endif
         
-        JSP_TEST(force || true, testRegistrationMacros);
+        JSP_TEST(force || false, testRegistrationMacros);
+        JSP_TEST(force || true, testJSConnection);
     }
 }
 
@@ -194,6 +195,9 @@ void TestingCallbacks::testInstanceMethod2()
 {
     registerCallback(globalHandle(), "instanceMethod2", bind(&TestingCallbacks::instanceMethod2, this, placeholders::_1));
     executeScript("print(instanceMethod2(33))");
+    
+    unregisterCallback(globalHandle(), "instanceMethod2");
+    executeScript("print(instanceMethod2(11))"); // SHOULD FAIL
 }
 
 // ---
@@ -248,7 +252,17 @@ void TestingCallbacks::testRegistrationMacros()
 
     registerCallback(globalHandle(), "instanceMethod2", BIND_INSTANCE_CALLBACK(&TestingCallbacks::instanceMethod2, this));
     executeScript("print(instanceMethod2(44))");
+}
+
+void TestingCallbacks::testJSConnection()
+{
+    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
     
-    unregisterCallback(globalHandle(), "instanceMethod2");
-    executeScript("print(instanceMethod2(11))"); // SHOULD FAIL
+    /*
+     * WORKS AS INTENDED:
+     *
+     * 1) foo.method1 PRINTS: function staticMethod1() { [native code] }
+     * 2) foo.method1(33) PRINTS: -33
+     */
+    executeScript("var foo = {}; foo.method1 = this.staticMethod1; print(foo.method1); print(foo.method1(33))");
 }

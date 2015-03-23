@@ -50,4 +50,5 @@ public:
     // ---
     
     void testRegistrationMacros();
+    void testJSConnection();
 };
