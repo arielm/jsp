@@ -59,10 +59,10 @@ namespace jsp
     
 #pragma mark ---------------------------------------- FUNCTIONS ----------------------------------------
     
-    Value Base::call(HandleObject object, const char *name, const HandleValueArray& args)
+    Value Base::call(HandleObject object, const char *functionName, const HandleValueArray& args)
     {
         RootedValue result(cx);
-        bool success = JS_CallFunctionName(cx, object, name, args, &result);
+        bool success = JS_CallFunctionName(cx, object, functionName, args, &result);
         
         if (JS_IsExceptionPending(cx))
         {
@@ -78,15 +78,10 @@ namespace jsp
         throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
     }
     
-    Value Base::call(HandleObject object, HandleValue function, const HandleValueArray& args)
+    Value Base::call(HandleObject object, HandleValue functionValue, const HandleValueArray& args)
     {
-        if (!isFunction(function))
-        {
-            throw EXCEPTION(Base, "INVALID FUNCTION");
-        }
-        
         RootedValue result(cx);
-        bool success = JS_CallFunctionValue(cx, object, function, args, &result);
+        bool success = JS_CallFunctionValue(cx, object, functionValue, args, &result);
         
         if (JS_IsExceptionPending(cx))
         {
@@ -119,13 +114,6 @@ namespace jsp
         }
         
         throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
-    }
-
-#pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
-
-    bool Base::applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args)
-    {
-        return fn(args);
     }
 
 #pragma mark ---------------------------------------- OBJECTS AND PROPERTIES ----------------------------------------

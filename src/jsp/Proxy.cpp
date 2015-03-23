@@ -141,7 +141,7 @@ namespace jsp
         return -1;
     }
     
-    int32_t Proxy::registerCallback(const string &name, const function<bool(CallArgs args)> &fn)
+    int32_t Proxy::registerCallback(const string &name, const CallbackFn &fn)
     {
         callbacks.emplace(++lastCallbackId, Callback(name, fn));
         return lastCallbackId;
@@ -149,7 +149,7 @@ namespace jsp
 
     // ---
     
-    void Proxy::registerCallback(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn)
+    void Proxy::registerCallback(HandleObject object, const string &name, const CallbackFn &fn)
     {
         auto callbackId = getCallbackId(name);
         

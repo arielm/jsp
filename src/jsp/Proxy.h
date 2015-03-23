@@ -24,9 +24,9 @@ namespace jsp
     struct Callback
     {
         std::string name;
-        std::function<bool(CallArgs args)> fn;
+        CallbackFn fn;
         
-        Callback(const std::string &name, const std::function<bool(CallArgs args)> &fn)
+        Callback(const std::string &name, const CallbackFn &fn)
         :
         name(name),
         fn(fn)
@@ -61,14 +61,14 @@ namespace jsp
         
         // ---
         
-        inline Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(call, object, name, args);
+            return FORWARD(call, object, functionName, args);
         }
         
-        inline Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(call, object, function, args);
+            return FORWARD(call, object, functionValue, args);
         }
         
         inline Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) final
@@ -78,7 +78,7 @@ namespace jsp
         
         // ---
         
-        inline bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) final
+        inline bool applyCallback(const CallbackFn &fn, CallArgs args) final
         {
             return FORWARD(applyCallback, fn, args);
         }
@@ -180,9 +180,10 @@ namespace jsp
          *    - OR FROM THE JS-SIDE, E.G.
          *      - var foo = {}; foo.method1 = peers.someProxy.method1; foo.method1(123);
          *        - peers.someProxy.method1 SHOULD BE A READ-ONLY PROPERTY
+         *      - LIKELY MORE COMPLEX THAN IT SOUNDS DUE TO JSPROP_NATIVE_ACCESSORS, ETC.
          */
 
-        void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn); // CAN THROW
+        void registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn); // CAN THROW
         void unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
@@ -194,7 +195,7 @@ namespace jsp
         int32_t getProxyId();
         Callback* getCallback(int32_t callbackId);
         int32_t getCallbackId(const std::string &name);
-        int32_t registerCallback(const std::string &name, const std::function<bool(CallArgs args)> &fn);
+        int32_t registerCallback(const std::string &name, const CallbackFn &fn);
     };
 }
 

@@ -7,11 +7,12 @@
  */
 
 /*
- * FOLLOW-UP:
+ * TODO:
  *
- * - SHOULD EVALUATION AND OBJECT-CREATION BE PART OF THE Proto INTERFACE?
- *   - E.G. exec(), newArray(), ETC.
- *   - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
+ * 1) SHOULD EVALUATION AND OBJECT-CREATION BE PART OF THE Proto INTERFACE?
+ *    - E.G. exec(), newArray(), ETC.
+ *    - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
+ * 2) CONSIDER NOT THROWING C++ EXCEPTIONS IN ANY CODE POTENTIALLY INVOCABLE FROM JS (E.G. VIA JSNativeCall)
  */
 
 #pragma once
@@ -22,6 +23,8 @@
 
 namespace jsp
 {
+    typedef std::function<bool(CallArgs args)> CallbackFn;
+
     class Proto
     {
     public:
@@ -102,13 +105,13 @@ namespace jsp
          * - DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
          */
         
-        virtual Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) = 0;
-        virtual Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty()) = 0;
         virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
         
         // ---
         
-        virtual bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) = 0;
+        virtual bool applyCallback(const CallbackFn &fn, CallArgs args) = 0;
 
         // ---
         

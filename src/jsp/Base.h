@@ -30,15 +30,18 @@ namespace jsp
          * FUNCTIONS
          */
         
-        Value call(HandleObject object, const char *name, const HandleValueArray& args = HandleValueArray::empty()) override;
-        Value call(HandleObject object, HandleValue function, const HandleValueArray& args = HandleValueArray::empty()) override;
+        Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) override;
+        Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty()) override;
         Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) override;
         
         /*
          * NATIVE-CALLBACKS
          */
         
-        bool applyCallback(std::function<bool(CallArgs args)> &fn, CallArgs args) override;
+        inline bool applyCallback(const CallbackFn &fn, CallArgs args) override
+        {
+            return fn(args);
+        }
 
         /*
          * OBJECTS AND PROPERTIES
