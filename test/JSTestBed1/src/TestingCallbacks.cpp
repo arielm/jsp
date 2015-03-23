@@ -44,7 +44,7 @@ void TestingCallbacks::run(bool force)
         JSP_TEST(force || false, testDefinedFunctionRooting2);
 #endif
         
-        JSP_TEST(force || true, testRegistrationMacro);
+        JSP_TEST(force || true, testRegistrationMacros);
     }
 }
 
@@ -179,10 +179,6 @@ void TestingCallbacks::testInstanceMethod1()
 
 // ---
 
-/*
- * TODO: SEE TODO-LIST IN Proxy.h (BEFORE THE DECLARATION OF registerCallback(), ETC.)
- */
-
 bool TestingCallbacks::instanceMethod2(CallArgs args)
 {
     if (args.hasDefined(0) && args[0].isNumber())
@@ -196,15 +192,14 @@ bool TestingCallbacks::instanceMethod2(CallArgs args)
 
 void TestingCallbacks::testInstanceMethod2()
 {
-//  registerCallback(globalHandle(), "instanceMethod2", &TestingCallbacks::instanceMethod2, this);
-//  executeScript("print(instanceMethod2(33))");
+    registerCallback(globalHandle(), "instanceMethod2", bind(&TestingCallbacks::instanceMethod2, this, placeholders::_1));
+    executeScript("print(instanceMethod2(33))");
 }
 
 // ---
 
 /*
- * DEMONSTRATING THAT A DEFINED-FUNCTION IS ROOTED AS-LONG-AS THE HOST-OBJECT IS ALIVE
- * LIMITATION: FOR OSX + DEBUG ONLY
+ * OSX + DEBUG ONLY: DEMONSTRATING THAT A DEFINED-FUNCTION IS ROOTED AS-LONG-AS THE HOST-OBJECT IS ALIVE
  *
  * TODO: FIND-OUT WHY JSP::isHealthy(JSFunction*) IS NOT WORKING
  */
@@ -235,13 +230,25 @@ void TestingCallbacks::testDefinedFunctionRooting2()
 
 // ---
 
-void TestingCallbacks::testRegistrationMacro()
+static bool staticMethod1(CallArgs args)
 {
-    REGISTER_CALLBACK(globalHandle(), TestingCallbacks, instanceMethod2);
+    if (args.hasDefined(0) && args[0].isNumber())
+    {
+        args.rval().set(NumberValue(args[0].toNumber() * -1));
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingCallbacks::testRegistrationMacros()
+{
+    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
+    executeScript("print(staticMethod1(33))");
+
+    registerCallback(globalHandle(), "instanceMethod2", BIND_INSTANCE_CALLBACK(&TestingCallbacks::instanceMethod2, this));
     executeScript("print(instanceMethod2(44))");
     
-    UNREGISTER_CALLBACK(globalHandle(), instanceMethod2);
-    
-    REGISTER_CALLBACK(globalHandle(), TestingCallbacks, instanceMethod2);
-    executeScript("print(instanceMethod2(-44))");
+    unregisterCallback(globalHandle(), "instanceMethod2");
+    executeScript("print(instanceMethod2(11))"); // SHOULD FAIL
 }

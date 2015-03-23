@@ -16,8 +16,8 @@
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
 
-#define REGISTER_CALLBACK(OBJECT, CLASS, METHOD) registerCallback(OBJECT, #METHOD, std::bind(&CLASS::METHOD, this, std::placeholders::_1))
-#define UNREGISTER_CALLBACK(OBJECT, METHOD) unregisterCallback(OBJECT, #METHOD)
+#define BIND_STATIC_CALLBACK(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
+#define BIND_INSTANCE_CALLBACK(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
 
 namespace jsp
 {
@@ -155,21 +155,38 @@ namespace jsp
     protected:
         Proto *target = nullptr;
         Proto *handler = nullptr;
-        
+
+        /*
+         * TODO:
+         *
+         * 1) EACH Proxy SHOULD BE ASSOCIATED WITH A JS-PEER:
+         *    - CREATED DURING Proxy CONSTRUCTION:
+         *      - ASSOCIATED WITH A NAME
+         *      - E.G. SomeProxy proxy(Base::instance(), "someProxy");
+         *    - GLOBALLY-ACCESSIBLE FROM THE JS-SIDE:
+         *      - E.G. Peers.someProxy OR peers.someProxy
+         *      - PEERS SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
+         * 2) registerCallback(HandleObject object, ...) AND unregisterCallback(HandleObject object, ...)
+         *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
+         *    - proxy.registerCallback("method1", BIND_STATIC_CALLBACK(staticMethod1));
+         *      proxy.unregisterCallback("method1");
+         *    - CONSIDER ADOPTING A "SIGNALS/SLOTS" SYNTAX, E.G.
+         *      - proxy.registerSignal("signal1", BIND_STATIC_CALLBACK(staticMethod1));
+         *      - proxy.unregisterSignal("signal1");
+         * 3) THEN IT SHOULD BE POSSIBLE TO "CONNECT/DISCONNECT":
+         *    - FROM THE C++ SIDE, E.G.
+         *      - proxy.connect(globalHandle, "method1");
+         *        proxy.disconnect(globalHandle, "method1");
+         *    - OR FROM THE JS-SIDE, E.G.
+         *      - var foo = {}; foo.method1 = peers.someProxy.method1; foo.method1(123);
+         *        - peers.someProxy.method1 SHOULD BE A READ-ONLY PROPERTY
+         */
+
         void registerCallback(JS::HandleObject object, const std::string &name, const std::function<bool(CallArgs args)> &fn); // CAN THROW
         void unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
     private:
-        /*
-         * TODO:
-         *
-         * 1) ADD unregisterCallback(JS::HandleObject object, const std::string &name):
-         *    - SHOULD DELETE THE PROPERTY ASSOCIATED WITH name IN object
-         *    - SHOULD REMOVE THE Callback ASSOCIATED WITH name IN INSTANCE'S callbacks
-         * 2) CALLBACK MANAGEMENT SHOULD TAKE PLACE AT THE "JS COMPARTMENT LEVEL"
-         */
-        
         int32_t proxyId = -1;
         int32_t lastCallbackId = -1;
         std::map<int32_t, Callback> callbacks;

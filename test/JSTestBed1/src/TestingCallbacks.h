@@ -49,5 +49,5 @@ public:
     
     // ---
     
-    void testRegistrationMacro();
+    void testRegistrationMacros();
 };
