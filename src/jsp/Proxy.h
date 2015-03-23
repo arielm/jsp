@@ -182,12 +182,12 @@ namespace jsp
          *      - proxy.connect(globalHandle, "method1");
          *        proxy.disconnect(globalHandle, "method1");
          *    - OR FROM THE JS-SIDE, E.G.
-         *      - var foo = {}; foo.method1 = peers.SomeProxy.method1; foo.method1(123);
-         *        - peers.SomeProxy.method1 SHOULD BE A READ-ONLY PROPERTY
+         *      - var foo = {}; foo.method1 = peers.SomeProxy[0].method1; foo.method1(123);
+         *        - peers.SomeProxy[0].method1 SHOULD BE A READ-ONLY PROPERTY
          */
 
-        void registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn); // CAN THROW
-        void unregisterCallback(JS::HandleObject object, const std::string &name);
+        bool registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn);
+        bool unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
     private:

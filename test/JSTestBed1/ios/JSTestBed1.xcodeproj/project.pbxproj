@@ -70,6 +70,7 @@
 		A8994D481726E51E00C8851E /* Application.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8994D471726E51E00C8851E /* Application.mm */; };
 		A8C16EA01A2A4A7300551905 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C16E9F1A2A4A7300551905 /* main.cpp */; };
 		A8C294A31ABDC7C700FD36C9 /* Proxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */; };
+		A8C294B31AC089CE00FD36C9 /* TestingProxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294B11AC089CE00FD36C9 /* TestingProxy.cpp */; };
 		A8CDB6631A2DD16A0043A5E5 /* MemoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */; };
 		A8CDB6641A2DD16A0043A5E5 /* NSDictionary+DefautValues.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65E1A2DD16A0043A5E5 /* NSDictionary+DefautValues.m */; };
 		A8CDB6651A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB6601A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m */; };
@@ -235,6 +236,8 @@
 		A8994D471726E51E00C8851E /* Application.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Application.mm; sourceTree = "<group>"; };
 		A8C16E9F1A2A4A7300551905 /* main.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = main.cpp; path = ../src/main.cpp; sourceTree = "<group>"; };
 		A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Proxy.cpp; sourceTree = "<group>"; };
+		A8C294B11AC089CE00FD36C9 /* TestingProxy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestingProxy.cpp; path = ../src/TestingProxy.cpp; sourceTree = "<group>"; };
+		A8C294B21AC089CE00FD36C9 /* TestingProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingProxy.h; path = ../src/TestingProxy.h; sourceTree = "<group>"; };
 		A8CDB65A1A2DD16A0043A5E5 /* MemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryManager.h; sourceTree = "<group>"; };
 		A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryManager.mm; sourceTree = "<group>"; };
 		A8CDB65D1A2DD16A0043A5E5 /* NSDictionary+DefautValues.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+DefautValues.h"; sourceTree = "<group>"; };
@@ -505,6 +508,8 @@
 				A84C58A91A7F9F09007D0BCC /* TestingWrappedValue.cpp */,
 				A8DC40AA1A9EA1DA0033953E /* TestingCallbacks.h */,
 				A8DC40A91A9EA1DA0033953E /* TestingCallbacks.cpp */,
+				A8C294B21AC089CE00FD36C9 /* TestingProxy.h */,
+				A8C294B11AC089CE00FD36C9 /* TestingProxy.cpp */,
 			);
 			name = Testing;
 			sourceTree = "<group>";
@@ -813,6 +818,7 @@
 				A84C58861A7F9E88007D0BCC /* scrptrun.cpp in Sources */,
 				A8FBA67A1A7276E700D6B4A3 /* CinderDelegate.mm in Sources */,
 				A84E431F1A2A1DFB00EE6AC1 /* MathUtils.cpp in Sources */,
+				A8C294B31AC089CE00FD36C9 /* TestingProxy.cpp in Sources */,
 				A874A5091A2B5B88009A60A0 /* TaskManager.cpp in Sources */,
 				A8CDB6641A2DD16A0043A5E5 /* NSDictionary+DefautValues.m in Sources */,
 				A84E43511A2A1F2300EE6AC1 /* UIView+StringTag.m in Sources */,

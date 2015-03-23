@@ -16,37 +16,22 @@ using namespace chr;
 
 using namespace jsp;
 
-void TestingCallbacks::setup()
-{
-    WrappedValue::LOG_VERBOSE = true;
-    WrappedObject::LOG_VERBOSE = true;
-}
-
-void TestingCallbacks::shutdown()
-{
-    WrappedValue::LOG_VERBOSE = false;
-    WrappedObject::LOG_VERBOSE = false;
-}
-
 void TestingCallbacks::run(bool force)
 {
-    if (force || true)
-    {
-        JSP_TEST(force || true, testMethodDispatch1);
-        JSP_TEST(force || true, testMethodDispatch2);
-        JSP_TEST(force || true, testMethodDispatchExtended);
-        
-        JSP_TEST(force || true, testInstanceMethod1);
-        JSP_TEST(force || true, testInstanceMethod2);
-
-        JSP_TEST(force || true, testRegistrationMacros);
-        JSP_TEST(force || true, testJSSideFunctionAssign);
-
+    JSP_TEST(force || true, testMethodDispatch1);
+    JSP_TEST(force || true, testMethodDispatch2);
+    JSP_TEST(force || true, testMethodDispatchExtended);
+    
+    JSP_TEST(force || true, testInstanceMethod1);
+    JSP_TEST(force || true, testInstanceMethod2);
+    
+    JSP_TEST(force || true, testRegistrationMacros);
+    JSP_TEST(force || true, testJSSideFunctionAssign);
+    
 #if defined(CINDER_MAC) && defined(DEBUG)
-        JSP_TEST(force || true, testDefinedFunctionRooting1);
-        JSP_TEST(force || true, testDefinedFunctionRooting2);
+    JSP_TEST(force || true, testDefinedFunctionRooting1);
+    JSP_TEST(force || true, testDefinedFunctionRooting2);
 #endif
-    }
 }
 
 // ---

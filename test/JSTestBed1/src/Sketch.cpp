@@ -12,6 +12,7 @@
 #include "TestingWrappedValue.h"
 #include "TestingRooting2.h"
 #include "TestingCallbacks.h"
+#include "TestingProxy.h"
 
 #include "jsp/Manager.h"
 
@@ -42,6 +43,7 @@ void Sketch::setup()
         
         TestingBase::execute<TestingJS>(false);
         TestingBase::execute<TestingCallbacks>(true);
+        TestingBase::execute<TestingProxy>(true);
     }
     
     // ---

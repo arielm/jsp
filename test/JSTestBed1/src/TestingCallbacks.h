@@ -13,8 +13,6 @@
 class TestingCallbacks : public TestingJSBase
 {
 public:
-    void setup() final;
-    void shutdown() final;
     void run(bool force = false) final;
     
     // ---

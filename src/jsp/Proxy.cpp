@@ -149,34 +149,30 @@ namespace jsp
 
     // ---
     
-    void Proxy::registerCallback(HandleObject object, const string &name, const CallbackFn &fn)
+    bool Proxy::registerCallback(HandleObject object, const string &name, const CallbackFn &fn)
     {
         auto callbackId = getCallbackId(name);
         
-        if (callbackId != -1)
+        if (callbackId == -1)
         {
-            throw EXCEPTION(Proxy, "UNABLE TO REGISTER CALLBACK | REASON: " + name + " IS ALREADY DEFINED AT Proxy LEVEL");
+            auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
+            
+            if (function)
+            {
+                auto proxyId = getProxyId();
+                callbackId = registerCallback(name, fn);
+                
+                SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
+                SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+                
+                return true;
+            }
         }
         
-        // ---
-        
-        auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
-        
-        if (!function)
-        {
-            throw EXCEPTION(Proxy, "UNABLE TO REGISTER CALLBACK | REASON: " + name + " CAN'T BE DEFINED AT JSObject LEVEL");
-        }
-        
-        // ---
-
-        auto proxyId = getProxyId();
-        callbackId = registerCallback(name, fn);
-        
-        SetFunctionNativeReserved(function, 0, NumberValue(proxyId));
-        SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+        return false;
     }
     
-    void Proxy::unregisterCallback(JS::HandleObject object, const std::string &name)
+    bool Proxy::unregisterCallback(JS::HandleObject object, const std::string &name)
     {
         auto callbackId = getCallbackId(name);
         
@@ -192,8 +188,10 @@ namespace jsp
              * 3) SLOT 1 CONTAINS VALUE EQUAL TO proxyId
              * 4) SLOT 2 CONTAINS VALUE EQUAL TO callbackId
              */
-            JS_DeleteProperty(cx, object, name.data());
+            return JS_DeleteProperty(cx, object, name.data());
         }
+        
+        return false;
     }
 
     bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
