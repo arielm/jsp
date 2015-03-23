@@ -32,20 +32,20 @@ void TestingCallbacks::run(bool force)
 {
     if (force || true)
     {
-        JSP_TEST(force || false, testMethodDispatch1);
-        JSP_TEST(force || false, testMethodDispatch2);
-        JSP_TEST(force || false, testMethodDispatchExtended);
+        JSP_TEST(force || true, testMethodDispatch1);
+        JSP_TEST(force || true, testMethodDispatch2);
+        JSP_TEST(force || true, testMethodDispatchExtended);
         
-        JSP_TEST(force || false, testInstanceMethod1);
-        JSP_TEST(force || false, testInstanceMethod2);
-        
+        JSP_TEST(force || true, testInstanceMethod1);
+        JSP_TEST(force || true, testInstanceMethod2);
+
+        JSP_TEST(force || true, testRegistrationMacros);
+        JSP_TEST(force || true, testJSSideFunctionAssign);
+
 #if defined(CINDER_MAC) && defined(DEBUG)
-        JSP_TEST(force || false, testDefinedFunctionRooting1);
-        JSP_TEST(force || false, testDefinedFunctionRooting2);
+        JSP_TEST(force || true, testDefinedFunctionRooting1);
+        JSP_TEST(force || true, testDefinedFunctionRooting2);
 #endif
-        
-        JSP_TEST(force || false, testRegistrationMacros);
-        JSP_TEST(force || true, testJSConnection);
     }
 }
 
@@ -151,13 +151,13 @@ static bool dispatchCallback1(JSContext *cx, unsigned argc, Value *vp)
     return TestingCallbacks::callbacks1[key](args);
 }
 
-template<class F>
-void TestingCallbacks::registerCallback1(HandleObject object, const string &name, F&& f)
+template<class C>
+void TestingCallbacks::registerCallback1(HandleObject object, const string &name, C&& callback)
 {
     int32_t key = ++callbackCount1;
-    callbacks1.emplace(key, bind(forward<F>(f), this, placeholders::_1));
+    callbacks1.emplace(key, bind(forward<C>(callback), this, placeholders::_1));
     
-    RootedFunction function(cx, DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback1, 0, 0));
+    JSFunction *function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback1, 0, 0);
     SetFunctionNativeReserved(function, 0, NumberValue(key));
 }
 
@@ -180,6 +180,56 @@ void TestingCallbacks::testInstanceMethod1()
 
 // ---
 
+map<string, int32_t> TestingCallbacks::names2 {};
+map<int32_t, function<bool(CallArgs args)>> TestingCallbacks::callbacks2 {};
+int32_t TestingCallbacks::callbackCount2 = 0;
+
+static bool dispatchCallback2(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    JSObject &callee = args.callee();
+    
+    JSFunction *function = &callee.as<JSFunction>();
+    int32_t key = GetFunctionNativeReserved(function, 0).toInt32();
+    
+    return TestingCallbacks::callbacks2[key](args);
+}
+
+bool TestingCallbacks::registerCallback2(HandleObject object, const string &name, const function<bool(CallArgs args)> &fn)
+{
+    auto found = names2.find(name);
+    
+    if (found == names2.end())
+    {
+        int32_t key = ++callbackCount2;
+        callbacks2.emplace(key, fn);
+        names2.emplace(name, key);
+        
+        JSFunction *function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback2, 0, 0);
+        SetFunctionNativeReserved(function, 0, NumberValue(key));
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool TestingCallbacks::unregisterCallback2(HandleObject object, const string &name)
+{
+    auto found = names2.find(name);
+    
+    if (found != names2.end())
+    {
+        int32_t key = found->second;
+        callbacks2.erase(key);
+        names2.erase(name);
+        
+        return JS_DeleteProperty(cx, object, name.data());
+    }
+    
+    return false;
+}
+
 bool TestingCallbacks::instanceMethod2(CallArgs args)
 {
     if (args.hasDefined(0) && args[0].isNumber())
@@ -191,13 +241,56 @@ bool TestingCallbacks::instanceMethod2(CallArgs args)
     return false;
 }
 
+static bool staticMethod1(CallArgs args)
+{
+    if (args.hasDefined(0) && args[0].isNumber())
+    {
+        args.rval().set(NumberValue(args[0].toNumber() * -1));
+        return true;
+    }
+    
+    return false;
+}
+
 void TestingCallbacks::testInstanceMethod2()
 {
-    registerCallback(globalHandle(), "instanceMethod2", bind(&TestingCallbacks::instanceMethod2, this, placeholders::_1));
+    registerCallback2(globalHandle(), "instanceMethod2", bind(&TestingCallbacks::instanceMethod2, this, placeholders::_1));
     executeScript("print(instanceMethod2(33))");
     
-    unregisterCallback(globalHandle(), "instanceMethod2");
-    executeScript("print(instanceMethod2(11))"); // SHOULD FAIL
+    try
+    {
+        unregisterCallback2(globalHandle(), "instanceMethod2");
+        executeScript("print(instanceMethod2(11))"); // SHOULD FAIL
+    }
+    catch(exception &e)
+    {}
+}
+
+// ---
+
+#define BIND_STATIC(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
+#define BIND_INSTANCE(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
+
+void TestingCallbacks::testRegistrationMacros()
+{
+    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC(staticMethod1));
+    executeScript("print(staticMethod1(33))");
+    
+    registerCallback2(globalHandle(), "instanceMethod2", BIND_INSTANCE(&TestingCallbacks::instanceMethod2, this));
+    executeScript("print(instanceMethod2(44))");
+}
+
+void TestingCallbacks::testJSSideFunctionAssign()
+{
+    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC(staticMethod1));
+    
+    /*
+     * WORKS AS INTENDED:
+     *
+     * 1) foo.method1 PRINTS: function staticMethod1() { [native code] }
+     * 2) foo.method1(33) PRINTS: -33
+     */
+    executeScript("var foo = {}; foo.method1 = this.staticMethod1; print(foo.method1); print(foo.method1(33))");
 }
 
 // ---
@@ -230,39 +323,4 @@ void TestingCallbacks::testDefinedFunctionRooting2()
     
     Barker::forceGC(); // WILL FINALIZE BARKER
     JSP_CHECK(boost::ends_with(JSP::writeDetailed(customMethodF2), "[P]")); // DEFINED-FUNCTION IS DEAD
-}
-
-// ---
-
-static bool staticMethod1(CallArgs args)
-{
-    if (args.hasDefined(0) && args[0].isNumber())
-    {
-        args.rval().set(NumberValue(args[0].toNumber() * -1));
-        return true;
-    }
-    
-    return false;
-}
-
-void TestingCallbacks::testRegistrationMacros()
-{
-    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
-    executeScript("print(staticMethod1(33))");
-
-    registerCallback(globalHandle(), "instanceMethod2", BIND_INSTANCE_CALLBACK(&TestingCallbacks::instanceMethod2, this));
-    executeScript("print(instanceMethod2(44))");
-}
-
-void TestingCallbacks::testJSConnection()
-{
-    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
-    
-    /*
-     * WORKS AS INTENDED:
-     *
-     * 1) foo.method1 PRINTS: function staticMethod1() { [native code] }
-     * 2) foo.method1(33) PRINTS: -33
-     */
-    executeScript("var foo = {}; foo.method1 = this.staticMethod1; print(foo.method1); print(foo.method1(33))");
 }

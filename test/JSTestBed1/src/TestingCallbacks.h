@@ -29,26 +29,31 @@ public:
     static std::map<int32_t, std::function<bool(JS::CallArgs args)>> callbacks1;
     static int32_t callbackCount1;
     
-    template<class F>
-    void registerCallback1(JS::HandleObject object, const std::string &name, F&& f);
+    template<class C>
+    void registerCallback1(JS::HandleObject object, const std::string &name, C&& callback);
     
     double instanceValue1 = 3;
     bool instanceMethod1(JS::CallArgs args);
     void testInstanceMethod1();
     
     // ---
+
+    static std::map<std::string, int32_t> names2;
+    static std::map<int32_t, std::function<bool(JS::CallArgs args)>> callbacks2;
+    static int32_t callbackCount2;
+    
+    bool registerCallback2(JS::HandleObject object, const std::string &name, const std::function<bool(JS::CallArgs args)> &fn);
+    bool unregisterCallback2(JS::HandleObject object, const std::string &name);
     
     double instanceValue2 = 2;
     bool instanceMethod2(JS::CallArgs args);
     void testInstanceMethod2();
-    
+
+    void testRegistrationMacros();
+    void testJSSideFunctionAssign();
+
     // ---
     
     void testDefinedFunctionRooting1();
     void testDefinedFunctionRooting2();
-    
-    // ---
-    
-    void testRegistrationMacros();
-    void testJSConnection();
 };
