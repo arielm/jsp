@@ -16,11 +16,6 @@ using namespace chr;
 
 using namespace jsp;
 
-TestingJSBase::TestingJSBase()
-:
-Proxy(Base::instance())
-{}
-
 void TestingJSBase::setup()
 {
     JSP::forceGC();

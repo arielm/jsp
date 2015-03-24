@@ -42,7 +42,7 @@ void Sketch::setup()
 #endif
         
         TestingBase::execute<TestingJS>(false);
-        TestingBase::execute<TestingCallbacks>(true);
+        TestingBase::execute<TestingCallbacks>(false);
         TestingBase::execute<TestingProxy>(true);
     }
     

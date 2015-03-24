@@ -498,10 +498,10 @@
 			isa = PBXGroup;
 			children = (
 				A84C58A01A7F9F09007D0BCC /* TestingBase.h */,
-				A84C58A11A7F9F09007D0BCC /* TestingJS.cpp */,
-				A84C58A21A7F9F09007D0BCC /* TestingJS.h */,
 				A84C58A41A7F9F09007D0BCC /* TestingJSBase.h */,
 				A84C58A31A7F9F09007D0BCC /* TestingJSBase.cpp */,
+				A84C58A21A7F9F09007D0BCC /* TestingJS.h */,
+				A84C58A11A7F9F09007D0BCC /* TestingJS.cpp */,
 				A84C58A81A7F9F09007D0BCC /* TestingRooting2.h */,
 				A84C58A71A7F9F09007D0BCC /* TestingRooting2.cpp */,
 				A84C58AA1A7F9F09007D0BCC /* TestingWrappedValue.h */,

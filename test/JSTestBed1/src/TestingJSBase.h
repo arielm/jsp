@@ -19,8 +19,6 @@
 class TestingJSBase : public TestingBase, public jsp::Proxy
 {
 public:
-    TestingJSBase();
-    
     void setup() override;
     void shutdown() override;
     void run(bool force) override {}

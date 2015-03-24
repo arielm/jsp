@@ -18,12 +18,48 @@ using namespace jsp;
 
 void TestingProxy::run(bool force)
 {
-    JSP_TEST(force || true, test);
+    JSP_TEST(force || true, testCallbacks1);
 }
 
 // ---
 
-void TestingProxy::test()
+static bool staticMethod1(CallArgs args)
 {
-    // TODO: TEST CALLBACK-REGISTRATION...
+    if (args.hasDefined(0) && args[0].isNumber())
+    {
+        args.rval().set(NumberValue(args[0].toNumber() * -1));
+        return true;
+    }
+    
+    return false;
+}
+
+bool TestingProxy::instanceMethod1(CallArgs args)
+{
+    if (args.hasDefined(0) && args[0].isNumber())
+    {
+        args.rval().set(NumberValue(args[0].toNumber() * instanceValue1));
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingProxy::testCallbacks1()
+{
+    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
+    registerCallback(globalHandle(), "instanceMethod1", BIND_INSTANCE_CALLBACK(&TestingProxy::instanceMethod1, this));
+    
+    registerCallback(globalHandle(), "lambda1", [=](CallArgs args)->bool
+        {
+            if (args.hasDefined(0) && args[0].isNumber())
+            {
+                args.rval().set(NumberValue(args[0].toNumber() * instanceValue1));
+                return true;
+            }
+                         
+            return false;
+        });
+    
+    executeScript("print(staticMethod1(77), instanceMethod1(11), lambda1(33))");
 }

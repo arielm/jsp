@@ -7,12 +7,14 @@
  */
 
 /*
- * TODO:
+ * FOLLOW-UP:
  *
  * 1) SHOULD EVALUATION AND OBJECT-CREATION BE PART OF THE Proto INTERFACE?
  *    - E.G. exec(), newArray(), ETC.
  *    - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
- * 2) CONSIDER NOT THROWING C++ EXCEPTIONS IN ANY CODE POTENTIALLY INVOCABLE FROM JS (E.G. VIA JSNativeCall)
+ *
+ * 2) CONSIDER NOT THROWING C++ EXCEPTIONS IN ANY CODE POTENTIALLY INVOCABLE FROM JS
+ *    - E.G. VIA JSNative CALLS
  */
 
 #pragma once
@@ -203,7 +205,7 @@ namespace jsp
         template<typename T>
         bool setElements(HandleObject array, const std::vector<T> &values)
         {
-            int index = 0;
+            uint32_t index = 0;
             
             for (const auto &value : values)
             {

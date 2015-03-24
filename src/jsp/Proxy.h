@@ -36,16 +36,17 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
-        Proxy(Proto *target); // CAN THROW
-        Proxy(Proxy *target); // CAN THROW
+        Proxy(Proto *target);
+        Proxy(Proxy *target);
+        
+        Proxy();
+        ~Proxy();
 
         bool setTarget(Proto *target);
-        bool setTarget(Proxy *target);
-        
         bool setHandler(Proto *handler);
-        bool setHandler(Proxy *handler);
 
-        ~Proxy();
+        bool setTarget(Proxy *target);
+        bool setHandler(Proxy *handler);
 
         // ---
         
@@ -161,15 +162,15 @@ namespace jsp
          *
          * 1) EACH Proxy SHOULD BE ASSOCIATED WITH A JS-PEER:
          *    - CREATED DURING Proxy CONSTRUCTION:
-         *      - ASSOCIATED WITH A NAME:
-         *        - COULD BE AUTOMATICALLY GENERATED VIA "CLASS-NAME DEMANGLING"
-         *          - E.G. SomeProxy proxy(Base::instance());
-         *      - ASSOCIATED WITH AN AUTOMATICALLY INCREMENTED INDEX
-         *        - I.E. proxy WOULD HAVE AN INDEX OF 0
-         *        - SomeProxy anotherProxy(...) WOULD HAVE AN INDEX OF 1
+         *      - ASSOCIATED WITH A "NAME" AND SOME "INDEX"
+         *        - NAME COULD BE AUTOMATICALLY GENERATED (E.G. VIA "CLASS-NAME DEMANGLING")
+         *        - INDEX SHOULD BE AUTOMATICALLY INCREMENTED BASED ON INSTANCE-COUNT
+         *        - E.G. SomeProxy proxy(); SomeProxy anotherProxy();
+         *          - proxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 0
+         *          - anotherProxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 1
          *    - GLOBALLY-ACCESSIBLE FROM THE JS-SIDE:
-         *      - E.G. Peers.SomeProxy[0] OR peers.SomeProxy[0]
-         *      - THE GLOBAL Peers (OR peers) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
+         *      - E.G. Peers.SomeProxy[0] (OR peers.SomeProxy[0]?)
+         *      - THE GLOBAL Peers (OR peers?) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
          * 2) registerCallback(HandleObject object, ...) AND unregisterCallback(HandleObject object, ...)
          *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
          *    - proxy.registerCallback("method1", BIND_STATIC_CALLBACK(staticMethod1));
@@ -187,18 +188,21 @@ namespace jsp
          */
 
         bool registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn);
-        bool unregisterCallback(JS::HandleObject object, const std::string &name);
+        void unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
     private:
-        int32_t proxyId = -1;
+        int32_t instanceId = -1;
         int32_t lastCallbackId = -1;
         std::map<int32_t, Callback> callbacks;
         
-        int32_t getProxyId();
+        void instanceCreated();
+        void instanceDestroyed();
+        
         Callback* getCallback(int32_t callbackId);
         int32_t getCallbackId(const std::string &name);
-        int32_t registerCallback(const std::string &name, const CallbackFn &fn);
+        int32_t addCallback(const std::string &name, const CallbackFn &fn);
+        void removeCallback(int32_t callbackId);
     };
 }
 
