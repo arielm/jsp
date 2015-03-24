@@ -14,10 +14,10 @@
 
 namespace jsp
 {
-    class Base : public Proto
+    class BaseProto : public Proto
     {
     public:
-        static Base* instance();
+        static BaseProto* instance();
 
         /*
          * EVALUATION
@@ -76,8 +76,8 @@ namespace jsp
         
         bool deleteElement(HandleObject array, uint32_t index) override;
         
-    protected:
-        Base() = default;
-        Base(const Base &other) = delete;
+    private:
+        BaseProto() = default;
+        BaseProto(const BaseProto &other) = delete;
     };
 }

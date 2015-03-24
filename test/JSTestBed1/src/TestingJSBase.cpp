@@ -8,8 +8,6 @@
 
 #include "TestingJSBase.h"
 
-#include "jsp/Base.h"
-
 using namespace std;
 using namespace ci;
 using namespace chr;

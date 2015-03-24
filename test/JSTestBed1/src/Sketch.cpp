@@ -44,6 +44,8 @@ void Sketch::setup()
         TestingBase::execute<TestingJS>(false);
         TestingBase::execute<TestingCallbacks>(false);
         TestingBase::execute<TestingProxy>(true);
+        
+        manager.shutdown();
     }
     
     // ---

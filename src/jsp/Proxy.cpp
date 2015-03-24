@@ -7,7 +7,7 @@
  */
 
 #include "jsp/Proxy.h"
-#include "jsp/Base.h"
+#include "jsp/BaseProto.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -52,7 +52,7 @@ namespace jsp
 
     Proxy::Proxy()
     :
-    Proxy(Base::instance())
+    Proxy(BaseProto::instance())
     {}
     
     Proxy::~Proxy()

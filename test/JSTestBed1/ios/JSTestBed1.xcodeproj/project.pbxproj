@@ -19,7 +19,6 @@
 		4C264DDC1850B82500468BAA /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C264DDB1850B82500468BAA /* Accelerate.framework */; };
 		A81E3DFA1993D0F3002B8978 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = A82C900816DF91D300FF519C /* Default-568h@2x.png */; };
 		A840015A1ABA3BA000C90EF0 /* Barker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84001481ABA3BA000C90EF0 /* Barker.cpp */; };
-		A840015B1ABA3BA000C90EF0 /* Base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A840014A1ABA3BA000C90EF0 /* Base.cpp */; };
 		A840015C1ABA3BA000C90EF0 /* CloneBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A840014C1ABA3BA000C90EF0 /* CloneBuffer.cpp */; };
 		A840015D1ABA3BA000C90EF0 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A840014E1ABA3BA000C90EF0 /* Context.cpp */; };
 		A840015E1ABA3BA000C90EF0 /* Manager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84001501ABA3BA000C90EF0 /* Manager.cpp */; };
@@ -71,6 +70,7 @@
 		A8C16EA01A2A4A7300551905 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C16E9F1A2A4A7300551905 /* main.cpp */; };
 		A8C294A31ABDC7C700FD36C9 /* Proxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */; };
 		A8C294B31AC089CE00FD36C9 /* TestingProxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294B11AC089CE00FD36C9 /* TestingProxy.cpp */; };
+		A8C294B61AC0E56C00FD36C9 /* BaseProto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A8C294B41AC0E56C00FD36C9 /* BaseProto.cpp */; };
 		A8CDB6631A2DD16A0043A5E5 /* MemoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */; };
 		A8CDB6641A2DD16A0043A5E5 /* NSDictionary+DefautValues.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB65E1A2DD16A0043A5E5 /* NSDictionary+DefautValues.m */; };
 		A8CDB6651A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m in Sources */ = {isa = PBXBuildFile; fileRef = A8CDB6601A2DD16A0043A5E5 /* NSMutableDictionary+Merge.m */; };
@@ -114,8 +114,6 @@
 		A83F55001A312DB100E3531E /* FileHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileHelper.h; sourceTree = "<group>"; };
 		A84001481ABA3BA000C90EF0 /* Barker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Barker.cpp; sourceTree = "<group>"; };
 		A84001491ABA3BA000C90EF0 /* Barker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Barker.h; sourceTree = "<group>"; };
-		A840014A1ABA3BA000C90EF0 /* Base.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Base.cpp; sourceTree = "<group>"; };
-		A840014B1ABA3BA000C90EF0 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		A840014C1ABA3BA000C90EF0 /* CloneBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CloneBuffer.cpp; sourceTree = "<group>"; };
 		A840014D1ABA3BA000C90EF0 /* CloneBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CloneBuffer.h; sourceTree = "<group>"; };
 		A840014E1ABA3BA000C90EF0 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Context.cpp; sourceTree = "<group>"; };
@@ -238,6 +236,8 @@
 		A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Proxy.cpp; sourceTree = "<group>"; };
 		A8C294B11AC089CE00FD36C9 /* TestingProxy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TestingProxy.cpp; path = ../src/TestingProxy.cpp; sourceTree = "<group>"; };
 		A8C294B21AC089CE00FD36C9 /* TestingProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TestingProxy.h; path = ../src/TestingProxy.h; sourceTree = "<group>"; };
+		A8C294B41AC0E56C00FD36C9 /* BaseProto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BaseProto.cpp; sourceTree = "<group>"; };
+		A8C294B51AC0E56C00FD36C9 /* BaseProto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseProto.h; sourceTree = "<group>"; };
 		A8CDB65A1A2DD16A0043A5E5 /* MemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemoryManager.h; sourceTree = "<group>"; };
 		A8CDB65B1A2DD16A0043A5E5 /* MemoryManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MemoryManager.mm; sourceTree = "<group>"; };
 		A8CDB65D1A2DD16A0043A5E5 /* NSDictionary+DefautValues.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+DefautValues.h"; sourceTree = "<group>"; };
@@ -429,11 +429,11 @@
 				A84001511ABA3BA000C90EF0 /* Manager.h */,
 				A84001501ABA3BA000C90EF0 /* Manager.cpp */,
 				A84001531ABA3BA000C90EF0 /* Proto.h */,
+				A84001521ABA3BA000C90EF0 /* Proto.cpp */,
+				A8C294B51AC0E56C00FD36C9 /* BaseProto.h */,
+				A8C294B41AC0E56C00FD36C9 /* BaseProto.cpp */,
 				A84001541ABA3BA000C90EF0 /* Proxy.h */,
 				A8C294A21ABDC7C700FD36C9 /* Proxy.cpp */,
-				A84001521ABA3BA000C90EF0 /* Proto.cpp */,
-				A840014B1ABA3BA000C90EF0 /* Base.h */,
-				A840014A1ABA3BA000C90EF0 /* Base.cpp */,
 			);
 			name = jsp;
 			path = blocks/jsp/src/jsp;
@@ -808,8 +808,8 @@
 				A8994D481726E51E00C8851E /* Application.mm in Sources */,
 				A840015A1ABA3BA000C90EF0 /* Barker.cpp in Sources */,
 				A84C58841A7F9E88007D0BCC /* LayoutCache.cpp in Sources */,
-				A840015B1ABA3BA000C90EF0 /* Base.cpp in Sources */,
 				A84E434F1A2A1F2300EE6AC1 /* SystemManager.mm in Sources */,
+				A8C294B61AC0E56C00FD36C9 /* BaseProto.cpp in Sources */,
 				A84C58831A7F9E88007D0BCC /* LangHelper.cpp in Sources */,
 				A840015C1ABA3BA000C90EF0 /* CloneBuffer.cpp in Sources */,
 				A84E431D1A2A1DFB00EE6AC1 /* FrameClock.cpp in Sources */,

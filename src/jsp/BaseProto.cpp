@@ -6,31 +6,28 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-#include "jsp/Base.h"
+#include "jsp/BaseProto.h"
 
 using namespace std;
 using namespace chr;
 
 namespace jsp
 {
-    namespace base
+    BaseProto* BaseProto::instance()
     {
-        shared_ptr<Base> instance;
-    }
+        static shared_ptr<BaseProto> instance = nullptr;
 
-    Base* Base::instance()
-    {
-        if (!base::instance)
+        if (!instance)
         {
-            base::instance = shared_ptr<Base>(new Base);
+            instance = shared_ptr<BaseProto>(new BaseProto);
         }
         
-        return base::instance.get();
+        return instance.get();
     }
 
 #pragma mark ---------------------------------------- EVALUATION ----------------------------------------
     
-    bool Base::exec(const string &source, const ReadOnlyCompileOptions &options)
+    bool BaseProto::exec(const string &source, const ReadOnlyCompileOptions &options)
     {
         RootedValue result(cx);
         bool success = Evaluate(cx, globalHandle(), options, source.data(), source.size(), &result);
@@ -44,7 +41,7 @@ namespace jsp
         return success;
     }
     
-    bool Base::eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result)
+    bool BaseProto::eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result)
     {
         bool success = Evaluate(cx, globalHandle(), options, source.data(), source.size(), result);
         
@@ -59,7 +56,7 @@ namespace jsp
     
 #pragma mark ---------------------------------------- FUNCTIONS ----------------------------------------
     
-    Value Base::call(HandleObject object, const char *functionName, const HandleValueArray& args)
+    Value BaseProto::call(HandleObject object, const char *functionName, const HandleValueArray& args)
     {
         RootedValue result(cx);
         bool success = JS_CallFunctionName(cx, object, functionName, args, &result);
@@ -75,10 +72,10 @@ namespace jsp
             return result;
         }
         
-        throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
+        throw EXCEPTION(BaseProto, "FUNCTION-CALL FAILED");
     }
     
-    Value Base::call(HandleObject object, HandleValue functionValue, const HandleValueArray& args)
+    Value BaseProto::call(HandleObject object, HandleValue functionValue, const HandleValueArray& args)
     {
         RootedValue result(cx);
         bool success = JS_CallFunctionValue(cx, object, functionValue, args, &result);
@@ -94,10 +91,10 @@ namespace jsp
             return result;
         }
         
-        throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
+        throw EXCEPTION(BaseProto, "FUNCTION-CALL FAILED");
     }
     
-    Value Base::call(HandleObject object, HandleFunction function, const HandleValueArray& args)
+    Value BaseProto::call(HandleObject object, HandleFunction function, const HandleValueArray& args)
     {
         RootedValue result(cx);
         bool success = JS_CallFunction(cx, object, function, args, &result);
@@ -113,17 +110,17 @@ namespace jsp
             return result;
         }
         
-        throw EXCEPTION(Base, "FUNCTION-CALL FAILED");
+        throw EXCEPTION(BaseProto, "FUNCTION-CALL FAILED");
     }
 
 #pragma mark ---------------------------------------- OBJECTS AND PROPERTIES ----------------------------------------
     
-    JSObject* Base::newObject()
+    JSObject* BaseProto::newObject()
     {
         return JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
     }
 
-    bool Base::hasProperty(HandleObject object, const char *name)
+    bool BaseProto::hasProperty(HandleObject object, const char *name)
     {
         if (object)
         {
@@ -138,7 +135,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::hasOwnProperty(HandleObject object, const char *name)
+    bool BaseProto::hasOwnProperty(HandleObject object, const char *name)
     {
         if (object)
         {
@@ -153,7 +150,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::getProperty(HandleObject object, const char *name, MutableHandleValue result)
+    bool BaseProto::getProperty(HandleObject object, const char *name, MutableHandleValue result)
     {
         if (object)
         {
@@ -163,7 +160,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::setProperty(HandleObject object, const char *name, HandleValue value)
+    bool BaseProto::setProperty(HandleObject object, const char *name, HandleValue value)
     {
         if (object)
         {
@@ -173,7 +170,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::deleteProperty(HandleObject object, const char *name)
+    bool BaseProto::deleteProperty(HandleObject object, const char *name)
     {
         if (object)
         {
@@ -185,17 +182,17 @@ namespace jsp
     
 #pragma mark ---------------------------------------- ARRAYS AND ELEMENTS ----------------------------------------
     
-    JSObject* Base::newArray(size_t length)
+    JSObject* BaseProto::newArray(size_t length)
     {
         return JS_NewArrayObject(cx, length);
     }
     
-    JSObject* Base::newArray(const HandleValueArray& contents)
+    JSObject* BaseProto::newArray(const HandleValueArray& contents)
     {
         return JS_NewArrayObject(cx, contents);
     }
     
-    uint32_t Base::getLength(HandleObject array)
+    uint32_t BaseProto::getLength(HandleObject array)
     {
         if (array)
         {
@@ -210,7 +207,7 @@ namespace jsp
         return 0;
     }
     
-    bool Base::getElement(HandleObject array, uint32_t index, MutableHandleValue result)
+    bool BaseProto::getElement(HandleObject array, uint32_t index, MutableHandleValue result)
     {
         if (array)
         {
@@ -220,7 +217,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::setElement(HandleObject array, uint32_t index, HandleValue value)
+    bool BaseProto::setElement(HandleObject array, uint32_t index, HandleValue value)
     {
         if (array)
         {
@@ -230,7 +227,7 @@ namespace jsp
         return false;
     }
     
-    bool Base::deleteElement(HandleObject array, uint32_t index)
+    bool BaseProto::deleteElement(HandleObject array, uint32_t index)
     {
         if (array)
         {
@@ -239,5 +236,4 @@ namespace jsp
         
         return false;
     }
-
 }
