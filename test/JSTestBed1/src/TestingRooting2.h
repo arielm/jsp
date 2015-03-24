@@ -42,5 +42,5 @@ public:
     void testHeapWrappedJSBarker1();
     
     void testBarkerPassedToJS1();
-    void testHeapWrappedBarkerPassedToJS1();
+    void testGlobalBarkerGetter();
 };

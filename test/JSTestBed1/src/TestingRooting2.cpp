@@ -30,7 +30,7 @@ void TestingRooting2::shutdown()
 
 void TestingRooting2::run(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAnalysis1)
         JSP_TEST(force || true, testAnalysis2)
@@ -54,12 +54,10 @@ void TestingRooting2::run(bool force)
         JSP_TEST(force || true, testHeapWrappedJSBarker1)
     }
     
-    if (force || false)
+    if (force || true)
     {
-        executeScript("function handleBarker1(barker) { barker.bark(); }");
-        
-        JSP_TEST(force || true, testBarkerPassedToJS1);
-        JSP_TEST(force || true, testHeapWrappedBarkerPassedToJS1);
+        JSP_TEST(force || false, testBarkerPassedToJS1);
+        JSP_TEST(force || true, testGlobalBarkerGetter);
     }
 }
 
@@ -410,11 +408,15 @@ void TestingRooting2::testHeapWrappedJSBarker1()
 // ---
 
 /*
- * IT IS NECESSARY TO PASS THROUGH JS::Value WHEN CALLING A JS FUNCTION FROM C++
+ * IT IS NECESSARY TO USE A ROOTED JS::Value WHEN PASSING ARGUMENTS TO A JS-FUNCTION CALLED FROM C++
+ *
+ * I.E. ANOTHER STRATEGY IS REQUIRED IN ORDER TO TEST "NON-ROOTED BARKERS CREATED ON THE C++ SIDE" FROM THE JS-SIDE
  */
 
 void TestingRooting2::testBarkerPassedToJS1()
 {
+    executeScript("function handleBarker1(barker) { barker.bark(); }");
+
     {
         AutoValueVector args(cx);
         args.append(Barker::construct("PASSED-TO-JS 1").as<Value>());
@@ -438,12 +440,18 @@ void TestingRooting2::testBarkerPassedToJS1()
 }
 
 /*
- * WE WILL THEREFORE USE WrappedValue FROM NOW ON...
- *
- * TODO: CONTINUE AFTER WrappedValue REWORK
+ * TODO: CONTINUE ONCE Barker.instances() IS IMPLEMENTED
  */
 
-void TestingRooting2::testHeapWrappedBarkerPassedToJS1()
+void TestingRooting2::testGlobalBarkerGetter()
 {
-    Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED-PASSED-TO-JS 1").as<WrappedValue>());
+    /*
+    {
+        Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<WrappedValue>());
+        
+        executeScript("Barker.forceGC(); Barker.instances('HEAP-WRAPPED 2').bark()");
+    }
+    
+    executeScript("Barker.forceGC(); print(Barker.isHealthy('HEAP-WRAPPED 2'))");
+    */
 }

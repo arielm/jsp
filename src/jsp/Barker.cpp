@@ -53,7 +53,7 @@ namespace jsp
             names[barkerId] = name;
         }
         
-        LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << getName(barkerId) << endl;
+        LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << getName(barkerId) << endl; // LOG: VERBOSE
     }
     
     string barker::getName(ptrdiff_t barkerId)
@@ -96,7 +96,13 @@ namespace jsp
     
     const JSFunctionSpec Barker::functions[] =
     {
-        JS_FS("bark", bark, 0, 0),
+        JS_FS("bark", function_bark, 0, 0),
+        JS_FS_END
+    };
+    
+    const JSFunctionSpec Barker::static_functions[] =
+    {
+        JS_FS("forceGC", static_function_forceGC, 0, 0),
         JS_FS_END
     };
     
@@ -157,13 +163,13 @@ namespace jsp
          * 2) SPIDERMONKEY'S "GC CALLBACK" COULD BE USED
          */
         
-        LOGD << "Barker GC-BEGIN" << endl;
+        LOGD << "Barker GC-BEGIN" << endl; // LOG: VERBOSE
         
         JS_SetFinalizeCallback(rt, Barker::finalizeCallback);
         JSP::forceGC();
         JS_SetFinalizeCallback(rt, nullptr);
         
-        LOGD << "Barker GC-END" << endl;
+        LOGD << "Barker GC-END" << endl; // LOG: VERBOSE
     }
     
     /*
@@ -250,7 +256,7 @@ namespace jsp
         if (barkerId >= 0)
         {
             finalizeCount++;
-            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl;
+            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
             
             /*
              * KEEPING A TRACE OF THE BARKER IN barker::names IS NECESSARY
@@ -280,7 +286,7 @@ namespace jsp
             if (barkerId > 0) // PURPOSELY NOT TRACING THE CLASS-INSTANCE
             {
                 traceCount++;
-                LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl;
+                LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
             }
         }
     }
@@ -373,20 +379,15 @@ namespace jsp
     {
         if (!barker::classInstance)
         {
-            barker::classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, nullptr);
+            barker::classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
             
             if (barker::classInstance)
             {
                 barker::setup(barker::classInstance, 0, "CLASS-INSTANCE");
             }
-            else
-            {
-                LOGD << "Barker CONSTRUCTION FAILED" << endl;
-                return false;
-            }
         }
         
-        return true;
+        return barker::classInstance;
     }
     
     const Barker& Barker::construct(const string &name)
@@ -396,10 +397,6 @@ namespace jsp
         if (barker::lastInstance)
         {
             barker::setup(barker::lastInstance, ++barker::constructCount, name);
-        }
-        else
-        {
-            LOGD << "Barker CONSTRUCTION FAILED" << endl;
         }
         
         static Barker delegate;
@@ -420,7 +417,9 @@ namespace jsp
         return true;
     }
     
-    bool Barker::bark(JSContext *cx, unsigned argc, Value *vp)
+    // ---
+    
+    bool Barker::function_bark(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
         auto instance = args.thisv().toObjectOrNull();
@@ -442,5 +441,15 @@ namespace jsp
         
         LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl;
         return false;
+    }
+    
+    // ---
+    
+    bool Barker::static_function_forceGC(JSContext *cx, unsigned argc, Value *vp)
+    {
+        forceGC();
+        
+        CallArgsFromVp(argc, vp).rval().setUndefined();
+        return true;
     }
 }

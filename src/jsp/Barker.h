@@ -109,11 +109,17 @@ namespace jsp
         /*
          * JS FUNCTIONS
          */
-        static bool bark(JSContext *cx, unsigned argc, Value *vp);
+        static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
+        
+        /*
+         * STATIC JS FUNCTIONS
+         */
+        static bool static_function_forceGC(JSContext *cx, unsigned argc, Value *vp);
         
     protected:
         static const JSClass clazz;
         static const JSFunctionSpec functions[];
+        static const JSFunctionSpec static_functions[];
         
         static void finalizeCallback(JSFreeOp *fop, JSFinalizeStatus status, bool isCompartmentGC);
         static void finalize(JSFreeOp *fop, JSObject *obj);
