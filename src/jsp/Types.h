@@ -27,15 +27,15 @@ namespace jsp
     class TypeTraits
     {
     public:
-        static constexpr const bool isNumber = false;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
         
         typedef T defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return defaultType(); }
+        inline static constexpr defaultType defaultValue() noexcept { return defaultType(); }
     };
     
     // ---
@@ -44,119 +44,119 @@ namespace jsp
     class TypeTraits<JSObject*>
     {
     public:
-        static constexpr const bool isNumber = false;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = true;
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = true;
         
         typedef JSObject* defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return nullptr; }
+        inline static constexpr defaultType defaultValue() noexcept { return nullptr; }
     };
     
     template <>
     class TypeTraits<int32_t>
     {
     public:
-        static constexpr const bool isNumber = true;
-        static constexpr const bool isInteger = true;
-        static constexpr const bool isSigned = true;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = true;
+        static constexpr bool isInteger = true;
+        static constexpr bool isSigned = true;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
         
         typedef int32_t defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return 0; }
+        inline static constexpr defaultType defaultValue() noexcept { return 0; }
     };
     
     template <>
     class TypeTraits<uint32_t>
     {
     public:
-        static constexpr const bool isNumber = true;
-        static constexpr const bool isInteger = true;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = true;
+        static constexpr bool isInteger = true;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
         
         typedef uint32_t defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return 0; }
+        inline static constexpr defaultType defaultValue() noexcept { return 0; }
     };
     
     template <>
     class TypeTraits<float>
     {
     public:
-        static constexpr const bool isNumber = true;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = true;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = true;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = true;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
         
         typedef float defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return 0; }
+        inline static constexpr defaultType defaultValue() noexcept { return 0; }
     };
     
     template <>
     class TypeTraits<double>
     {
     public:
-        static constexpr const bool isNumber = true;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = true;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = true;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = true;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
         
         typedef double defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return 0; }
+        inline static constexpr defaultType defaultValue() noexcept { return 0; }
     };
     
     template <>
     class TypeTraits<bool>
     {
     public:
-        static constexpr const bool isNumber = true;
-        static constexpr const bool isInteger = true;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = false;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = true;
+        static constexpr bool isInteger = true;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
 
         typedef bool defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return false; }
+        inline static constexpr defaultType defaultValue() noexcept { return false; }
     };
     
     template <>
     class TypeTraits<std::string>
     {
     public:
-        static constexpr const bool isNumber = false;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = false;
-        static constexpr const bool isText = true;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = true;
+        static constexpr bool isObject = false;
         
         typedef const char* defaultType; // XXX: std::string CAN'T BE USED IN constexpr
-        inline static constexpr const defaultType defaultValue() noexcept { return ""; }
+        inline static constexpr defaultType defaultValue() noexcept { return ""; }
     };
     
     template <>
     class TypeTraits<const char*>
     {
     public:
-        static constexpr const bool isNumber = false;
-        static constexpr const bool isInteger = false;
-        static constexpr const bool isSigned = false;
-        static constexpr const bool isStatic = true;
-        static constexpr const bool isText = true;
-        static constexpr const bool isObject = false;
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = true;
+        static constexpr bool isText = true;
+        static constexpr bool isObject = false;
         
         typedef const char* defaultType;
-        inline static constexpr const defaultType defaultValue() noexcept { return ""; }
+        inline static constexpr defaultType defaultValue() noexcept { return ""; }
     };
 }
