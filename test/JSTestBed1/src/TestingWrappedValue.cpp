@@ -63,11 +63,7 @@ void TestingWrappedValue::run(bool force)
     /*
      * TODO:
      *
-     * 1) REWORK STUFF FROM TestingValueOperations IF NECESSARY
-     *
-     * 2) TEST ARRAY-ASSIGNMENT IN Proto
-     *
-     * 3) SEE TODOS IN TestingRooting2.cpp
+     * 1) TEST ARRAY-ASSIGNMENT IN Proto
      */
 }
 
@@ -84,7 +80,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     // --
     
     wrapped = Barker::construct("ASSIGNED-TO-VALUE").as<OBJECT>();
-    JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[n]")); // I.E. IN NURSERY
+    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     Barker::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
@@ -92,7 +88,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     // ---
     
     wrapped = toValue("assigned-to-value");
-    JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[W]")); // I.E. TENURED
+    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
@@ -115,7 +111,7 @@ void TestingWrappedValue::testAutomaticConversion()
     // --
     
     wrapped = Barker::construct("ASSIGNED-TO-VALUE").as<OBJECT>();
-    JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[n]")); // I.E. IN NURSERY
+    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     Barker::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
@@ -123,7 +119,7 @@ void TestingWrappedValue::testAutomaticConversion()
     // ---
     
     wrapped = "assigned-to-value";
-    JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[W]")); // I.E. TENURED
+    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
@@ -157,7 +153,7 @@ void TestingWrappedValue::testStringStackRooting1()
     
     if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
     {
-        JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[B]"));
+        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B');
     }
 }
 
@@ -169,7 +165,7 @@ void TestingWrappedValue::testStringStackRooting2()
     
     if (JSP_CHECK(JSP::isHealthy(rootedWrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
     {
-        JSP_CHECK(boost::ends_with(JSP::writeDetailed(rootedWrapped.get()), "[B]"));
+        JSP_CHECK(JSP::writeGCDescriptor(rootedWrapped.get()) == 'B');
     }
 }
 
@@ -258,7 +254,7 @@ if (true)
     
     if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE"))
     {
-        JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[B]"));
+        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B');
     }
 }
 else
@@ -272,7 +268,7 @@ else
     
     if (JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE")) // REASON: ATOMS ARE NOT ROOTED BY DEFAULT
     {
-        JSP_CHECK(boost::ends_with(JSP::writeDetailed(wrapped), "[P]"));
+        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'P');
     }
 }
 */

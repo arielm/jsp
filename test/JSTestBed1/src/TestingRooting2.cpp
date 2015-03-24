@@ -32,12 +32,19 @@ void TestingRooting2::run(bool force)
 {
     if (force || true)
     {
+        JSP_TEST(force || true, testAnalysis1)
+        JSP_TEST(force || true, testAnalysis2)
+        JSP_TEST(force || true, testAnalysis3)
+    }
+    
+    if (force || false)
+    {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
         JSP_TEST(force || true, testWrappedObjectAssignment2)
         JSP_TEST(force || true, testWrappedObjectAssignment3)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testBarkerFinalization1)
         JSP_TEST(force || true, testHeapWrappedObject1)
@@ -47,7 +54,7 @@ void TestingRooting2::run(bool force)
         JSP_TEST(force || true, testHeapWrappedJSBarker1)
     }
     
-    if (force || true)
+    if (force || false)
     {
         executeScript("function handleBarker1(barker) { barker.bark(); }");
         
@@ -81,6 +88,60 @@ void TestingRooting2::handleMutableWrappedBarker1(MutableHandle<WrappedObject> w
     
     Barker::forceGC();
     JSP_CHECK(!Barker::bark(barker), "UNHEALTHY BARKER");
+}
+
+// ---
+
+static bool nativeCallback(JSContext *cx, unsigned argc, Value *vp)
+{
+    CallArgsFromVp(argc, vp).rval().set(NumberValue(33));
+    return true;
+}
+
+void TestingRooting2::testAnalysis1()
+{
+    JSObject *object = Barker::construct("UNROOTED");
+    
+    JSP_CHECK(JSP::isInsideNursery(object));
+    JSP_CHECK(JSP::writeGCDescriptor(object) == 'n');
+    
+    Barker::forceGC();
+    
+    JSP_CHECK(!JSP::isHealthy(object)); // REASON: object NOT ROOTED
+    JSP_CHECK(JSP::writeGCDescriptor(object) == 'P');
+}
+
+void TestingRooting2::testAnalysis2()
+{
+    RootedObject object(cx, Barker::construct("ROOTED"));
+    JSFunction *function = JS_DefineFunction(cx, object, "someFunction", nativeCallback, 0, 0);
+    
+    JSP_CHECK(!JSP::isInsideNursery(function)); // TODO: FIND OUT WHY IT IS NOT CREATED IN THE NURSERY
+    JSP_CHECK(JSP::writeGCDescriptor(function) == 'W');
+    
+    JSP::forceGC();
+    
+    JSP_CHECK(JSP::isHealthy(function)); // REASON: function ROOTED (VIA object)
+    JSP_CHECK(JSP::writeGCDescriptor(function) == 'B');
+
+    JS_DeleteProperty(cx, object, "someFunction");
+    JSP::forceGC();
+
+    JSP_CHECK(!JSP::isHealthy(function)); // REASON: function NOT ROOTED
+    JSP_CHECK(JSP::writeGCDescriptor(function) == 'P');
+}
+
+void TestingRooting2::testAnalysis3()
+{
+    JSString *str = toJSString("whatever");
+    
+    JSP_CHECK(!JSP::isInsideNursery(str)); // TODO: FIND OUT WHY IT IS NOT CREATED IN THE NURSERY
+    JSP_CHECK(JSP::writeGCDescriptor(str) == 'W');
+
+    JSP::forceGC();
+    
+    JSP_CHECK(!JSP::isHealthy(str)); // REASON: str NOT ROOTED
+    JSP_CHECK(JSP::writeGCDescriptor(str) == 'P');
 }
 
 // ---

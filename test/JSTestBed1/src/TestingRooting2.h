@@ -25,6 +25,10 @@ public:
     void handleMutableWrappedBarker1(JS::MutableHandle<jsp::WrappedObject> wrappedBarker);
     
     // ---
+    
+    void testAnalysis1();
+    void testAnalysis2();
+    void testAnalysis3();
 
     void testWrappedObjectAssignment1();
     void testWrappedObjectAssignment2();

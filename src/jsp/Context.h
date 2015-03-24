@@ -311,6 +311,35 @@ namespace JSP
     std::string writeDetailed(JSObject *object);
     std::string writeDetailed(const Value &value);
     
+    // ---
+    
+    /*
+     * USING JSP::isPoisoned(T*) STANDALONE IS ACTUALLY NOT ENOUGH:
+     *
+     * 1) THE thing COULD BE NULL
+     *
+     * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
+     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
+     *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
+     *      - MOST COMPLICTED CASE: JSString INSIDE JS::Value
+     *      - TODO: FOLLOW-UP
+     *
+     * HENCE THE NEED FOR JSP::isHeathy(T*)
+     */
+    
+    template<typename T>
+    bool isHealthy(T *thing);
+    
+    bool isHealthy(const Value &value);
+    
+    bool isInsideNursery(void *thing);
+
+    /*
+     * MOSTLY FOR INTERNAL USAGE (HERE AGAIN: RESULTS ARE NOT AS-OBVIOUS-AS STATED IN THE NAMING)
+     */
+    template<typename T>
+    bool isAboutToBeFinalized(T **thing);
+    
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
     
     /*
@@ -376,6 +405,20 @@ namespace JSP
         
         return false;
     }
+    
+    /*
+     * XXX: NOT CLEAR WHY TEMPLATE-MATCHING DOESN'T WORK FOR JSFunction (HENCE THE NEED FOR THE FOLLOWING 2...)
+     */
+
+    inline char writeGCDescriptor(JSFunction *function)
+    {
+        return writeGCDescriptor(static_cast<JSObject*>(function));
+    }
+
+    inline bool isHealthy(JSFunction *function)
+    {
+        return isHealthy(static_cast<JSObject*>(function));
+    }
 
 #else
     
@@ -391,28 +434,6 @@ namespace JSP
     }
     
 #endif
-
-    /*
-     * USING THE "REAL" isPoisoned() STANDALONE IS ACTUALLY NOT ENOUGH
-     *
-     * 1) THE thing COULD BE NULL
-     *
-     * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
-     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
-     *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
-     *      - MOST COMPLICTED CASE: JSString INSIDE JS::Value
-     *      - TODO: FOLLOW-UP
-     */
-    
-    template<typename T>
-    bool isHealthy(T *thing);
-    
-    bool isHealthy(const Value &value);
-    
-    template<typename T>
-    bool isAboutToBeFinalized(T **thing);
-
-    bool isInsideNursery(void *thing);
 
     // ---
     

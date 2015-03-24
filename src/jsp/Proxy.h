@@ -164,6 +164,9 @@ namespace jsp
          *    - CREATED DURING Proxy CONSTRUCTION:
          *      - ASSOCIATED WITH A "NAME" AND SOME "INDEX"
          *        - NAME COULD BE AUTOMATICALLY GENERATED (E.G. VIA "CLASS-NAME DEMANGLING")
+         *          - BETTER ALTERNATIVE: A VIRTUAL string Proxy.peerName() METHOD
+         *            - BECAUSE CLASS-NAME DEMANGLING IS NOT STANDARD
+         *            - MORE FLEXIBLE ANYWAY
          *        - INDEX SHOULD BE AUTOMATICALLY INCREMENTED BASED ON INSTANCE-COUNT
          *        - E.G. SomeProxy proxy(); SomeProxy anotherProxy();
          *          - proxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 0

@@ -618,6 +618,12 @@ namespace JSP
     }
     
     template <>
+    char writeGCDescriptor(JSFunction *thing)
+    {
+        return '?';
+    }
+    
+    template <>
     char writeGCDescriptor(JSString *thing)
     {
         return '?';
@@ -636,6 +642,12 @@ namespace JSP
     
     template <>
     bool isAboutToBeFinalized(JSObject **thing)
+    {
+        return js::gc::IsObjectAboutToBeFinalized(thing);
+    }
+    
+    template <>
+    bool isAboutToBeFinalized(JSFunction **thing)
     {
         return js::gc::IsObjectAboutToBeFinalized(thing);
     }
@@ -681,7 +693,7 @@ namespace JSP
         
         return false;
     }
-    
+
     bool isHealthy(const Value &value)
     {
         if (value.isMarkable())
@@ -722,6 +734,12 @@ namespace JSP
     }
     
     template <>
+    bool isAboutToBeFinalized(JSFunction **thing)
+    {
+        return false;
+    }
+    
+    template <>
     bool isAboutToBeFinalized(JSString **thing)
     {
         return false;
@@ -729,6 +747,12 @@ namespace JSP
     
     template <>
     bool isHealthy(JSObject *thing)
+    {
+        return false;
+    }
+    
+    template <>
+    bool isHealthy(JSFunction *thing)
     {
         return false;
     }
