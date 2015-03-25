@@ -78,8 +78,6 @@ namespace jsp
     {
         if (intern::postInitialized && rt && cx)
         {
-            Barker::shutdown();
-            
             JS_RemoveExtraGCRootsTracer(rt, intern::traceCallback, nullptr);
             intern::tracers.clear();
             

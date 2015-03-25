@@ -62,7 +62,15 @@ namespace jsp
         
         // ---
         
-        operator JSObject* () const;
+        operator JSObject* () const
+        {
+            return instance;
+        }
+        
+        operator const JSObject& () const
+        {
+            return *instance;
+        }
         
         template <class T>
         T as() const; // CAN RETURN A NULL-POINTER, OR A NULL-VALUE
@@ -83,21 +91,23 @@ namespace jsp
         
         // ---
         
-        static ptrdiff_t getId(JSObject *instance); // CAN RETURN THE ID OF A FINALIZED OR POISONED BARKER
-        static std::string getName(JSObject *instance); // CAN RETURN THE NAME OF A FINALIZED OR POISONED BARKER
+        static ptrdiff_t getId(JSObject *instance); // CAN RETURN THE ID OF A POISONED BARKER (I.E. AFTER "NON-ASSISTED" FINALIZATION)
+        static std::string getName(JSObject *instance); // CAN RETURN THE NAME OF A POISONED BARKER (I.E. AFTER "NON-ASSISTED" FINALIZATION)
         
         static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
         static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
         
         // ---
-        
-        static bool init(); // MANDATORY PRIOR TO BARKER CREATION ON THE JS-SIDE
-        static void shutdown() {};
+
+        /*
+         * MANDATORY PRIOR TO BARKER CREATION ON THE JS-SIDE
+         */
+        static bool init();
         
         /*
          * C++ CONSTRUCTOR
          *
-         * REMINISCENT OF "INCREMENTAL GC" DAYS: SOME "EXTRA-CARE" TO AVOID "STRAY INSTANCES" ON THE C-HEAP
+         * REMINISCENT OF INCREMENTAL-GC DAYS: SOME "EXTRA-CARE" TO AVOID "STRAY INSTANCES" ON THE C-HEAP
          */
         MOZ_NEVER_INLINE static const Barker& construct(const std::string &name = "");
         
@@ -114,6 +124,7 @@ namespace jsp
         /*
          * STATIC JS FUNCTIONS
          */
+        static bool static_function_instances(JSContext *cx, unsigned argc, Value *vp);
         static bool static_function_forceGC(JSContext *cx, unsigned argc, Value *vp);
         
     protected:
@@ -121,14 +132,15 @@ namespace jsp
         static const JSFunctionSpec functions[];
         static const JSFunctionSpec static_functions[];
         
+        JSObject* instance = nullptr;
+        
         static void finalizeCallback(JSFreeOp *fop, JSFinalizeStatus status, bool isCompartmentGC);
         static void finalize(JSFreeOp *fop, JSObject *obj);
         static void trace(JSTracer *trc, JSObject *obj);
         
-        Barker() {};
-        
-        Barker(const Barker &other) MOZ_DELETE;
-        void operator=(const Barker &other) MOZ_DELETE;
+        Barker() = default;
+        Barker(const Barker &other) = delete;
+        void operator=(const Barker &other) = delete;
         
         static bool maybeBark(JSObject *instance);
     };

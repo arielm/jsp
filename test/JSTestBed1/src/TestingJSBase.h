@@ -19,16 +19,20 @@
 class TestingJSBase : public TestingBase, public jsp::Proxy
 {
 public:
-    void setup() override;
-    void shutdown() override;
-    void run(bool force) override {}
-    
+    void setup() final;
+    void shutdown() final;
+    void run(bool force) final;
+
+    virtual void performSetup() {}
+    virtual void performShutdown() {}
+    virtual void performRun(bool force) = 0;
+
     static bool fail(const std::string &file = "", int line = 0, const std::string &reason = "");
 };
 
 // ---
 
-#define JSP_BEGIN(TITLE) LOGI << TITLE << std::endl;
+#define JSP_BEGIN(TITLE) LOGI << std::endl << TITLE << std::endl;
 #define JSP_END() LOGI << std::endl;
 #define JSP_TEST(CONDITION, FN) if ((CONDITION)) { JSP_BEGIN(#FN); JSP::forceGC(); FN(); JSP_END(); }
 

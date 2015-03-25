@@ -16,13 +16,22 @@ using namespace jsp;
 
 void TestingJSBase::setup()
 {
-    JSP::forceGC();
+    Barker::forceGC();
+    performSetup();
 }
 
 void TestingJSBase::shutdown()
 {
-    JSP::forceGC();
+    performShutdown();
+    Barker::forceGC();
 }
+
+void TestingJSBase::run(bool force)
+{
+    performRun(force);
+}
+
+// ---
 
 bool TestingJSBase::fail(const string &file, int line, const string &reason)
 {

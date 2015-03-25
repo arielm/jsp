@@ -16,7 +16,7 @@ using namespace chr;
 
 using namespace jsp;
 
-void TestingJS::run(bool force)
+void TestingJS::performRun(bool force)
 {
     executeScript(InputSource::getAsset("helpers.js"));
     executeScript(InputSource::getAsset("test.js"));

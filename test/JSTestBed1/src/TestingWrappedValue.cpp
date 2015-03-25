@@ -16,19 +16,19 @@ using namespace chr;
 
 using namespace jsp;
 
-void TestingWrappedValue::setup()
+void TestingWrappedValue::performSetup()
 {
     WrappedValue::LOG_VERBOSE = true;
     WrappedObject::LOG_VERBOSE = true;
 }
 
-void TestingWrappedValue::shutdown()
+void TestingWrappedValue::performShutdown()
 {
     WrappedValue::LOG_VERBOSE = false;
     WrappedObject::LOG_VERBOSE = false;
 }
 
-void TestingWrappedValue::run(bool force)
+void TestingWrappedValue::performRun(bool force)
 {
     if (force || true)
     {

@@ -13,9 +13,9 @@
 class TestingRooting2 : public TestingJSBase
 {
 public:
-    void setup() final;
-    void shutdown() final;
-    void run(bool force = false) final;
+    void performSetup() final;
+    void performShutdown() final;
+    void performRun(bool force = false) final;
     
     // ---
     

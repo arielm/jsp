@@ -16,7 +16,7 @@ using namespace chr;
 
 using namespace jsp;
 
-void TestingProxy::run(bool force)
+void TestingProxy::performRun(bool force)
 {
     JSP_TEST(force || true, testCallbacks1);
 }

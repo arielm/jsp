@@ -16,7 +16,7 @@ using namespace chr;
 
 using namespace jsp;
 
-void TestingCallbacks::run(bool force)
+void TestingCallbacks::performRun(bool force)
 {
     JSP_TEST(force || true, testMethodDispatch1);
     JSP_TEST(force || true, testMethodDispatch2);

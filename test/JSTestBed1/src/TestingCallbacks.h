@@ -13,7 +13,7 @@
 class TestingCallbacks : public TestingJSBase
 {
 public:
-    void run(bool force = false) final;
+    void performRun(bool force = false) final;
     
     // ---
     

@@ -21,14 +21,13 @@ namespace jsp
     
     namespace barker
     {
+        bool initialized = false;
+        
         ptrdiff_t lastInstanceId = 0; // ID 0 IS RESERVED FOR THE CLASS-INSTANCE (WHICH IS NOT NECESSARILY CREATED)
         ptrdiff_t constructCount = 0; // CLASS-INSTANCE IS NOT COUNTED
         
         map<ptrdiff_t, string> names;
         map<ptrdiff_t, JSObject*> instances;
-        
-        JSObject* classInstance = nullptr;
-        JSObject* lastInstance = nullptr;
         
         void setup(JSObject *instance, ptrdiff_t barkerId, const string &name = "");
         string getName(ptrdiff_t barkerId);
@@ -39,10 +38,28 @@ namespace jsp
         if (barkerId > 0)
         {
             lastInstanceId = barkerId;
+            
+            /*
+             * IN CASE THE NEW INSTANCE IS ALLOCATED AT THE ADDRESS OF A
+             * PREVIOUS BARKER FINALIZED IN A "NON-ASSISTED" FASHION
+             */
+            
+            for (auto &element : instances)
+            {
+                if (instance == element.second)
+                {
+                    instances[element.first] = nullptr;
+                    break;
+                }
+            }
         }
         
         instances[barkerId] = instance;
         JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
+        
+        /*
+         * TODO: HANDLE DUPLICATE NAMES
+         */
         
         if (name.empty())
         {
@@ -102,6 +119,7 @@ namespace jsp
     
     const JSFunctionSpec Barker::static_functions[] =
     {
+        JS_FS("instances", static_function_instances, 1, 0),
         JS_FS("forceGC", static_function_forceGC, 0, 0),
         JS_FS_END
     };
@@ -115,13 +133,17 @@ namespace jsp
     {
         if (instance)
         {
+            /*
+             * TODO: CHECK IF instance IS A Barker
+             */
+            
             if (JSP::isPoisoned(instance)) // FIXME: USE !JSP::isHealthy() INSTEAD
             {
                 for (auto &element : barker::instances)
                 {
                     if (instance == element.second)
                     {
-                        return element.first;
+                        return element.first; // I.E. NOT AFTER "ASSISTED FINALIZATION"
                     }
                 }
             }
@@ -249,29 +271,24 @@ namespace jsp
         }
     }
     
+    /*
+     * IMPORTANT: OCCURS *ONLY* DURING "ASSISTED" FINALIZATION
+     */
     void Barker::finalize(JSFreeOp *fop, JSObject *obj)
     {
         auto barkerId = getId(obj);
         
-        if (barkerId >= 0)
+        if (barkerId > 0) // PURPOSELY EXCLUDING THE CLASS-INSTANCE
         {
-            finalizeCount++;
-            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
-            
             /*
              * KEEPING A TRACE OF THE BARKER IN barker::names IS NECESSARY
              * FOR BARKER-FORENSIC (CF Barker::isFinalized AND Barker::isHealthy)
              */
+            
             barker::instances[barkerId] = nullptr;
             
-            if (barkerId == 0)
-            {
-                barker::classInstance = nullptr;
-            }
-            else if (barkerId == barker::lastInstanceId)
-            {
-                barker::lastInstance = nullptr;
-            }
+            finalizeCount++;
+            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
         }
     }
     
@@ -279,23 +296,18 @@ namespace jsp
     {
         auto barkerId = getId(obj);
         
-        if (barkerId >= 0)
+        if (barkerId > 0) // PURPOSELY EXCLUDING THE CLASS-INSTANCE
         {
             barker::instances[barkerId] = obj; // NECESSARY IN CASE OF MOVED-POINTER
             
-            if (barkerId > 0) // PURPOSELY NOT TRACING THE CLASS-INSTANCE
+            if (barkerId == barker::lastInstanceId)
             {
-                traceCount++;
-                LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
+//                barker::lastInstance = obj; // PROBABLY OVERKILL SINCE lastInstance IS EFFECTIVELY-USED DURING VERY SHORT PERIODS
             }
+            
+            traceCount++;
+            LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
         }
-    }
-    
-    // ---
-    
-    Barker::operator JSObject* () const
-    {
-        return barker::lastInstance;
     }
     
     // ---
@@ -309,25 +321,25 @@ namespace jsp
     template <>
     JSObject* Barker::as() const
     {
-        return barker::lastInstance;
+        return instance;
     }
     
     template <>
     WrappedObject Barker::as() const
     {
-        return WrappedObject(barker::lastInstance);
+        return WrappedObject(instance);
     }
     
     template <>
     Value Barker::as() const
     {
-        return ObjectOrNullValue(barker::lastInstance);
+        return ObjectOrNullValue(instance);
     }
     
     template <>
     WrappedValue Barker::as() const
     {
-        return ObjectOrNullValue(barker::lastInstance);
+        return ObjectOrNullValue(instance);
     }
     
     // ---
@@ -351,8 +363,8 @@ namespace jsp
         {
             if (element.second == name)
             {
-                auto instance = barker::instances.at(element.first);
-                return !instance || JSP::isPoisoned(instance); // FIXME: USE !JSP::isHealthy()
+                auto instance = barker::instances.at(element.first); // NULL ONLY IF "ASSISTED" FINALIZATION TOOK PLACE
+                return !JSP::isHealthy(instance);
             }
         }
         
@@ -365,8 +377,7 @@ namespace jsp
         {
             if (element.second == name)
             {
-                auto instance = barker::instances.at(element.first);
-                return instance && !JSP::isPoisoned(instance); // FIXME: USE JSP::isHealthy()
+                return JSP::isHealthy(barker::instances.at(element.first));
             }
         }
         
@@ -377,29 +388,24 @@ namespace jsp
     
     bool Barker::init()
     {
-        if (!barker::classInstance)
+        if (!barker::initialized)
         {
-            barker::classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
+            auto classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
+            barker::setup(classInstance, 0, "CLASS-INSTANCE");
             
-            if (barker::classInstance)
-            {
-                barker::setup(barker::classInstance, 0, "CLASS-INSTANCE");
-            }
+            barker::initialized = true;
         }
         
-        return barker::classInstance;
+        return barker::initialized;
     }
     
     const Barker& Barker::construct(const string &name)
     {
-        barker::lastInstance = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        
-        if (barker::lastInstance)
-        {
-            barker::setup(barker::lastInstance, ++barker::constructCount, name);
-        }
-        
         static Barker delegate;
+
+        delegate.instance = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
+        barker::setup(delegate.instance, ++barker::constructCount, name);
+        
         return delegate;
     }
     
@@ -430,9 +436,9 @@ namespace jsp
     
     bool Barker::maybeBark(JSObject *instance)
     {
-        if (getId(instance) != -1) // I.E. ONCE A BARKER
+        if (getId(instance) >= 0)
         {
-            if (!JSP::isPoisoned(instance)) // FIXME: USE JSP::isHealthy()
+            if (JSP::isHealthy(instance))
             {
                 LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << getName(instance) << endl;
                 return true;
@@ -444,6 +450,15 @@ namespace jsp
     }
     
     // ---
+    
+    bool Barker::static_function_instances(JSContext *cx, unsigned argc, Value *vp)
+    {
+        /*
+         * TODO
+         */
+        
+        return true;
+    }
     
     bool Barker::static_function_forceGC(JSContext *cx, unsigned argc, Value *vp)
     {
