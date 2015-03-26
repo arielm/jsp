@@ -66,27 +66,27 @@ namespace jsp
 
         bool operator==(const Value &other) const;
         bool operator!=(const Value &other) const;
-        
+
         bool operator==(const JSObject *other) const;
         bool operator!=(const JSObject *other) const;
 
-        bool operator==(float f) const;
-        bool operator!=(float f) const;
+        bool operator==(float other) const;
+        bool operator!=(float other) const;
         
-        bool operator==(double d) const;
-        bool operator!=(double d) const;
+        bool operator==(double other) const;
+        bool operator!=(double other) const;
         
-        bool operator==(int32_t i) const;
-        bool operator!=(int32_t i) const;
+        bool operator==(int32_t other) const;
+        bool operator!=(int32_t other) const;
         
-        bool operator==(uint32_t ui) const;
-        bool operator!=(uint32_t ui) const;
+        bool operator==(uint32_t other) const;
+        bool operator!=(uint32_t other) const;
 
-        bool operator==(bool b) const;
-        bool operator!=(bool b) const;
+        bool operator==(bool other) const;
+        bool operator!=(bool other) const;
         
-        bool operator==(const char *s) const;
-        bool operator!=(const char *s) const;
+        bool operator==(const char *other) const;
+        bool operator!=(const char *other) const;
 
         const Value& get() const { return value; }
         const Value* address() const { return &value; }

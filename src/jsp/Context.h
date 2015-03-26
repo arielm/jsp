@@ -102,13 +102,13 @@ namespace jsp
     
     // ---
 
-    inline bool compare(const Value &lhs, const Value &rhs)
+    inline bool compare(const Value &value, const Value &other)
     {
-        if (lhs.isString() && rhs.isString())
+        if (value.isString() && other.isString())
         {
             int32_t result;
             
-            if (JS_CompareStrings(cx, lhs.toString(), rhs.toString(), &result))
+            if (JS_CompareStrings(cx, value.toString(), other.toString(), &result))
             {
                 return (result == 0);
             }
@@ -116,73 +116,73 @@ namespace jsp
             return false;
         }
         
-        return lhs == rhs;
+        return value == other;
     }
     
-    inline bool compare(const Value &value, const JSObject *object)
+    inline bool compare(const Value &value, const JSObject *other)
     {
         if (value.isObject())
         {
-            return object == value.toObjectOrNull();
+            return other == value.toObjectOrNull();
         }
         
         return false;
     }
     
-    inline bool compare(const Value &value, float f)
+    inline bool compare(const Value &value, float other)
     {
         if (value.isDouble())
         {
-            return f == float(value.toDouble()); // TODO: TEST
+            return other == float(value.toDouble()); // TODO: TEST
         }
         
         return false;
     }
     
-    inline bool compare(const Value &value, double d)
+    inline bool compare(const Value &value, double other)
     {
         if (value.isDouble())
         {
-            return d == value.toDouble();
+            return other == value.toDouble();
         }
         
         return false;
     }
     
-    inline bool compare(const Value &value, int32_t i)
+    inline bool compare(const Value &value, int32_t other)
     {
         if (value.isInt32())
         {
-            return i == value.toInt32();
+            return other == value.toInt32();
         }
         
         return false;
     }
     
-    inline bool compare(const Value &value, uint32_t ui)
+    inline bool compare(const Value &value, uint32_t other)
     {
         if (value.isInt32())
         {
-            return ui == uint32_t(value.toInt32());
+            return other == uint32_t(value.toInt32());
         }
         
         if (value.isDouble())
         {
-            return ui == uint32_t(value.toDouble()); // TODO: TEST
+            return other == uint32_t(value.toDouble()); // TODO: TEST
         }
         
         return false;
     }
     
-    inline bool compare(HandleValue value, bool b) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue value, bool other) // INFAILIBLE, POSSIBLY SLOW
     {
-        return ToBoolean(value) == b;
+        return ToBoolean(value) == other;
     }
     
-    inline bool compare(HandleValue value, const char *s) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue value, const char *other) // INFAILIBLE, POSSIBLY SLOW
     {
         RootedString s1(cx, ToString(cx, value));
-        RootedString s2(cx, toJSString(s));
+        RootedString s2(cx, toJSString(other));
         
         int32_t result;
         

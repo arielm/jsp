@@ -107,7 +107,7 @@ namespace jsp
         /*
          * C++ CONSTRUCTOR
          *
-         * REMINISCENT OF INCREMENTAL-GC DAYS: SOME "EXTRA-CARE" TO AVOID "STRAY INSTANCES" ON THE C-HEAP
+         * REMINISCENT OF INCREMENTAL-GC DAYS: SOME EXTRA-CARE TO AVOID "STRAY INSTANCES" ON THE C-HEAP
          */
         MOZ_NEVER_INLINE static const Barker& construct(const std::string &name = "");
         

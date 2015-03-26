@@ -97,68 +97,68 @@ namespace jsp
         return !compare(value, other);
     }
     
-    bool WrappedValue::operator==(float f) const
+    bool WrappedValue::operator==(float other) const
     {
-        return compare(value, f);
+        return compare(value, other);
     }
     
-    bool WrappedValue::operator!=(float f) const
+    bool WrappedValue::operator!=(float other) const
     {
-        return !compare(value, f);
+        return !compare(value, other);
     }
     
-    bool WrappedValue::operator==(double d) const
+    bool WrappedValue::operator==(double other) const
     {
-        return compare(value, d);
+        return compare(value, other);
     }
     
-    bool WrappedValue::operator!=(double d) const
+    bool WrappedValue::operator!=(double other) const
     {
-        return !compare(value, d);
+        return !compare(value, other);
     }
     
-    bool WrappedValue::operator==(int32_t i) const
+    bool WrappedValue::operator==(int32_t other) const
     {
-        return compare(value, i);
+        return compare(value, other);
     }
     
-    bool WrappedValue::operator!=(int32_t i) const
+    bool WrappedValue::operator!=(int32_t other) const
     {
-        return !compare(value, i);
+        return !compare(value, other);
     }
     
-    bool WrappedValue::operator==(uint32_t ui) const
+    bool WrappedValue::operator==(uint32_t other) const
     {
-        return compare(value, ui);
+        return compare(value, other);
     }
     
-    bool WrappedValue::operator!=(uint32_t ui) const
+    bool WrappedValue::operator!=(uint32_t other) const
     {
-        return !compare(value, ui);
+        return !compare(value, other);
     }
     
-    bool WrappedValue::operator==(bool b) const
+    bool WrappedValue::operator==(bool other) const
     {
         RootedValue rooted(cx, value);
-        return ToBoolean(rooted) == b;
+        return ToBoolean(rooted) == other;
     }
     
-    bool WrappedValue::operator!=(bool b) const
+    bool WrappedValue::operator!=(bool other) const
     {
         RootedValue rooted(cx, value);
-        return ToBoolean(rooted) != b;
+        return ToBoolean(rooted) != other;
     }
     
-    bool WrappedValue::operator==(const char *s) const
+    bool WrappedValue::operator==(const char *other) const
     {
         RootedValue rooted(cx, value);
-        return compare(rooted, s);
+        return compare(rooted, other);
     }
     
-    bool WrappedValue::operator!=(const char *s) const
+    bool WrappedValue::operator!=(const char *other) const
     {
         RootedValue rooted(cx, value);
-        return !compare(rooted, s);
+        return !compare(rooted, other);
     }
     
     // ---

@@ -296,12 +296,10 @@ namespace jsp
         
         if (barkerId > 0) // PURPOSELY EXCLUDING THE CLASS-INSTANCE
         {
-            barker::instances[barkerId] = obj; // NECESSARY IN CASE OF MOVED-POINTER
-            
-            if (barkerId == barker::lastInstanceId)
-            {
-//                barker::lastInstance = obj; // PROBABLY OVERKILL SINCE lastInstance IS EFFECTIVELY-USED DURING VERY SHORT PERIODS
-            }
+            /*
+             * NECESSARY IN CASE OF MOVED-POINTER
+             */
+            barker::instances[barkerId] = obj;
             
             traceCount++;
             LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
