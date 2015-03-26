@@ -57,7 +57,7 @@ void TestingRooting2::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || false, testBarkerPassedToJS1);
-        JSP_TEST(force || true, testGlobalBarkerGetter);
+        JSP_TEST(force || true, testBarkerJSGlobalFunctionality);
     }
 }
 
@@ -425,34 +425,36 @@ void TestingRooting2::testBarkerPassedToJS1()
          * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::HandleValueArray
          */
         call(globalHandle(), "handleBarker1", value);
-        
-        /*
-         * DISABLE THE FOLLOWING BLOCK IN ORDER TO WITNESS A RARE EVENT:
-         * OBJECT CREATION *AND* FINALIZATION WHILE IN THE NURSERY!
-         */
-        
-        if (false)
-        {
-            Barker::forceGC();
-            JSP_CHECK(Barker::isHealthy("PASSED-TO-JS 1"), "HEALTHY BARKER"); // REASON: BARKER ROOTED
-        }
     }
     
     Barker::forceGC();
     JSP_CHECK(Barker::isFinalized("PASSED-TO-JS 1"), "FINALIZED BARKER"); // REASON: BARKER NOT ROOTED ANYMORE
 }
 
-void TestingRooting2::testGlobalBarkerGetter()
+void TestingRooting2::testBarkerJSGlobalFunctionality()
 {
-    {
-        Barker::construct("CPP-CREATED UNROOTED 1");
-        executeScript("Barker.instances('CPP-CREATED UNROOTED 1').bark();");
-    }
+    /*
+     * UNROOTED BARKER CREATED ON THE JS-SIDE:
+     * - ACCESSING id AND name PROPERTIES FROM THE JS-SIDE, WITHOUT AFFECTING ROOTING
+     */
     
-    executeScript("Barker.forceGC(); print(Barker.instances('CPP-CREATED UNROOTED 1'));");
+    executeScript("print(new Barker('js-created unrooted 1').id, Barker.instances('js-created unrooted 1').name)");
     
+    Barker::forceGC();
+    JSP_CHECK(Barker::isFinalized("js-created unrooted 1"), "FINALIZED BARKER");
 
-//    executeScript("new Barker('foo-bar'); Barker.forceGC(); print(Barker.instances('foo-bar'));");
+    // ---
+    
+    /*
+     * UNROOTED BARKER CREATED ON THE C++ SIDE:
+     * - BARKING FROM THE JS-SIDE, WITHOUT AFFECTING ROOTING
+     */
+
+    Barker::construct("CPP-CREATED UNROOTED 1");
+    executeScript("Barker.instances('CPP-CREATED UNROOTED 1').bark();");
+    
+    Barker::forceGC();
+    JSP_CHECK(Barker::isFinalized("CPP-CREATED UNROOTED 1"), "FINALIZED BARKER");
     
     /*
      * TODO:

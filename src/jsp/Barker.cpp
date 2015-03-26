@@ -36,13 +36,18 @@ namespace jsp
     
     void barker::setup(JSObject *instance, ptrdiff_t barkerId, const string &name)
     {
+        assert(instance);
+        assert(barkerId >= 0);
+        
+        RootedObject rootedInstance(cx, instance);
+        
         if (barkerId > 0)
         {
             lastInstanceId = barkerId;
             
             /*
              * IN CASE THE NEW INSTANCE IS ALLOCATED AT THE ADDRESS OF A
-             * PREVIOUS BARKER FINALIZED IN A "NON-ASSISTED" FASHION
+             * PREVIOUS BARKER FINALIZED IN SOME "NON-ASSISTED" FASHION
              */
             
             for (auto &element : instances)
@@ -58,21 +63,35 @@ namespace jsp
         instances[barkerId] = instance;
         JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
         
-        /*
-         * TODO:
-         *
-         * 1) HANDLE DUPLICATE NAMES
-         * 2) DEFINE id AND name PERMANENT PROPERTIES ON instance
-         */
+        // ---
+        
+        string finalName;
         
         if (name.empty())
         {
-            names[barkerId] = "ANONYMOUS-" + ci::toString(barkerId);
+            finalName = "ANONYMOUS-" + ci::toString(barkerId);
+        }
+        else if (getId(name) >= 0) // NAMES MUST BE UNIQUE (NECESSARY FOR BARKER-FORENSIC)
+        {
+            finalName = name + " [" + ci::toString(barkerId) + "]";
         }
         else
         {
-            names[barkerId] = name;
+            finalName = name;
         }
+        
+        names[barkerId] = finalName;
+        
+        // ---
+        
+        RootedValue rootedId(cx, Int32Value(barkerId));
+        JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+
+        
+        RootedValue rootedName(cx, StringValue(toJSString(finalName.data())));
+        JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        
+        // ---
         
         LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << getName(barkerId) << endl; // LOG: VERBOSE
     }
@@ -311,8 +330,11 @@ namespace jsp
         if (barkerId > 0) // PURPOSELY EXCLUDING THE CLASS-INSTANCE
         {
             /*
-             * KEEPING A TRACE OF THE BARKER IN barker::names IS NECESSARY
-             * FOR BARKER-FORENSIC (CF Barker::isFinalized AND Barker::isHealthy)
+             * BY DESIGN:
+             *
+             * - NULLING ENTRY IN barker::instances
+             * - LEAVING ENTRY IN barker::names
+             *   - NECESSARY FOR BARKER-FORENSIC (CF Barker::isFinalized AND Barker::isHealthy)
              */
             
             barker::instances[barkerId] = nullptr;
