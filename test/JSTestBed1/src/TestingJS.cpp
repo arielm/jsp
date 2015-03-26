@@ -18,51 +18,49 @@ using namespace jsp;
 
 void TestingJS::performRun(bool force)
 {
-    executeScript(InputSource::getAsset("helpers.js"));
-    executeScript(InputSource::getAsset("test.js"));
 
-    if (false)
+    if (force || false)
     {
         JSP::dumpObject(globalHandle());
     }
     
-    if (true)
+    if (force || false)
     {
+        executeScript(InputSource::getAsset("helpers.js"));
+        executeScript(InputSource::getAsset("test.js"));
+
         call(globalHandle(), "start");
         LOGI << JSP::writeDetailed(get<OBJECT>(globalHandle(), "foo")) << endl;
-    }
-
-    if (true)
-    {
+        
         executeScript("print(1, 'אריאל מלכא', {x: 5, y: null})");
         executeScript("error tester", __FILE__, __LINE__);
     }
     
     // ---
     
-    if (false)
+    if (force || false)
     {
         testStringify();
         testToSource();
     }
     
-    if (false)
+    if (force || false)
     {
         testThreadSafety();
     }
 
-    if (false)
+    if (force || false)
     {
         testEvaluationScope();
         testFunctionScope();
     }
 
-    if (false)
+    if (force || false)
     {
         testCustomScriptExecution();
     }
     
-    if (false)
+    if (force || false)
     {
         testShapes1();
         testShapes2();
@@ -70,6 +68,47 @@ void TestingJS::performRun(bool force)
         testReservedSlots();
         testJSID();
     }
+    
+    if (force || true)
+    {
+        testGetters1();
+    }
+}
+
+#pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------
+
+/*
+ * REFERENCES:
+ *
+ * - https://github.com/arielm/Spidermonkey/blob/chr_31/js/src/jsapi-tests/testDefineGetterSetterNonEnumerable.cpp
+ */
+
+bool TestingJS::getter1(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    
+//    if (args.hasDefined(0) && args[0].isNumber())
+//    {
+//        LOGI << jsp::toString(args[0]) << endl;
+//    }
+    
+    LOGI << "GREETINGS FROM getter1" << endl;
+    
+    args.rval().setInt32(33);
+    return true;
+}
+
+void TestingJS::testGetters1()
+{
+    RootedObject function(cx, JS_GetFunctionObject(JS_NewFunction(cx, getter1, 0, 0, NullPtr(), "get")));
+    
+    JS_DefineProperty(cx, globalHandle(), "one",
+                      JS::UndefinedHandleValue, JSPROP_GETTER | JSPROP_PERMANENT,
+                      JS_DATA_TO_FUNC_PTR(JSPropertyOp, (JSObject*)function));
+    
+    // ---
+    
+    executeScript("var test = one; print(test)");
 }
 
 #pragma mark ---------------------------------------- SHAPES ----------------------------------------

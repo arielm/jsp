@@ -30,21 +30,21 @@ void TestingRooting2::performShutdown()
 
 void TestingRooting2::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAnalysis1)
         JSP_TEST(force || true, testAnalysis2)
         JSP_TEST(force || true, testAnalysis3)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
         JSP_TEST(force || true, testWrappedObjectAssignment2)
         JSP_TEST(force || true, testWrappedObjectAssignment3)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testBarkerFinalization1)
         JSP_TEST(force || true, testHeapWrappedObject1)
@@ -56,7 +56,7 @@ void TestingRooting2::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testBarkerPassedToJS1);
+        JSP_TEST(force || false, testBarkerPassedToJS1);
         JSP_TEST(force || true, testGlobalBarkerGetter);
     }
 }
@@ -418,10 +418,13 @@ void TestingRooting2::testBarkerPassedToJS1()
     executeScript("function handleBarker1(barker) { barker.bark(); }");
 
     {
-        AutoValueVector args(cx);
-        args.append(Barker::construct("PASSED-TO-JS 1"));
+        RootedValue value(cx, Barker::construct("PASSED-TO-JS 1"));
         
-        call(globalHandle(), "handleBarker1", args);
+        /*
+         * IT'S OKAY TO PASS A RootedValue:
+         * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::HandleValueArray
+         */
+        call(globalHandle(), "handleBarker1", value);
         
         /*
          * DISABLE THE FOLLOWING BLOCK IN ORDER TO WITNESS A RARE EVENT:
@@ -431,7 +434,7 @@ void TestingRooting2::testBarkerPassedToJS1()
         if (false)
         {
             Barker::forceGC();
-            JSP_CHECK(Barker::isHealthy("PASSED-TO-JS 1"), "HEALTHY BARKER"); // REASON: BARKER ROOTED VIA THE AutoValueVector
+            JSP_CHECK(Barker::isHealthy("PASSED-TO-JS 1"), "HEALTHY BARKER"); // REASON: BARKER ROOTED
         }
     }
     
@@ -445,6 +448,15 @@ void TestingRooting2::testBarkerPassedToJS1()
 
 void TestingRooting2::testGlobalBarkerGetter()
 {
+    /*
+     * TODO:
+     *
+     * 1) USE Barker.instances('name') OR barkers('names')
+     * 2) IMPLEMENT Barker.isHealthy('name')
+     * 3) IMPLEMENT Barker.bark('name')?
+     * 4) CANCEL Barker::isFinalized()
+     */
+    
     /*
     {
         Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<Value>());

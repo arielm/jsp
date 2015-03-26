@@ -40,4 +40,10 @@ public:
     void testStringify();
     void testToSource();
     void initComplexJSObject(chr::InputSource::Ref inputSource);
+    
+    // ---
+    
+    static bool getter1(JSContext *cx, unsigned argc, JS::Value *vp);
+    
+    void testGetters1();
 };
