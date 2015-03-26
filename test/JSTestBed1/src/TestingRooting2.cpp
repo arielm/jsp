@@ -419,7 +419,7 @@ void TestingRooting2::testBarkerPassedToJS1()
 
     {
         AutoValueVector args(cx);
-        args.append(Barker::construct("PASSED-TO-JS 1").as<Value>());
+        args.append(Barker::construct("PASSED-TO-JS 1"));
         
         call(globalHandle(), "handleBarker1", args);
         
@@ -447,7 +447,7 @@ void TestingRooting2::testGlobalBarkerGetter()
 {
     /*
     {
-        Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<WrappedValue>());
+        Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<Value>());
         
         executeScript("Barker.forceGC(); Barker.instances('HEAP-WRAPPED 2').bark()");
     }

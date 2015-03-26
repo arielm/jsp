@@ -7,8 +7,6 @@
  */
 
 #include "jsp/Barker.h"
-#include "jsp/WrappedObject.h"
-#include "jsp/WrappedValue.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -321,25 +319,13 @@ namespace jsp
     template <>
     JSObject* Barker::as() const
     {
-        return instance;
-    }
-    
-    template <>
-    WrappedObject Barker::as() const
-    {
-        return WrappedObject(instance);
+        return object;
     }
     
     template <>
     Value Barker::as() const
     {
-        return ObjectOrNullValue(instance);
-    }
-    
-    template <>
-    WrappedValue Barker::as() const
-    {
-        return ObjectOrNullValue(instance);
+        return ObjectOrNullValue(object);
     }
     
     // ---
@@ -403,8 +389,8 @@ namespace jsp
     {
         static Barker delegate;
 
-        delegate.instance = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        barker::setup(delegate.instance, ++barker::constructCount, name);
+        delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
+        barker::setup(delegate.object, ++barker::constructCount, name);
         
         return delegate;
     }

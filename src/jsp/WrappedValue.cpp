@@ -19,8 +19,10 @@ namespace jsp
 
     WrappedValue::WrappedValue()
     :
-    WrappedValue(UndefinedValue())
-    {}
+    value(UndefinedValue())
+    {
+        dump(__PRETTY_FUNCTION__);
+    }
     
     WrappedValue::~WrappedValue()
     {
@@ -31,27 +33,30 @@ namespace jsp
     
     WrappedValue::WrappedValue(const Value &v)
     :
-    value(v),
-    traced(false),
-    traceCount(0)
+    value(v)
     {
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     WrappedValue& WrappedValue::operator=(const Value &v)
     {
         set(v);
+        dump(__PRETTY_FUNCTION__);
+
         return *this;
     }
     
     WrappedValue::WrappedValue(const WrappedValue &other)
     :
-    WrappedValue(other.value)
-    {}
+    value(other.value)
+    {
+        dump(__PRETTY_FUNCTION__);
+    }
     
     void WrappedValue::operator=(const WrappedValue &other)
     {
         set(other.value);
+        dump(__PRETTY_FUNCTION__);
     }
     
     WrappedValue::operator const bool () const
@@ -160,22 +165,17 @@ namespace jsp
     
     void WrappedValue::set(const Value &v)
     {
-        if (v != value)
+        if (traced)
         {
-            if (traced)
-            {
-                endTracing();
-            }
-            
-            value = v;
-            
-            LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+            endTracing();
         }
+        
+        value = v;
     }
     
-    void WrappedValue::reset()
+    void WrappedValue::dump(const char *prefix)
     {
-        set(UndefinedValue());
+        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
     }
     
     // ---
@@ -186,7 +186,6 @@ namespace jsp
          * THE JS::IsPoisonedValue() USUALLY INVOKED IN SPIDERMONKEY CODE IS DUMMY (ALWAYS RETURNS FALSE),
          * SO USING THE "REAL" JSP::isPoisoned() WOULD BE A WASTE OF CYCLES
          */
-        
         return false;
     }
     
@@ -200,7 +199,7 @@ namespace jsp
         beginTracing();
         HeapValuePostBarrier(&value);
         
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedValue::relocate()
@@ -208,7 +207,7 @@ namespace jsp
         HeapValueRelocate(&value);
         endTracing();
         
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     // ---
@@ -218,9 +217,7 @@ namespace jsp
         assert(!traced && value.isMarkable()); // TODO: FOLLOW-UP
         
         traced = true;
-        traceCount = 0;
-        
-        addTracer(this, bind(&WrappedValue::trace, this, std::placeholders::_1));
+        addTracer(this, bind(&WrappedValue::trace, this, placeholders::_1));
     }
     
     void WrappedValue::endTracing()
@@ -228,19 +225,16 @@ namespace jsp
         assert(traced); // TODO: FOLLOW-UP
         
         traced = false;
-//      traceCount = 0;
-        
         removeTracer(this);
     }
     
     void WrappedValue::trace(JSTracer *trc)
     {
         JS_CallValueTracer(trc, &value, "WrappedValue");
-        traceCount++;
         
         /*
          * MUST TAKE PLACE AFTER JS_CallValueTracer
          */
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
 }

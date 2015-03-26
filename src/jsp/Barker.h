@@ -64,17 +64,17 @@ namespace jsp
         
         operator JSObject* () const
         {
-            return instance;
+            return object;
         }
         
-        operator const JSObject& () const
+        operator const Value () const
         {
-            return *instance;
+            return ObjectOrNullValue(object);
         }
-        
-        template <class T>
-        T as() const; // CAN RETURN A NULL-POINTER, OR A NULL-VALUE
-        
+
+        template<class T>
+        T as() const;
+
         // ---
         
         /*
@@ -132,7 +132,7 @@ namespace jsp
         static const JSFunctionSpec functions[];
         static const JSFunctionSpec static_functions[];
         
-        JSObject* instance = nullptr;
+        JSObject* object = nullptr;
         
         static void finalizeCallback(JSFreeOp *fop, JSFinalizeStatus status, bool isCompartmentGC);
         static void finalize(JSFreeOp *fop, JSObject *obj);

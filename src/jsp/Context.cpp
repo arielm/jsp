@@ -89,10 +89,10 @@ namespace jsp
     
 #pragma mark ---------------------------------------- CENTRALIZED EXTRA-ROOT-TRACING ----------------------------------------
     
-    void addTracer(void *tracer, function<void(JSTracer*)> fn)
+    void addTracer(void *tracer, const function<void(JSTracer*)> &fn)
     {
         assert(intern::postInitialized);
-        intern::tracers[tracer] = fn;
+        intern::tracers.emplace(tracer, fn);
     }
     
     void removeTracer(void *tracer)

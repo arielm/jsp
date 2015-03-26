@@ -38,6 +38,10 @@ namespace jsp
         WrappedObject(const HandleObject &handle);
         WrappedObject& operator=(const HandleObject &handle);
         
+        /*
+         * THESE 2 ARE NOT MANDATORY (I.E. COMPILER-GENERATED IN ANY-CASE)
+         * BUT WE WANT TO CALL dump() WHENEVER IT HAPPENS
+         */
         WrappedObject(const WrappedObject &other);
         void operator=(const WrappedObject &other);
         
@@ -49,7 +53,6 @@ namespace jsp
         JSObject* unsafeGet() { return value; }
         
         void set(JSObject *object);
-        void reset();
         
     protected:
         friend class Heap<const WrappedObject>;
@@ -59,10 +62,10 @@ namespace jsp
         friend struct js::GCMethods<WrappedObject>;
         
         JSObject *value;
+        bool traced = false;
         
-        bool traced;
-        int traceCount;
-        
+        void dump(const char *prefix);
+
         bool poisoned() const;
         bool needsPostBarrier() const;
         void postBarrier();

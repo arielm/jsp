@@ -19,8 +19,10 @@ namespace jsp
 
     WrappedObject::WrappedObject()
     :
-    WrappedObject(nullptr)
-    {}
+    value(nullptr)
+    {
+        dump(__PRETTY_FUNCTION__);
+    }
     
     WrappedObject::~WrappedObject()
     {
@@ -31,58 +33,60 @@ namespace jsp
     
     WrappedObject::WrappedObject(JSObject *object)
     :
-    value(object),
-    traced(false),
-    traceCount(0)
+    value(object)
     {
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     WrappedObject& WrappedObject::operator=(JSObject *object)
     {
         set(object);
+        dump(__PRETTY_FUNCTION__);
+        
         return *this;
     }
     
     WrappedObject::WrappedObject(const HandleObject &handle)
     :
-    WrappedObject(handle.get())
-    {}
+    value(handle.get())
+    {
+        dump(__PRETTY_FUNCTION__);
+    }
     
     WrappedObject& WrappedObject::operator=(const HandleObject &handle)
     {
         set(handle.get());
+        dump(__PRETTY_FUNCTION__);
+        
         return *this;
     }
     
     WrappedObject::WrappedObject(const WrappedObject &other)
     :
-    WrappedObject(other.value)
-    {}
+    value(other.value)
+    {
+        dump(__PRETTY_FUNCTION__);
+    }
     
     void WrappedObject::operator=(const WrappedObject &other)
     {
         set(other.value);
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::set(JSObject *object)
     {
-        if (object != value)
+        if (traced)
         {
-            if (traced)
-            {
-                endTracing();
-            }
-            
-            value = object;
-            
-            LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+            endTracing();
         }
+        
+        value = object;
     }
     
-    void WrappedObject::reset()
+    void WrappedObject::dump(const char *prefix)
     {
-        set(nullptr);
+        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
     }
     
     // ---
@@ -93,7 +97,6 @@ namespace jsp
          * THE JS::IsPoisonedPtr() USUALLY INVOKED IN SPIDERMONKEY CODE IS DUMMY (ALWAYS RETURNS FALSE),
          * SO USING THE "REAL" JSP::isPoisoned() WOULD BE A WASTE OF CYCLES
          */
-        
         return false;
     }
     
@@ -125,8 +128,6 @@ namespace jsp
         assert(!traced); // TODO: FOLLOW-UP
         
         traced = true;
-        traceCount = 0;
-        
         addTracer(this, bind(&WrappedObject::trace, this, std::placeholders::_1));
     }
     
@@ -135,15 +136,12 @@ namespace jsp
         assert(traced); // TODO: FOLLOW-UP
         
         traced = false;
-//      traceCount = 0;
-        
         removeTracer(this);
     }
     
     void WrappedObject::trace(JSTracer *trc)
     {
         JS_CallObjectTracer(trc, const_cast<JSObject**>(&value), "WrappedObject");
-        traceCount++;
         
         /*
          * MUST TAKE PLACE AFTER JS_CallObjectTracer

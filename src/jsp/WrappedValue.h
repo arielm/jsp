@@ -30,16 +30,31 @@ namespace jsp
         WrappedValue(const Value &v);
         WrappedValue& operator=(const Value &v);
         
+        /*
+         * THESE 2 ARE NOT MANDATORY (I.E. COMPILER-GENERATED IN ANY-CASE)
+         * BUT WE WANT TO CALL dump() WHENEVER IT HAPPENS
+         */
         WrappedValue(const WrappedValue &other);
         void operator=(const WrappedValue &other);
         
         template<typename T>
-        WrappedValue(const T &v) : WrappedValue(toValue(v)) {}
+        WrappedValue(const T &v)
+        {
+            assignValue(value, v);
+            dump(__PRETTY_FUNCTION__);
+        }
     
         template<typename T>
         WrappedValue& operator=(const T &v)
         {
-            set(toValue(v));
+            if (traced)
+            {
+                endTracing();
+            }
+            
+            assignValue(value, v);
+            dump(__PRETTY_FUNCTION__);
+            
             return *this;
         }
         
@@ -78,7 +93,6 @@ namespace jsp
         Value* unsafeGet() { return &value; }
         
         void set(const Value &v);
-        void reset();
         
         /*
          * TODO: USE "AUTOMATIC CONVERSION" FOR THE FOLLOWING 2 (AS IMPLEMENTED IN WrappedObject)
@@ -102,10 +116,10 @@ namespace jsp
         friend struct js::GCMethods<WrappedValue>;
         
         Value value;
-        
-        bool traced;
-        int traceCount;
-        
+        bool traced = false;
+
+        void dump(const char *prefix);
+
         bool poisoned() const;
         bool needsPostBarrier() const;
         void postBarrier();
@@ -114,7 +128,7 @@ namespace jsp
         void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
-        
+
         const Value* extract() const { return &value; }
         Value* extractMutable() { return &value; }
     };

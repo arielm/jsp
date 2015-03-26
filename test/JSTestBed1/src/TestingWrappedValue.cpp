@@ -108,6 +108,9 @@ void TestingWrappedValue::testAutomaticConversion()
     wrapped = false;
     JSP_CHECK(JSP::write(wrapped) == "false");
     
+    wrapped = (JSObject*)nullptr; // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
+    JSP_CHECK(JSP::write(wrapped) == "null");
+    
     // --
     
     wrapped = Barker::construct("ASSIGNED-TO-VALUE").as<OBJECT>();
@@ -204,7 +207,7 @@ void TestingWrappedValue::testObjectComparison()
 void TestingWrappedValue::testBooleanComparison()
 {
     WrappedValue wrapped2 = true;
-    JSP_CHECK(wrapped2 == true, "INEQUALITY"); // THANKS TO WrappedValue::operator==(bool)
+    JSP_CHECK(wrapped2 == true, "EQUALITY"); // THANKS TO WrappedValue::operator==(bool)
     JSP_CHECK(wrapped2 != false, "INEQUALITY"); // THANKS TO WrappedValue::operator!=(bool)
     
     JSP_CHECK(wrapped2, "TRUE"); // THANKS TO WrappedValue::operator const bool ()
@@ -234,7 +237,11 @@ void TestingWrappedValue::testAutomaticComparison()
     JSP_CHECK(wrapped != 127, "INEQUALITY");
     
     JSP_CHECK(wrapped != "foo", "FALSE");
-    JSP_CHECK(wrapped != (JSObject*)nullptr, "FALSE");
+    JSP_CHECK(wrapped != (JSObject*)nullptr, "FALSE"); // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
+    
+    wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED (TODO: TEST ON 32-BIT SYSTEMS)
+    JSP_CHECK(wrapped == 0xff123456, "EQUALITY");
+    JSP_CHECK(wrapped != 0x12345678, "INEQUALITY");
 
     JSP_CHECK(wrapped, "FALSE");
 

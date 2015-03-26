@@ -51,7 +51,7 @@ namespace jsp
     
     // ---
     
-    void addTracer(void *tracer, std::function<void(JSTracer*)> fn);
+    void addTracer(void *tracer, const std::function<void(JSTracer*)> &fn);
     void removeTracer(void *tracer);
     
     // ---
@@ -133,7 +133,7 @@ namespace jsp
     {
         if (value.isDouble())
         {
-            return f == float(value.toDouble());
+            return f == float(value.toDouble()); // TODO: TEST
         }
         
         return false;
@@ -166,6 +166,11 @@ namespace jsp
             return ui == uint32_t(value.toInt32());
         }
         
+        if (value.isDouble())
+        {
+            return ui == uint32_t(value.toDouble()); // TODO: TEST
+        }
+        
         return false;
     }
     
@@ -190,26 +195,6 @@ namespace jsp
     }
     
     // ---
-    
-    /*
-     * TODO: USE toObject TEMPLATE FOR toSource(), stringify(), isFunction(), isHealthy(), ETC.
-     */
-    
-    template <typename T>
-    JSObject* toObject(T); // CAN RETURN A NULL POINTER
-
-    bool isFunction(const Value &value);
-    bool isArray(JSObject *object);
-
-    // ---
-    
-    std::string toSource(JSObject *object);
-    std::string toSource(HandleValue value);
-    
-    std::string stringify(JSObject *object, int indent = 2);
-    std::string stringify(MutableHandleValue value, int indent = 2);
-    
-    // ---
 
     /*
      * TEMPLATE SPECIALIZATION IS NECESSARY, OTHERWISE toValue(bool) IS ALWAYS "PICKED"
@@ -229,19 +214,19 @@ namespace jsp
     template <>
     inline Value toValue(float f)
     {
-        return NumberValue(f);
+        return DoubleValue(f);
     }
     
     template <>
     inline Value toValue(double d)
     {
-        return NumberValue(d);
+        return DoubleValue(d);
     }
     
     template <>
     inline Value toValue(int32_t i)
     {
-        return NumberValue(i);
+        return Int32Value(i);
     }
 
     template <>
@@ -261,6 +246,63 @@ namespace jsp
     {
         return StringValue(toJSString(s));
     }
+    
+    // ---
+    
+    inline void assignValue(Value &target, JSObject *object)
+    {
+        target.setObjectOrNull(object);
+    }
+    
+    inline void assignValue(Value &target, float f)
+    {
+        target.setDouble(f);
+    }
+    
+    inline void assignValue(Value &target, double d)
+    {
+        target.setDouble(d);
+    }
+    
+    inline void assignValue(Value &target, int32_t i)
+    {
+        target.setInt32(i);
+    }
+    
+    inline void assignValue(Value &target, uint32_t ui)
+    {
+        target.setNumber(ui);
+    }
+    
+    inline void assignValue(Value &target, bool b)
+    {
+        target.setBoolean(b);
+    }
+    
+    inline void assignValue(Value &target, const char *s)
+    {
+        target.setString(toJSString(s));
+    }
+    
+    // ---
+    
+    /*
+     * TODO: USE toObject TEMPLATE FOR toSource(), stringify(), isFunction(), isHealthy(), ETC.
+     */
+    
+    template <typename T>
+    JSObject* toObject(T); // CAN RETURN A NULL POINTER
+    
+    bool isFunction(const Value &value);
+    bool isArray(JSObject *object);
+    
+    // ---
+    
+    std::string toSource(JSObject *object);
+    std::string toSource(HandleValue value);
+    
+    std::string stringify(JSObject *object, int indent = 2);
+    std::string stringify(MutableHandleValue value, int indent = 2);
 }
 
 namespace js
