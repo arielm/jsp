@@ -442,19 +442,25 @@ void TestingRooting2::testBarkerPassedToJS1()
     JSP_CHECK(Barker::isFinalized("PASSED-TO-JS 1"), "FINALIZED BARKER"); // REASON: BARKER NOT ROOTED ANYMORE
 }
 
-/*
- * TODO: CONTINUE ONCE Barker.instances() IS IMPLEMENTED
- */
-
 void TestingRooting2::testGlobalBarkerGetter()
 {
+    {
+        Barker::construct("CPP-CREATED UNROOTED 1");
+        executeScript("Barker.instances('CPP-CREATED UNROOTED 1').bark();");
+    }
+    
+    executeScript("Barker.forceGC(); print(Barker.instances('CPP-CREATED UNROOTED 1'));");
+    
+
+//    executeScript("new Barker('foo-bar'); Barker.forceGC(); print(Barker.instances('foo-bar'));");
+    
     /*
      * TODO:
      *
-     * 1) USE Barker.instances('name') OR barkers('names')
-     * 2) IMPLEMENT Barker.isHealthy('name')
-     * 3) IMPLEMENT Barker.bark('name')?
-     * 4) CANCEL Barker::isFinalized()
+     * 1) IMPLEMENT Barker.isHealthy('name')
+     * 2) IMPLEMENT Barker.bark('name')?
+     * 3) CANCEL Barker::isFinalized()?
+     * 4) THEN CONTINUE WITH THE FOLLOWING...
      */
     
     /*

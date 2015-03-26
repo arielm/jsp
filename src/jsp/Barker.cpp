@@ -28,7 +28,9 @@ namespace jsp
         map<ptrdiff_t, JSObject*> instances;
         
         void setup(JSObject *instance, ptrdiff_t barkerId, const string &name = "");
+        
         string getName(ptrdiff_t barkerId);
+        pair<bool, JSObject*> getInstance(const string &name);
     }
     
     void barker::setup(JSObject *instance, ptrdiff_t barkerId, const string &name)
@@ -81,6 +83,20 @@ namespace jsp
         }
         
         return ""; // I.E. NO TRACES OF SUCH A BARKER
+    }
+    
+    pair<bool, JSObject*> barker::getInstance(const string &name)
+    {
+        for (auto &element : barker::names)
+        {
+            if (element.second == name)
+            {
+                auto instance = instances.at(element.first); // NULL ONLY IF "ASSISTED" FINALIZATION TOOK PLACE
+                return make_pair(true, instance);
+            }
+        }
+        
+        return make_pair(false, nullptr); // I.E. NO TRACES OF SUCH A BARKER
     }
     
 #pragma mark ---------------------------------------- Barker NAMESPACE ----------------------------------------
@@ -352,7 +368,7 @@ namespace jsp
             }
         }
         
-        return false;
+        return false; // I.E. NO TRACES OF SUCH A BARKER
     }
     
     bool Barker::isHealthy(const char *name)
@@ -403,7 +419,7 @@ namespace jsp
             name = toString(args[0]);
         }
         
-        args.rval().set(construct(name).as<Value>());
+        args.rval().set(construct(name));
         return true;
     }
     
@@ -437,10 +453,22 @@ namespace jsp
     
     bool Barker::static_function_instances(JSContext *cx, unsigned argc, Value *vp)
     {
-        /*
-         * TODO
-         */
+        auto args = CallArgsFromVp(argc, vp);
         
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            bool found;
+            JSObject *instance;
+            tie(found, instance) = barker::getInstance(toString(args[0]));
+            
+            if (found)
+            {
+                args.rval().setObjectOrNull(instance);
+                return true;
+            }
+        }
+        
+        args.rval().setUndefined();
         return true;
     }
     

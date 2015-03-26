@@ -111,22 +111,6 @@ namespace jsp
          */
         MOZ_NEVER_INLINE static const Barker& construct(const std::string &name = "");
         
-        /*
-         * JS CONSTRUCTOR
-         */
-        static bool construct(JSContext *cx, unsigned argc, Value *vp);
-        
-        /*
-         * JS FUNCTIONS
-         */
-        static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
-        
-        /*
-         * STATIC JS FUNCTIONS
-         */
-        static bool static_function_instances(JSContext *cx, unsigned argc, Value *vp);
-        static bool static_function_forceGC(JSContext *cx, unsigned argc, Value *vp);
-        
     protected:
         static const JSClass clazz;
         static const JSFunctionSpec functions[];
@@ -143,5 +127,21 @@ namespace jsp
         void operator=(const Barker &other) = delete;
         
         static bool maybeBark(JSObject *instance);
+        
+        /*
+         * JS CONSTRUCTOR
+         */
+        static bool construct(JSContext *cx, unsigned argc, Value *vp);
+        
+        /*
+         * JS FUNCTIONS
+         */
+        static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
+        
+        /*
+         * STATIC JS FUNCTIONS
+         */
+        static bool static_function_instances(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_forceGC(JSContext *cx, unsigned argc, Value *vp);
     };
 }
