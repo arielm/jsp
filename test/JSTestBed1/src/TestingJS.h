@@ -43,7 +43,7 @@ public:
     
     // ---
     
-    static bool getter1(JSContext *cx, unsigned argc, JS::Value *vp);
-    
-    void testGetters1();
+    void testGetter1();
+    void testSetter1();
+    void testGetterSetter1();
 };

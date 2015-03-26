@@ -71,7 +71,9 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        testGetters1();
+        JSP_TEST(force || true, testGetter1)
+        JSP_TEST(force || true, testSetter1)
+        JSP_TEST(force || true, testGetterSetter1)
     }
 }
 
@@ -83,32 +85,104 @@ void TestingJS::performRun(bool force)
  * - https://github.com/arielm/Spidermonkey/blob/chr_31/js/src/jsapi-tests/testDefineGetterSetterNonEnumerable.cpp
  */
 
-bool TestingJS::getter1(JSContext *cx, unsigned argc, Value *vp)
+static bool getter1(JSContext *cx, unsigned argc, Value *vp)
 {
     auto args = CallArgsFromVp(argc, vp);
     
-//    if (args.hasDefined(0) && args[0].isNumber())
-//    {
-//        LOGI << jsp::toString(args[0]) << endl;
-//    }
-    
-    LOGI << "GREETINGS FROM getter1" << endl;
+    LOGI << "getter1 CALLED" << endl;
     
     args.rval().setInt32(33);
     return true;
 }
 
-void TestingJS::testGetters1()
+void TestingJS::testGetter1()
 {
     RootedObject function(cx, JS_GetFunctionObject(JS_NewFunction(cx, getter1, 0, 0, NullPtr(), "get")));
     
-    JS_DefineProperty(cx, globalHandle(), "one",
+    JS_DefineProperty(cx, globalHandle(), "oneR",
                       JS::UndefinedHandleValue, JSPROP_GETTER | JSPROP_PERMANENT,
                       JS_DATA_TO_FUNC_PTR(JSPropertyOp, (JSObject*)function));
     
     // ---
     
-    executeScript("var test = one; print(test)");
+    executeScript("var test = oneR; print(test)");
+}
+
+// ---
+
+static bool setter1(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    
+    if (args.hasDefined(0))
+    {
+        LOGI << "setter1 CALLED WITH: " << jsp::toString(args[0]) << endl;
+        
+        args.rval().setUndefined();
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingJS::testSetter1()
+{
+    RootedObject function(cx, JS_GetFunctionObject(JS_NewFunction(cx, setter1, 0, 0, NullPtr(), "set")));
+    
+    JS_DefineProperty(cx, globalHandle(), "oneW",
+                      JS::UndefinedHandleValue, JSPROP_SETTER| JSPROP_PERMANENT,
+                      nullptr,
+                      JS_DATA_TO_FUNC_PTR(JSStrictPropertyOp, (JSObject*)function));
+    
+    // ---
+    
+    executeScript("oneW = 255");
+}
+
+// ---
+
+static int getterSetterValue1 = 199;
+
+static bool getterSetter1(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    
+    if (args.hasDefined(0))
+    {
+        LOGI << "getterSetter1: setter CALLED WITH: " << jsp::toString(args[0]) << endl;
+
+        if (args[0].isInt32())
+        {
+            getterSetterValue1 = args[0].toInt32();
+            
+            args.rval().setUndefined();
+            return true;
+        }
+    }
+    else
+    {
+        LOGI << "getterSetter1: getter CALLED" << endl;
+        
+        args.rval().setInt32(getterSetterValue1);
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingJS::testGetterSetter1()
+{
+    RootedObject getterFunction(cx, JS_GetFunctionObject(JS_NewFunction(cx, getterSetter1, 0, 0, NullPtr(), "get")));
+    RootedObject setterFunction(cx, JS_GetFunctionObject(JS_NewFunction(cx, getterSetter1, 0, 0, NullPtr(), "set")));
+    
+    JS_DefineProperty(cx, globalHandle(), "oneRW",
+                      JS::UndefinedHandleValue, JSPROP_GETTER | JSPROP_SETTER | JSPROP_PERMANENT,
+                      JS_DATA_TO_FUNC_PTR(JSPropertyOp, (JSObject*)getterFunction),
+                      JS_DATA_TO_FUNC_PTR(JSStrictPropertyOp, (JSObject*)setterFunction));
+    
+    // ---
+    
+    executeScript("var test = ++oneRW; print(test);");
 }
 
 #pragma mark ---------------------------------------- SHAPES ----------------------------------------
@@ -147,7 +221,7 @@ void TestingJS::testShapes1()
                 if (shape->hasSlot())
                 {
                     RootedValue vp(cx);
-                    vp.set(obj2->nativeGetSlot(shape->slot())); // PROBLABLY THE BRIDGE TO ("NATURALLY" NON-ACCESSIBLE) "RESERVED SLOTS" FROM THE JS SIDE
+                    vp.set(obj2->nativeGetSlot(shape->slot())); // PROBABLY THE BRIDGE TO ("NATURALLY" NON-ACCESSIBLE) "RESERVED SLOTS" FROM THE JS SIDE
                     
                     LOGI << JSP::write(id) << ": " << JSP::write(vp) << endl;
                 }
@@ -181,7 +255,7 @@ void TestingJS::testShapes2()
  *
  *
  * WISDOM ACQUIRED WHILE WORKING ON ToSourceTraverser.cpp:
- * - THE "IDENTIFIER MECHANISM" CAN BE USED TO DIFFERENTE BETWEEN ATOMS LIKE property1 AND property-two
+ * - THE "IDENTIFIER MECHANISM" CAN BE USED TO DIFFERENTIATE BETWEEN ATOMS LIKE property1 AND property-two
  *   - THE LATTER IS NOT "COMPILABLE" (UNLESS QUOTED), AND THEREFORE IS NOT CONSIDERED AS AN "IDENTIFIER"
  *   - SEE "bool IsIdentifier(JSLinearString *str)" IN "frontend/BytecodeCompiler.h"
  */
@@ -394,7 +468,7 @@ void TestingJS::testThreadSafety()
  * CONCLUSIONS:
  *
  * SCOPE:
- * JS::Evaluate (USED BY Manager::evaluateObject) WILL FAIL IF NO obj PARAMETER IS PROVIDED
+ * JS::Evaluate (USED BY Proto::evaluateObject) WILL FAIL IF NO obj PARAMETER IS PROVIDED
  * I.E. WE SHOULD CONTINUE USING THE GLOBAL-OBJECT BY DEFAULT
  *
  * FOLLOW-UP:
@@ -411,7 +485,7 @@ void TestingJS::testEvaluationScope()
  * CONCLUSIONS:
  *
  * SCOPE:
- * SEE COMMENTS REGARDING HOW JS_CallFunctionValue (USED BY Manager::callFunction)
+ * SEE COMMENTS REGARDING HOW JS_CallFunctionValue (USED BY Proto::call)
  * WILL BEHAVE DEPENDING ON THE obj PARAMETER
  */
 
