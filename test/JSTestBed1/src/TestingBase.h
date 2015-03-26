@@ -16,7 +16,7 @@ public:
     template<class TestingBase>
     static void execute(bool proceed = true, bool force = false)
     {
-        if (proceed)
+        if (proceed || force)
         {
             auto test = std::make_shared<TestingBase>();
             

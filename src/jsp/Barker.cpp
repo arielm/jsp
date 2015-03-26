@@ -30,6 +30,7 @@ namespace jsp
         void setup(JSObject *instance, ptrdiff_t barkerId, const string &name = "");
         
         string getName(ptrdiff_t barkerId);
+        ptrdiff_t getId(const string &name);
         pair<bool, JSObject*> getInstance(const string &name);
     }
     
@@ -58,7 +59,10 @@ namespace jsp
         JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
         
         /*
-         * TODO: HANDLE DUPLICATE NAMES
+         * TODO:
+         *
+         * 1) HANDLE DUPLICATE NAMES
+         * 2) DEFINE id AND name PERMANENT PROPERTIES ON instance
          */
         
         if (name.empty())
@@ -85,15 +89,27 @@ namespace jsp
         return ""; // I.E. NO TRACES OF SUCH A BARKER
     }
     
-    pair<bool, JSObject*> barker::getInstance(const string &name)
+    ptrdiff_t barker::getId(const string &name)
     {
-        for (auto &element : barker::names)
+        for (auto &element : names)
         {
             if (element.second == name)
             {
-                auto instance = instances.at(element.first); // NULL ONLY IF "ASSISTED" FINALIZATION TOOK PLACE
-                return make_pair(true, instance);
+                return element.first;
             }
+        }
+        
+        return -1; // I.E. NO TRACES OF SUCH A BARKER
+    }
+    
+    pair<bool, JSObject*> barker::getInstance(const string &name)
+    {
+        auto barkerId = getId(name);
+        
+        if (barkerId >= 0)
+        {
+            auto instance = instances.at(barkerId); // NULL ONLY IF "ASSISTED" FINALIZATION TOOK PLACE
+            return make_pair(true, instance);
         }
         
         return make_pair(false, nullptr); // I.E. NO TRACES OF SUCH A BARKER
@@ -346,12 +362,13 @@ namespace jsp
     
     bool Barker::bark(const char *name)
     {
-        for (auto &element : barker::names)
+        bool found;
+        JSObject *instance;
+        tie(found, instance) = barker::getInstance(name);
+        
+        if (found)
         {
-            if (element.second == name)
-            {
-                return maybeBark(barker::instances.at(element.first));
-            }
+            return maybeBark(instance);
         }
         
         return false;
@@ -359,26 +376,27 @@ namespace jsp
     
     bool Barker::isFinalized(const char *name)
     {
-        for (auto &element : barker::names)
+        bool found;
+        JSObject *instance;
+        tie(found, instance) = barker::getInstance(name);
+        
+        if (found)
         {
-            if (element.second == name)
-            {
-                auto instance = barker::instances.at(element.first); // NULL ONLY IF "ASSISTED" FINALIZATION TOOK PLACE
-                return !JSP::isHealthy(instance);
-            }
+            return !JSP::isHealthy(instance);
         }
         
-        return false; // I.E. NO TRACES OF SUCH A BARKER
+        return false;
     }
     
     bool Barker::isHealthy(const char *name)
     {
-        for (auto &element : barker::names)
+        bool found;
+        JSObject *instance;
+        tie(found, instance) = barker::getInstance(name);
+        
+        if (found)
         {
-            if (element.second == name)
-            {
-                return JSP::isHealthy(barker::instances.at(element.first));
-            }
+            return JSP::isHealthy(instance);
         }
         
         return false;
