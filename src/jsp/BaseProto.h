@@ -38,7 +38,7 @@ namespace jsp
          * NATIVE-CALLBACKS
          */
         
-        inline bool applyCallback(const CallbackFn &fn, CallArgs args) override
+        inline bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) override
         {
             return fn(args);
         }

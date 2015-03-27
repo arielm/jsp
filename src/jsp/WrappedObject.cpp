@@ -128,7 +128,7 @@ namespace jsp
         assert(!traced); // TODO: FOLLOW-UP
         
         traced = true;
-        addTracer(this, bind(&WrappedObject::trace, this, std::placeholders::_1));
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
     }
     
     void WrappedObject::endTracing()
@@ -136,7 +136,7 @@ namespace jsp
         assert(traced); // TODO: FOLLOW-UP
         
         traced = false;
-        removeTracer(this);
+        removeTracerCallback(this);
     }
     
     void WrappedObject::trace(JSTracer *trc)

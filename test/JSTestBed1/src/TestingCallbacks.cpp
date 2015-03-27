@@ -253,21 +253,18 @@ void TestingCallbacks::testInstanceMethod2()
 
 // ---
 
-#define BIND_STATIC(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
-#define BIND_INSTANCE(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
-
 void TestingCallbacks::testRegistrationMacros()
 {
-    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC(staticMethod1));
+    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
     executeScript("print(staticMethod1(33))");
     
-    registerCallback2(globalHandle(), "instanceMethod2", BIND_INSTANCE(&TestingCallbacks::instanceMethod2, this));
+    registerCallback2(globalHandle(), "instanceMethod2", BIND_INSTANCE1(&TestingCallbacks::instanceMethod2, this));
     executeScript("print(instanceMethod2(44))");
 }
 
 void TestingCallbacks::testJSSideFunctionAssign()
 {
-    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC(staticMethod1));
+    registerCallback2(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
     
     /*
      * WORKS AS INTENDED:

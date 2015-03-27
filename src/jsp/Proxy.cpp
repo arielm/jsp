@@ -115,7 +115,7 @@ namespace jsp
     
     // ---
     
-    Callback* Proxy::getCallback(int32_t callbackId)
+    NativeCallback* Proxy::getCallback(int32_t callbackId)
     {
         auto found = callbacks.find(callbackId);
         
@@ -140,9 +140,9 @@ namespace jsp
         return -1;
     }
     
-    int32_t Proxy::addCallback(const string &name, const CallbackFn &fn)
+    int32_t Proxy::addCallback(const string &name, const NativeCallbackFnType &fn)
     {
-        callbacks.emplace(++lastCallbackId, Callback(name, fn));
+        callbacks.emplace(++lastCallbackId, NativeCallback(name, fn));
         return lastCallbackId;
     }
     
@@ -153,7 +153,7 @@ namespace jsp
 
     // ---
     
-    bool Proxy::registerCallback(HandleObject object, const string &name, const CallbackFn &fn)
+    bool Proxy::registerCallback(HandleObject object, const string &name, const NativeCallbackFnType &fn)
     {
         auto callbackId = getCallbackId(name);
         
@@ -210,7 +210,7 @@ namespace jsp
             
             if (callback)
             {
-                return proxy->applyCallback(callback->fn, args);
+                return proxy->applyNativeCallback(callback->fn, args);
             }
         }
         

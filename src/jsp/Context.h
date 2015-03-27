@@ -27,7 +27,10 @@
 #include <functional>
 #include <cassert>
 
-#include "unicode/unistr.h" // TODO: TRY REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
+#include "unicode/unistr.h" // TODO: CONSIDER REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
+
+#define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
+#define BIND_INSTANCE1(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
 
 namespace jsp
 {
@@ -35,6 +38,9 @@ namespace jsp
 
     class WrappedObject;
     class WrappedValue;
+
+    typedef std::function<void(JSTracer*)> TracerCallbackFnType;
+    typedef std::function<void(JSRuntime *rt, JSGCStatus status, void *data)> GCCallbackFnType; // TODO
 
     // ---
     
@@ -51,8 +57,8 @@ namespace jsp
     
     // ---
     
-    void addTracer(void *tracer, const std::function<void(JSTracer*)> &fn);
-    void removeTracer(void *tracer);
+    void addTracerCallback(void *tracer, const TracerCallbackFnType &fn);
+    void removeTracerCallback(void *tracer);
     
     // ---
     

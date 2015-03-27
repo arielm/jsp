@@ -217,7 +217,7 @@ namespace jsp
         assert(!traced && value.isMarkable()); // TODO: FOLLOW-UP
         
         traced = true;
-        addTracer(this, bind(&WrappedValue::trace, this, placeholders::_1));
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
     }
     
     void WrappedValue::endTracing()
@@ -225,7 +225,7 @@ namespace jsp
         assert(traced); // TODO: FOLLOW-UP
         
         traced = false;
-        removeTracer(this);
+        removeTracerCallback(this);
     }
     
     void WrappedValue::trace(JSTracer *trc)

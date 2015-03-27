@@ -11,10 +11,10 @@
 #include "jsp/WrappedValue.h"
 #include "jsp/Barker.h"
 
+#include "chronotext/Log.h"
 #include "chronotext/incubator/utils/FileCapture.h"
 
 #include <map>
-#include <sstream>
 
 using namespace std;
 using namespace chr;
@@ -25,7 +25,7 @@ namespace jsp
 {
     namespace intern
     {
-        map<void*, function<void(JSTracer*)>> tracers;
+        map<void*, TracerCallbackFnType> tracers;
         void traceCallback(JSTracer *trc, void *data);
         
         struct Stringifier;
@@ -89,13 +89,13 @@ namespace jsp
     
 #pragma mark ---------------------------------------- CENTRALIZED EXTRA-ROOT-TRACING ----------------------------------------
     
-    void addTracer(void *tracer, const function<void(JSTracer*)> &fn)
+    void addTracerCallback(void *tracer, const TracerCallbackFnType &fn)
     {
         assert(intern::postInitialized);
         intern::tracers.emplace(tracer, fn);
     }
     
-    void removeTracer(void *tracer)
+    void removeTracerCallback(void *tracer)
     {
         assert(intern::postInitialized);
         intern::tracers.erase(tracer);
@@ -777,8 +777,12 @@ namespace JSP
     
     void forceGC()
     {
+        LOGD << "jsp::forceGC() | BEGIN" << endl; // LOG: VERBOSE
+
         JS_SetGCParameter(rt, JSGC_MODE, JSGC_MODE_GLOBAL);
         JS_GC(rt);
+        
+        LOGD << "jsp::forceGC() | END" << endl; // LOG: VERBOSE
     }
     
     void setGCZeal(uint8_t zeal, uint32_t frequency)

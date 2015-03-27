@@ -25,7 +25,19 @@
 
 namespace jsp
 {
-    typedef std::function<bool(CallArgs args)> CallbackFn;
+    typedef std::function<bool(CallArgs args)> NativeCallbackFnType;
+    
+    struct NativeCallback
+    {
+        std::string name;
+        NativeCallbackFnType fn;
+        
+        NativeCallback(const std::string &name, const NativeCallbackFnType &fn)
+        :
+        name(name),
+        fn(fn)
+        {}
+    };
 
     class Proto
     {
@@ -113,7 +125,7 @@ namespace jsp
         
         // ---
         
-        virtual bool applyCallback(const CallbackFn &fn, CallArgs args) = 0;
+        virtual bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) = 0;
 
         // ---
         

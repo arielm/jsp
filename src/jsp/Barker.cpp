@@ -224,19 +224,16 @@ namespace jsp
          *
          * INSTEAD OF PASSING BY Barker::forceGC():
          *
-         * - JS_SetGCCallback() COULD BE USED AT THE jsp MAINSPACE LEVEL,
+         * - JS_SetGCCallback() COULD BE USED AT THE jsp NAMESPACE LEVEL,
          *   TOGETHER WITH A CHAIN OF REGISTERABLE GC-CALLBACKS
          *
          * - ADVANTAGE: POSSIBILITY TO DETECT ANY FINALIZED BARKER
          */
 
-        LOGD << "Barker GC-BEGIN" << endl; // LOG: VERBOSE
-
         JS_SetGCCallback(rt, Barker::gcCallback, nullptr);
         JSP::forceGC();
         JS_SetGCCallback(rt, nullptr, nullptr);
         
-        LOGD << "Barker GC-END" << endl; // LOG: VERBOSE
     }
     void Barker::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
     {

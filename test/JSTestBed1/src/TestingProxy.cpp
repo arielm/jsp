@@ -47,8 +47,8 @@ bool TestingProxy::instanceMethod1(CallArgs args)
 
 void TestingProxy::testCallbacks1()
 {
-    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC_CALLBACK(staticMethod1));
-    registerCallback(globalHandle(), "instanceMethod1", BIND_INSTANCE_CALLBACK(&TestingProxy::instanceMethod1, this));
+    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
+    registerCallback(globalHandle(), "instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
     
     registerCallback(globalHandle(), "lambda1", [=](CallArgs args)->bool
     {

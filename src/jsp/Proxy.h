@@ -16,23 +16,8 @@
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
 
-#define BIND_STATIC_CALLBACK(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
-#define BIND_INSTANCE_CALLBACK(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
-
 namespace jsp
 {
-    struct Callback
-    {
-        std::string name;
-        CallbackFn fn;
-        
-        Callback(const std::string &name, const CallbackFn &fn)
-        :
-        name(name),
-        fn(fn)
-        {}
-    };
-    
     class Proxy : public Proto
     {
     public:
@@ -79,9 +64,9 @@ namespace jsp
         
         // ---
         
-        inline bool applyCallback(const CallbackFn &fn, CallArgs args) final
+        inline bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) final
         {
-            return FORWARD(applyCallback, fn, args);
+            return FORWARD(applyNativeCallback, fn, args);
         }
         
         // ---
@@ -190,21 +175,21 @@ namespace jsp
          *        - peers.SomeProxy[0].method1 SHOULD BE A READ-ONLY PROPERTY
          */
 
-        bool registerCallback(JS::HandleObject object, const std::string &name, const CallbackFn &fn);
+        bool registerCallback(JS::HandleObject object, const std::string &name, const NativeCallbackFnType &fn);
         void unregisterCallback(JS::HandleObject object, const std::string &name);
         static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
         
     private:
         int32_t instanceId = -1;
         int32_t lastCallbackId = -1;
-        std::map<int32_t, Callback> callbacks;
+        std::map<int32_t, NativeCallback> callbacks;
         
         void instanceCreated();
         void instanceDestroyed();
         
-        Callback* getCallback(int32_t callbackId);
+        NativeCallback* getCallback(int32_t callbackId);
         int32_t getCallbackId(const std::string &name);
-        int32_t addCallback(const std::string &name, const CallbackFn &fn);
+        int32_t addCallback(const std::string &name, const NativeCallbackFnType &fn);
         void removeCallback(int32_t callbackId);
     };
 }
