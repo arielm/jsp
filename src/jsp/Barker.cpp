@@ -230,22 +230,66 @@ namespace jsp
          * - ADVANTAGE: POSSIBILITY TO DETECT ANY FINALIZED BARKER
          */
         
-        LOGD << "Barker GC-BEGIN" << endl; // LOG: VERBOSE
+        JS_SetFinalizeCallback(rt, Barker::finalizeCallback);
+        JS_SetGCCallback(rt, Barker::gcCallback, nullptr);
         
         JSP::forceGC();
         
-        for (auto &element : barker::instances)
+        JS_SetFinalizeCallback(rt, nullptr);
+        JS_SetGCCallback(rt, nullptr, nullptr);
+    }
+    
+    void Barker::finalizeCallback(JSFreeOp *fop, JSFinalizeStatus status, bool isCompartmentGC)
+    {
+        switch (status)
         {
-            if (element.second)
+            case JSFINALIZE_GROUP_START:
             {
-                if (!JSP::isHealthy(element.second))
-                {
-                    finalize(rt->defaultFreeOp(), element.second);
-                }
+                LOGD << "JSFINALIZE_GROUP_START" << endl; // LOG: VERBOSE
+                break;
+            }
+                
+            case JSFINALIZE_GROUP_END:
+            {
+                LOGD << "JSFINALIZE_GROUP_END" << endl; // LOG: VERBOSE
+                break;
+            }
+                
+            case JSFINALIZE_COLLECTION_END:
+            {
+                LOGD << "JSFINALIZE_COLLECTION_END" << endl; // LOG: VERBOSE
+                break;
             }
         }
-        
-        LOGD << "Barker GC-END" << endl; // LOG: VERBOSE
+    }
+
+    void Barker::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
+    {
+        switch (status)
+        {
+            case JSGC_BEGIN:
+            {
+                LOGD << "JSGC_BEGIN" << endl; // LOG: VERBOSE
+                break;
+            }
+                
+            case JSGC_END:
+            {
+                for (auto &element : barker::instances)
+                {
+                    if (element.second)
+                    {
+                        if (!JSP::isHealthy(element.second))
+                        {
+                            finalize(rt->defaultFreeOp(), element.second);
+                        }
+                    }
+                }
+                
+                LOGD << "JSGC_END" << endl; // LOG: VERBOSE
+                break;
+            }
+        }
     }
     
     /*
