@@ -26,7 +26,6 @@ namespace jsp
         map<ptrdiff_t, JSObject*> instances;
         
         void setup(JSObject *instance, ptrdiff_t barkerId, const string &name = "");
-        bool maybeCleanup(JSObject *instance);
         
         /*
          * RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
@@ -44,27 +43,18 @@ namespace jsp
          * IF THE RETURNED bool IS FALSE: SUCH A BARKER NEVER EXISTED
          * OTHERWISE: THE RETURNED INSTANCE MAY NOT NECESSARILY BE HEALTHY
          */
-        pair<bool, JSObject*> getInstance(const string &name); //
+        pair<bool, JSObject*> getInstance(const string &name);
     }
     
     void barker::setup(JSObject *instance, ptrdiff_t barkerId, const string &name)
     {
-        assert(instance);
-        assert(barkerId >= 0);
-        
-        RootedObject rootedInstance(cx, instance);
-        
-        if (barkerId > 0)
+        for (auto &element : instances)
         {
-            /*
-             * IN CASE THE NEW INSTANCE IS ALLOCATED AT THE ADDRESS OF A
-             * PREVIOUS BARKER NOT FINALIZED DURING Barker::forceGC()
-             */
-            maybeCleanup(instance);
+            if (instance == element.second)
+            {
+                assert(false); // THIS SHOULD NEVER HAPPEN, UNLESS BARKER-FINALIZATION IS BROKEN
+            }
         }
-        
-        instances[barkerId] = instance;
-        JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
         
         // ---
         
@@ -87,9 +77,13 @@ namespace jsp
         
         // ---
         
+        RootedObject rootedInstance(cx, instance);
+        
+        instances[barkerId] = instance;
+        JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
+        
         RootedValue rootedId(cx, Int32Value(barkerId));
         JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
-
         
         RootedValue rootedName(cx, StringValue(toJSString(finalName.data())));
         JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
@@ -97,20 +91,6 @@ namespace jsp
         // ---
         
         LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << finalName << endl; // LOG: VERBOSE
-    }
-    
-    bool barker::maybeCleanup(JSObject *instance)
-    {
-        for (auto &element : instances)
-        {
-            if (instance == element.second)
-            {
-                instances[element.first] = nullptr;
-                return true;
-            }
-        }
-        
-        return false;
     }
     
     string barker::getName(ptrdiff_t barkerId)
@@ -144,7 +124,7 @@ namespace jsp
         
         if (barkerId >= 0)
         {
-            auto instance = instances.at(barkerId); // XXX: NULL ONLY IF FINALIZED DURING Barker::forceGC()
+            auto instance = instances.at(barkerId); // NULL AFTER FINALIZATION
             return make_pair(true, instance);
         }
         
@@ -154,9 +134,11 @@ namespace jsp
 #pragma mark ---------------------------------------- Barker NAMESPACE ----------------------------------------
     
     /*
-     * MORE ON WHY WE PERFORM OUR OWN "ASSISTED" FINALIZATION INSTEAD OF DEFINING A FINALIZER FOR THE CLASS:
+     * IN ORDER TO PROPERLY "WITNESS" GC-MOVING:
+     * BARKERS MUST BE CREATED IN THE NURSERY (JUST LIKE ANY OTHER "PLAIN" JS-OBJECT)
      *
-     * https://github.com/mozilla/gecko-dev/blob/esr31/js/public/RootingAPI.h#L319-320
+     * ASSIGNING A FINALIZER WOULD FORCE BARKERS TO ALWAYS BE TENURED:
+     * https://github.com/mozilla/gecko-dev/blob/esr31/js/public/RootingAPI.h#L318-319
      */
     
     const JSClass Barker::clazz =
@@ -170,7 +152,7 @@ namespace jsp
         JS_EnumerateStub,
         JS_ResolveStub,
         JS_ConvertStub,
-        nullptr,/*finalize*/ // WE WANT BARKERS TO BE CREATED IN THE NURSERY, IN ORDER TO BE ABLE TO "WITNESS" GC-MOVING
+        nullptr,/*finalize*/
         nullptr,
         nullptr,
         nullptr,
@@ -186,7 +168,6 @@ namespace jsp
     const JSFunctionSpec Barker::static_functions[] =
     {
         JS_FS("instances", static_function_instances, 1, 0),
-        JS_FS("forceGC", static_function_forceGC, 0, 0),
         JS_FS_END
     };
     
@@ -217,24 +198,6 @@ namespace jsp
     
     // ---
     
-    void Barker::forceGC()
-    {
-        /*
-         * TODO:
-         *
-         * INSTEAD OF PASSING BY Barker::forceGC():
-         *
-         * - JS_SetGCCallback() COULD BE USED AT THE jsp NAMESPACE LEVEL,
-         *   TOGETHER WITH A CHAIN OF REGISTERABLE GC-CALLBACKS
-         *
-         * - ADVANTAGE: POSSIBILITY TO DETECT ANY FINALIZED BARKER
-         */
-
-        JS_SetGCCallback(rt, Barker::gcCallback, nullptr);
-        JSP::forceGC();
-        JS_SetGCCallback(rt, nullptr, nullptr);
-        
-    }
     void Barker::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
     {
         switch (status)
@@ -262,9 +225,6 @@ namespace jsp
         }
     }
     
-    /*
-     * IMPORTANT: CURRENTLY OCCURS ONLY DURING Barker::forceGC()
-     */
     void Barker::finalize(JSFreeOp *fop, JSObject *obj)
     {
         auto barkerId = -1;
@@ -363,7 +323,6 @@ namespace jsp
         return false;
     }
     
-    
     bool Barker::bark(const char *name)
     {
         bool found;
@@ -386,6 +345,11 @@ namespace jsp
         {
             auto classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
             barker::setup(classInstance, 0, "CLASS-INSTANCE");
+            
+            static bool unique;
+            addGCCallback(&unique, BIND_STATIC3(Barker::gcCallback));
+            
+            // ---
             
             barker::initialized = true;
         }
@@ -462,14 +426,6 @@ namespace jsp
         }
         
         args.rval().setUndefined();
-        return true;
-    }
-    
-    bool Barker::static_function_forceGC(JSContext *cx, unsigned argc, Value *vp)
-    {
-        forceGC();
-        
-        CallArgsFromVp(argc, vp).rval().setUndefined();
         return true;
     }
 }

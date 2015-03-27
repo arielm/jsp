@@ -9,7 +9,6 @@
 #include "jsp/Context.h"
 #include "jsp/WrappedObject.h"
 #include "jsp/WrappedValue.h"
-#include "jsp/Barker.h"
 
 #include "chronotext/Log.h"
 #include "chronotext/incubator/utils/FileCapture.h"
@@ -25,8 +24,11 @@ namespace jsp
 {
     namespace intern
     {
-        map<void*, TracerCallbackFnType> tracers;
-        void traceCallback(JSTracer *trc, void *data);
+        map<void*, TracerCallbackFnType> tracerCallbacks;
+        void tracerCallback(JSTracer *trc, void *data);
+        
+        map<void*, GCCallbackFnType> gcCallbacks;
+        void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
         
         struct Stringifier;
         
@@ -62,9 +64,8 @@ namespace jsp
     {
         if (!intern::postInitialized && rt && cx)
         {
-            JS_AddExtraGCRootsTracer(rt, intern::traceCallback, nullptr);
-            
-            Barker::init();
+            JS_AddExtraGCRootsTracer(rt, intern::tracerCallback, nullptr);
+            JS_SetGCCallback(rt, intern::gcCallback, nullptr);
             
             // ---
             
@@ -78,8 +79,11 @@ namespace jsp
     {
         if (intern::postInitialized && rt && cx)
         {
-            JS_RemoveExtraGCRootsTracer(rt, intern::traceCallback, nullptr);
-            intern::tracers.clear();
+            JS_RemoveExtraGCRootsTracer(rt, intern::tracerCallback, nullptr);
+            intern::tracerCallbacks.clear();
+            
+            JS_SetGCCallback(rt, nullptr, nullptr);
+            intern::gcCallbacks.clear();
             
             // ---
             
@@ -92,23 +96,45 @@ namespace jsp
     void addTracerCallback(void *tracer, const TracerCallbackFnType &fn)
     {
         assert(intern::postInitialized);
-        intern::tracers.emplace(tracer, fn);
+        intern::tracerCallbacks.emplace(tracer, fn);
     }
     
     void removeTracerCallback(void *tracer)
     {
         assert(intern::postInitialized);
-        intern::tracers.erase(tracer);
+        intern::tracerCallbacks.erase(tracer);
     }
     
-    void intern::traceCallback(JSTracer *trc, void *data)
+    void intern::tracerCallback(JSTracer *trc, void *data)
     {
-        for (auto &element : tracers)
+        for (auto &element : tracerCallbacks)
         {
             element.second(trc);
         }
     }
     
+#pragma mark ---------------------------------------- CENTRALIZED GC-CALLBACKS ----------------------------------------
+
+    void addGCCallback(void *data, const GCCallbackFnType &fn)
+    {
+        assert(intern::postInitialized);
+        intern::gcCallbacks.emplace(data, fn);
+    }
+    
+    void removeGCCallback(void *data)
+    {
+        assert(intern::postInitialized);
+        intern::gcCallbacks.erase(data);
+    }
+    
+    void intern::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
+    {
+        for (auto &element : gcCallbacks)
+        {
+            element.second(rt, status, data);
+        }
+    }
+
 #pragma mark ---------------------------------------- VALUE TO TYPE (MAYBE) ----------------------------------------
     
     bool toObjectMaybe(HandleValue &&value, JSObject **result)

@@ -13,6 +13,7 @@
  */
 
 #include "jsp/Manager.h"
+#include "jsp/Barker.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -32,7 +33,7 @@ namespace jsp
     const JSClass Manager::global_class =
     {
         "global",
-        JSCLASS_GLOBAL_FLAGS | JSCLASS_HAS_PRIVATE,
+        JSCLASS_GLOBAL_FLAGS,
         JS_PropertyStub,
         JS_DeletePropertyStub,
         JS_PropertyStub,
@@ -45,6 +46,13 @@ namespace jsp
         nullptr,
         nullptr,
         JS_GlobalObjectTraceHook
+    };
+    
+    const JSFunctionSpec Manager::global_functions[]
+    {
+        JS_FS("print", function_print, 0, 0),
+        JS_FS("forceGC", function_forceGC, 0, 0),
+        JS_FS_END
     };
     
 #pragma mark ---------------------------------------- CALLBACKS ----------------------------------------
@@ -114,7 +122,7 @@ namespace jsp
         LOGI << "JS " << errorPrefix << " " << errorBody << endl; // TODO: IT SHOULD BE POSSIBLE TO DEFINE WHICH std::ostream IS USED
     }
     
-    bool Manager::print(JSContext *cx, unsigned argc, Value *vp)
+    bool Manager::function_print(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
         
@@ -153,6 +161,14 @@ namespace jsp
         return true;
     }
     
+    bool Manager::function_forceGC(JSContext *cx, unsigned argc, Value *vp)
+    {
+        JSP::forceGC();
+        
+        CallArgsFromVp(argc, vp).rval().setUndefined();
+        return true;
+    }
+    
 #pragma mark ---------------------------------------- LIFECYCLE ----------------------------------------
     
     Manager::~Manager()
@@ -166,9 +182,9 @@ namespace jsp
         {
             if (performInit() && jsp::postInit())
             {
-                JS_DefineFunction(cx, globalHandle(), "print", print, 0, 0);
+                JS_DefineFunctions(cx, globalHandle(), global_functions);
                 
-                JS_SetPrivate(globalHandle(), this); // XXX
+                Barker::init();
                 
                 // ---
                 

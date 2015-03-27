@@ -25,7 +25,8 @@ namespace jsp
         // ---
 
         static void reportError(JSContext *cx, const char *message, JSErrorReport *report);
-        static bool print(JSContext *cx, unsigned argc, Value *vp);
+        static bool function_print(JSContext *cx, unsigned argc, Value *vp);
+        static bool function_forceGC(JSContext *cx, unsigned argc, Value *vp);
 
         static const JSClass global_class;
         static const JSFunctionSpec global_functions[];

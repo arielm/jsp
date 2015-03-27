@@ -82,7 +82,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     wrapped = Barker::construct("ASSIGNED-TO-VALUE 1");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
     
     // ---
@@ -116,7 +116,7 @@ void TestingWrappedValue::testAutomaticConversion()
     wrapped = Barker::construct("ASSIGNED-TO-VALUE 2");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
     
     // ---
@@ -135,7 +135,7 @@ void TestingWrappedValue::testObjectStackRooting1()
     RootedObject rootedObject(cx, Barker::construct("STACK-ROOTED STANDALONE"));
     WrappedValue wrapped(rootedObject.get());
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
 }
 
@@ -143,7 +143,7 @@ void TestingWrappedValue::testObjectStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, Barker::construct("STACK-ROOTED VIA-VALUE"));
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
 }
 
@@ -257,7 +257,7 @@ if (true)
     RootedString rooted(cx, toJSString("not atomized"));
     wrapped = StringValue(rooted);
     
-    Barker::forceGC();
+    JSP::forceGC();
     
     if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE"))
     {
@@ -271,7 +271,7 @@ else
     string atomized = "atomized";
     wrapped = StringValue(Atomize(cx, atomized.data(), atomized.size()));
     
-    Barker::forceGC();
+    JSP::forceGC();
     
     if (JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE")) // REASON: ATOMS ARE NOT ROOTED BY DEFAULT
     {

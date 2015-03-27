@@ -21,8 +21,11 @@
  *
  * TODO:
  *
- * 1) WE COULD DIFFERENTIATE BETWEEN JS-CREATED OR CPP-CREATED BARKERS
- *    - E.G. VIA A METHOD OR WHEN WRITING THE BARKER'S NAME...
+ * 1) IT WOULD BE BETTER TO HAVE:
+ *    - Barker.instances['some barker name']
+ *    - INSTEAD OF AS CURRENTLY:
+ *      - Barker.instances('some barker name']
+ *    - NOT CLEAR HOW TO ACHIEVE THIS SO FAR...
  *
  * 2) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
  *
@@ -77,8 +80,6 @@ namespace jsp
         
         static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
         static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
-        
-        static void forceGC();
         
         // ---
         
@@ -139,6 +140,5 @@ namespace jsp
          * STATIC JS FUNCTIONS
          */
         static bool static_function_instances(JSContext *cx, unsigned argc, Value *vp);
-        static bool static_function_forceGC(JSContext *cx, unsigned argc, Value *vp);
     };
 }

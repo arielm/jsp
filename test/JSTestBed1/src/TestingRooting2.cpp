@@ -75,7 +75,7 @@ void TestingRooting2::handleObject1(HandleObject object, const string &source)
 
 void TestingRooting2::handleWrappedBarker1(Handle<WrappedObject> wrappedBarker)
 {
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::bark(wrappedBarker), "HEALTHY BARKER");
 }
 
@@ -84,7 +84,7 @@ void TestingRooting2::handleMutableWrappedBarker1(MutableHandle<WrappedObject> w
     JSObject *barker = wrappedBarker.get();
     wrappedBarker.set(nullptr);
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(!Barker::bark(barker), "UNHEALTHY BARKER");
 }
 
@@ -103,7 +103,7 @@ void TestingRooting2::testAnalysis1()
     JSP_CHECK(JSP::isInsideNursery(object));
     JSP_CHECK(JSP::writeGCDescriptor(object) == 'n');
     
-    Barker::forceGC();
+    JSP::forceGC();
     
     JSP_CHECK(!JSP::isHealthy(object)); // REASON: object NOT ROOTED
     JSP_CHECK(JSP::writeGCDescriptor(object) == 'P');
@@ -155,11 +155,11 @@ void TestingRooting2::testWrappedObjectAssignment1()
         
         Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
         
-        Barker::forceGC();
+        JSP::forceGC();
         JSP_CHECK(Barker::bark(rootedWrapped.address()), "HEALTHY BARKER"); // REASON: BARKER ROOTED
     }
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(!Barker::isHealthy("ASSIGNED 1A"), "UNHEALTHY BARKER"); // REASON: BARKER NOT STACK-ROOTED ANYMORE
 }
 
@@ -223,7 +223,7 @@ void TestingRooting2::testBarkerFinalization1()
     {
         Barker::construct("FINALIZATION 1"); // CREATED IN THE NURSERY, AS INTENDED
         
-        Barker::forceGC();
+        JSP::forceGC();
         
         /*
          * INTERESTING FACT:
@@ -297,7 +297,7 @@ void TestingRooting2::testWrappedBarker1()
     
     JSP_CHECK(Barker::bark(&wrapped), "HEALTHY BARKER");
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("WRAPPED 1"), "FINALIZED BARKER");
 }
 
@@ -310,7 +310,7 @@ void TestingRooting2::testRootedWrappedBarker1()
         handleWrappedBarker1(rootedWrapped);
     }
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("ROOTED-WRAPPED 1"), "FINALIZED BARKER");
 }
 
@@ -323,7 +323,7 @@ void TestingRooting2::testHeapWrappedBarker1()
         handleWrappedBarker1(heapWrapped); // AUTOMATIC-CONVERSION FROM Heap<WrappedObject> TO Handle<WrappedObject>
     }
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("HEAP-WRAPPED 1"), "FINALIZED BARKER");
 }
 
@@ -395,13 +395,13 @@ void TestingRooting2::testHeapWrappedJSBarker1()
          *        DURING WrappedObject::postBarrier(), WHICH AUTOMATICALLY CALLED WHILE ENCLOSED IN A Heap<WrappedObject>
          */
         
-        Barker::forceGC();
+        JSP::forceGC();
         
         JSP_CHECK(!JSP::isHealthy(object), "MOVED BARKER"); // ACCESSING THE BARKER VIA object WOULD BE A GC-HAZARD
         JSP_CHECK(Barker::bark(heapWrapped.address()), "HEALTHY BARKER"); // PASSING THROUGH Heap<WrappedObject> LEADS TO THE MOVED BARKER
     }
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("heap-wrapped-js 1"), "FINALIZED BARKER");
 }
 
@@ -427,7 +427,7 @@ void TestingRooting2::testBarkerPassedToJS1()
         call(globalHandle(), "handleBarker1", value);
     }
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("PASSED-TO-JS 1"), "FINALIZED BARKER"); // REASON: BARKER NOT ROOTED ANYMORE
 }
 
@@ -440,7 +440,7 @@ void TestingRooting2::testBarkerJSGlobalFunctionality()
     
     executeScript("print(new Barker('js-created unrooted 1').id, Barker.instances('js-created unrooted 1').name)");
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("js-created unrooted 1"), "FINALIZED BARKER");
 
     // ---
@@ -453,7 +453,7 @@ void TestingRooting2::testBarkerJSGlobalFunctionality()
     Barker::construct("CPP-CREATED UNROOTED 1");
     executeScript("Barker.instances('CPP-CREATED UNROOTED 1').bark();");
     
-    Barker::forceGC();
+    JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("CPP-CREATED UNROOTED 1"), "FINALIZED BARKER");
     
     /*
@@ -469,9 +469,9 @@ void TestingRooting2::testBarkerJSGlobalFunctionality()
     {
         Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<Value>());
         
-        executeScript("Barker.forceGC(); Barker.instances('HEAP-WRAPPED 2').bark()");
+        executeScript("forceGC(); Barker.instances('HEAP-WRAPPED 2').bark()");
     }
     
-    executeScript("Barker.forceGC(); print(Barker.isHealthy('HEAP-WRAPPED 2'))");
+    executeScript("forceGC(); print(Barker.isHealthy('HEAP-WRAPPED 2'))");
     */
 }

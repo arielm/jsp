@@ -30,7 +30,12 @@
 #include "unicode/unistr.h" // TODO: CONSIDER REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
+#define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
+#define BIND_STATIC3(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+
 #define BIND_INSTANCE1(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
+#define BIND_INSTANCE2(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1, std::placeholders::_2)
+#define BIND_INSTANCE3(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1, std::placeholders::_3)
 
 namespace jsp
 {
@@ -40,7 +45,7 @@ namespace jsp
     class WrappedValue;
 
     typedef std::function<void(JSTracer*)> TracerCallbackFnType;
-    typedef std::function<void(JSRuntime *rt, JSGCStatus status, void *data)> GCCallbackFnType; // TODO
+    typedef std::function<void(JSRuntime *rt, JSGCStatus status, void *data)> GCCallbackFnType;
 
     // ---
     
@@ -59,6 +64,9 @@ namespace jsp
     
     void addTracerCallback(void *tracer, const TracerCallbackFnType &fn);
     void removeTracerCallback(void *tracer);
+    
+    void addGCCallback(void *data, const GCCallbackFnType &fn);
+    void removeGCCallback(void *data);
     
     // ---
     
@@ -369,7 +377,7 @@ namespace JSP
      * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
      *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
      *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
-     *      - MOST COMPLICTED CASE: JSString INSIDE JS::Value
+     *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
      *      - TODO: FOLLOW-UP
      *
      * HENCE THE NEED FOR JSP::isHeathy(T*)
