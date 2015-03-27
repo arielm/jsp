@@ -76,7 +76,7 @@ namespace jsp
         }
         else if (getId(name) >= 0)
         {
-            finalName = name + " [" + ci::toString(barkerId) + "]"; // NAMES MUST BE UNIQUE (NECESSARY FOR BARKER-FORENSIC)
+            finalName = name + " [" + ci::toString(barkerId) + "]"; // NAMES MUST BE UNIQUE (NECESSARY FOR BARKER-FORENSICS)
         }
         else
         {
@@ -229,64 +229,37 @@ namespace jsp
          *
          * - ADVANTAGE: POSSIBILITY TO DETECT ANY FINALIZED BARKER
          */
-        
-        JS_SetFinalizeCallback(rt, Barker::finalizeCallback);
-        JS_SetGCCallback(rt, Barker::gcCallback, nullptr);
-        
-        JSP::forceGC();
-        
-        JS_SetFinalizeCallback(rt, nullptr);
-        JS_SetGCCallback(rt, nullptr, nullptr);
-    }
-    
-    void Barker::finalizeCallback(JSFreeOp *fop, JSFinalizeStatus status, bool isCompartmentGC)
-    {
-        switch (status)
-        {
-            case JSFINALIZE_GROUP_START:
-            {
-                LOGD << "JSFINALIZE_GROUP_START" << endl; // LOG: VERBOSE
-                break;
-            }
-                
-            case JSFINALIZE_GROUP_END:
-            {
-                LOGD << "JSFINALIZE_GROUP_END" << endl; // LOG: VERBOSE
-                break;
-            }
-                
-            case JSFINALIZE_COLLECTION_END:
-            {
-                LOGD << "JSFINALIZE_COLLECTION_END" << endl; // LOG: VERBOSE
-                break;
-            }
-        }
-    }
 
+        LOGD << "Barker GC-BEGIN" << endl; // LOG: VERBOSE
+
+        JS_SetGCCallback(rt, Barker::gcCallback, nullptr);
+        JSP::forceGC();
+        JS_SetGCCallback(rt, nullptr, nullptr);
+        
+        LOGD << "Barker GC-END" << endl; // LOG: VERBOSE
+    }
     void Barker::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
     {
         switch (status)
         {
             case JSGC_BEGIN:
-            {
-                LOGD << "JSGC_BEGIN" << endl; // LOG: VERBOSE
                 break;
-            }
                 
             case JSGC_END:
             {
+                auto freeOp = rt->defaultFreeOp();
+                
                 for (auto &element : barker::instances)
                 {
                     if (element.second)
                     {
                         if (!JSP::isHealthy(element.second))
                         {
-                            finalize(rt->defaultFreeOp(), element.second);
+                            finalize(freeOp, element.second);
                         }
                     }
                 }
                 
-                LOGD << "JSGC_END" << endl; // LOG: VERBOSE
                 break;
             }
         }
@@ -299,20 +272,25 @@ namespace jsp
     {
         auto barkerId = -1;
         
-        for (auto &element : barker::instances)
+        if (obj)
         {
-            if (obj == element.second)
+            for (auto &element : barker::instances)
             {
-                barkerId = element.first;
-                break;
+                if (obj == element.second)
+                {
+                    barkerId = element.first;
+                    break;
+                }
             }
         }
         
         if (barkerId >= 0)
         {
             /*
-             * PRESERVING ENTRY IN barker::names
-             * - NECESSARY FOR BARKER-FORENSIC (E.G. Barker::isFinalized(), Barker::bark(), ETC.)
+             * NECESSARY FOR BARKER-FORENSICS:
+             *
+             * - NULLING (I.E. NOT ERASING) ENTRY IN barker::instances
+             * - PRESERVING ENTRY IN barker::names
              */
             barker::instances[barkerId] = nullptr;
             
