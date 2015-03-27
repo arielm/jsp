@@ -30,21 +30,21 @@ void TestingRooting2::performShutdown()
 
 void TestingRooting2::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testAnalysis1)
         JSP_TEST(force || true, testAnalysis2)
         JSP_TEST(force || true, testAnalysis3)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
         JSP_TEST(force || true, testWrappedObjectAssignment2)
         JSP_TEST(force || true, testWrappedObjectAssignment3)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testBarkerFinalization1)
         JSP_TEST(force || true, testHeapWrappedObject1)
@@ -56,7 +56,7 @@ void TestingRooting2::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || false, testBarkerPassedToJS1);
+        JSP_TEST(force || true, testBarkerPassedToJS1);
         JSP_TEST(force || true, testBarkerJSGlobalFunctionality);
     }
 }

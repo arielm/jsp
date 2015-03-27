@@ -21,12 +21,14 @@
  *
  * TODO:
  *
- * 0) WE COULD DIFFERENTIATE BETWEEN JS-CREATED OR CPP-CREATED BARKERS
+ * 1) WE COULD DIFFERENTIATE BETWEEN JS-CREATED OR CPP-CREATED BARKERS
  *    - E.G. VIA A METHOD OR WHEN WRITING THE BARKER'S NAME...
  *
- * 1) TRY TO USE std:forward IN TEMPLATES WHENEVER POSSIBLE
+ * 2) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
  *
- * 2) FOR THE NEXT "CUSTOM NATIVE OBJECT" (E.G. Profiler):
+ * 3) CONSIDER USING SOME KIND OF "BI-MAP" FOR barker::instances AND barker::names
+ *
+ * 4) FOR THE NEXT "CUSTOM NATIVE OBJECT" (E.G. Profiler):
  *    - THE JS construct() COULD USE JS_NewObjectForConstructor
  *      - STUDY constructHook IN testNewObject.cpp:
  *        - TO UNDERSTAND:
@@ -43,7 +45,7 @@
  *      - CHECK THE "Helper Macros for creating JSClasses that function as proxies" (EG. "PROXY_CLASS_WITH_EXT") IN jsfriendapi.h
  *        - EXAMPLE IN jsapi-tests/testBug604087.cpp
  *
- * 3) STUDY testProfileStrings.cpp AND THE Probes MECHANISM
+ * 5) STUDY testProfileStrings.cpp AND THE Probes MECHANISM
  */
 
 #pragma once
@@ -55,13 +57,6 @@ namespace jsp
     class Barker
     {
     public:
-        static int finalizeCount;
-        static int traceCount;
-        
-        static void forceGC();
-        
-        // ---
-        
         operator JSObject* () const
         {
             return object;
@@ -74,7 +69,17 @@ namespace jsp
 
         template<class T>
         T as() const;
-
+        
+        // ---
+        
+        static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
+        static std::string getName(JSObject *instance); // RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
+        
+        static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
+        static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
+        
+        static void forceGC();
+        
         // ---
         
         /*
@@ -88,14 +93,6 @@ namespace jsp
         {
             return maybeBark(toObject(std::forward<T>(thing)));
         }
-        
-        // ---
-        
-        static ptrdiff_t getId(JSObject *instance); // CAN RETURN THE ID OF A POISONED BARKER (I.E. AFTER "NON-ASSISTED" FINALIZATION)
-        static std::string getName(JSObject *instance); // CAN RETURN THE NAME OF A POISONED BARKER (I.E. AFTER "NON-ASSISTED" FINALIZATION)
-        
-        static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
-        static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
         
         // ---
 

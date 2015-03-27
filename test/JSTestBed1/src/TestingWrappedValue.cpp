@@ -43,7 +43,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting1);
         JSP_TEST(force || true, testStringStackRooting2);
     }
-
+    
     if (force || true)
     {
         /*
@@ -79,7 +79,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
 
     // --
     
-    wrapped = Barker::construct("ASSIGNED-TO-VALUE").as<OBJECT>();
+    wrapped = Barker::construct("ASSIGNED-TO-VALUE 1");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     Barker::forceGC();
@@ -87,7 +87,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     
     // ---
     
-    wrapped = toValue("assigned-to-value");
+    wrapped = toValue("assigned-to-value 1");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
@@ -113,7 +113,7 @@ void TestingWrappedValue::testAutomaticConversion()
     
     // --
     
-    wrapped = Barker::construct("ASSIGNED-TO-VALUE").as<OBJECT>();
+    wrapped = Barker::construct("ASSIGNED-TO-VALUE 2");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     Barker::forceGC();
@@ -121,7 +121,7 @@ void TestingWrappedValue::testAutomaticConversion()
     
     // ---
     
-    wrapped = "assigned-to-value";
+    wrapped = "assigned-to-value 2";
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
@@ -141,7 +141,7 @@ void TestingWrappedValue::testObjectStackRooting1()
 
 void TestingWrappedValue::testObjectStackRooting2()
 {
-    Rooted<WrappedValue> rootedWrapped(cx, Barker::construct("STACK-ROOTED VIA-VALUE").as<OBJECT>());
+    Rooted<WrappedValue> rootedWrapped(cx, Barker::construct("STACK-ROOTED VIA-VALUE"));
     
     Barker::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
