@@ -283,6 +283,18 @@ namespace jsp
     }
     
     template <>
+    JSObject* toObject(Rooted<WrappedObject> *rooted)
+    {
+        return rooted ? rooted->get().unsafeGet() : nullptr;
+    }
+    
+    template <>
+    JSObject* toObject(Heap<WrappedObject> *heap)
+    {
+        return heap ? const_cast<JSObject*>(heap->get().address()) : nullptr;
+    }
+    
+    template <>
     JSObject* toObject(Value &value)
     {
         return value.isObject() ? value.toObjectOrNull() : nullptr;
@@ -316,6 +328,28 @@ namespace jsp
     JSObject* toObject(MutableHandle<WrappedValue> handle)
     {
         return handle.get().isObject() ? handle.get().toObjectOrNull() : nullptr;
+    }
+    
+    template <>
+    JSObject* toObject(Rooted<WrappedValue> *rooted)
+    {
+        if (rooted && rooted->get().isObject())
+        {
+            return rooted->get().toObjectOrNull();
+        }
+        
+        return nullptr;
+    }
+    
+    template <>
+    JSObject* toObject(Heap<WrappedValue> *heap)
+    {
+        if (heap && heap->get().isObject())
+        {
+            return heap->get().toObjectOrNull();
+        }
+        
+        return nullptr;
     }
     
 #pragma mark ---------------------------------------- MISC ----------------------------------------

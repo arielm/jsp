@@ -208,7 +208,7 @@ void TestingRooting2::testWrappedObjectAssignment1()
         Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
         
         JSP::forceGC();
-        JSP_CHECK(Barker::bark(rootedWrapped.address()), "HEALTHY BARKER"); // REASON: BARKER ROOTED
+        JSP_CHECK(Barker::bark(&rootedWrapped), "HEALTHY BARKER"); // REASON: BARKER ROOTED
     }
     
     JSP::forceGC();
@@ -260,14 +260,11 @@ void TestingRooting2::testWrappedObjectAssignment3()
 // ---
 
 /*
- * THE FOLLOWING SHOULD BE FURTHER INVESTIGATED REGARDING "GENERIC JS-OBJECT FINALIZATION" (TODO)
+ * TODO:
  *
- * 1) SPIDERMONKEY'S "PROBES" MECHANISM (DEFINED /js/src/vm/Probes), NOTABLY:
- *    bool FinalizeObject(JSObject *obj);
- *
- * 2) CHECK THE NewObjectGCKind() METHOD DEFINED IN jsobj.cpp
- *    - IT SEEMS TO DEFINE A CREATED-OBJECT'S "FINALIZE" METHOD
- *      - E.G. gc::FINALIZE_OBJECT4
+ * 1) BRING-BACK THE POSSIBILITY TO ANALYSE OBJECTS DURING SPIDERMONKEY'S FINALIZATION-CALLBACK
+ * 2) USE IT TO DEMONSTRATE THE "INTERESTING FACT" MENTIONED IN testBarkerFinalization1()
+ * 3) USE IT TO SOLVE "MYSTERY" MENTIONED IN testHeapWrappedObject1()
  */
 
 void TestingRooting2::testBarkerFinalization1()
@@ -281,42 +278,50 @@ void TestingRooting2::testBarkerFinalization1()
          * INTERESTING FACT:
          *
          * WHEN AN OBJECT IS GARBAGE-COLLECTED WHILE IN THE NURSERY, SPIDERMONKEY
-         * DOES NOT CONSIDER IT AS "ABOUT TO BE FINALIZED", AND SIMPLY MAKE IT POISONED
+         * DOES NOT CONSIDER IT AS "ABOUT TO BE FINALIZED", AND SIMPLY MAKES IT POISONED
          *
          * THIS IS PROBABLY THE REASON WHY CLASSES WITH A FINALIZE-CALLBACK ARE
-         * CONSTRUCTING OBJECTS DIRECTLY IN THE TENURED-HEAP
+         * ALLOCATING OBJECTS DIRECTLY IN THE TENURED-HEAP
          */
         
         JSP_CHECK(Barker::isFinalized("FINALIZATION 1"), "FINALIZED BARKER");
     }
 }
 
+/*
+ * TODO: THE FOLLOWING SHOULD BE FURTHER INVESTIGATED REGARDING "GENERIC JS-OBJECT CREATION"
+ *
+ * 1) THE NewObjectGCKind() METHOD DEFINED IN jsobj.cpp
+ *    - IT SEEMS TO DEFINE A CREATED-OBJECT'S "FINALIZE" METHOD
+ *      - E.G. gc::FINALIZE_OBJECT4
+ *
+ * 2) APPEARING IN THE (INSIGHTFUL NewObject() METHOD) DEFINED IN jsobj.cpp:
+ *    gc::InitialHeap heap = GetInitialHeap(newKind, clasp);
+ *
+ * 3) SPIDERMONKEY'S "PROBES" MECHANISM (DEFINED /js/src/vm/Probes), NOTABLY:
+ *    - bool CreateObject(ExclusiveContext *cx, JSObject *obj)
+ *    - bool FinalizeObject(JSObject *obj)
+ */
+
 void TestingRooting2::testHeapWrappedObject1()
 {
     /*
-     * OBJECT APPEARS TO BE ALLOCATED DIRECTLY IN THE TENURED-HEAP, BUT IT COULD BE AN ILLUSION
+     * MYSTERY: OBJECT APPEARS TO BE ALLOCATED DIRECTLY IN THE TENURED-HEAP!?
+     *
      *
      * FACTS:
-     * - IT DOESN'T MATTER IF {} OR "new Object({}) IS USED
-     * - A "GENERIC JS-OBJECT" CLASS DOES NOT HAVE A finalize CALLBACK
-     *   - WHICH IS A WELL-KNOWN NURSERY-SKIP REASON...
      *
-     * POSSIBLY::
-     * - THE OBJECT IS CREATED IN THE NURSERY
-     * - JS::Evaluate() REQUIRES THE "RETURNED VALUE" TO BE ROOTED
-     *   - WHICH IN TURN MOVES THE OBJECT TO THE TENURED-HEAP?
+     * 1) IT DOESN'T MATTER IF {} OR "new Object({}) IS USED
      *
+     * 2) THE "GENERIC JS-OBJECT" CLASS DOES NOT APPEAR TO HAVE A FINALIZE-CALLBACK
+     *    - ASSUMING THIS IS THE CLASS USED HERE
      *
-     * THE FOLLOWING SHOULD BE FURTHER INVESTIGATED REGARDING "GENERIC JS-OBJECT CREATION" (TODO)
-     *
-     * 1) APPEARING IN THE (INSIGHTFUL NewObject() METHOD) DEFINED IN jsobj.cpp:
-     *    gc::InitialHeap heap = GetInitialHeap(newKind, clasp);
-     *
-     * 2) SPIDERMONKEY'S "PROBES" MECHANISM (DEFINED /js/src/vm/Probes), NOTABLY:
-     *    bool CreateObject(ExclusiveContext *cx, JSObject *obj);
+     * 3) A BARKER CREATED SIMILARELY VIA evaluateObject() WOULD BE ALLOCATED IN THE NURSERY
+     *    - SEE testHeapWrappedJSBarker1()
      */
     
-    JSObject *object = evaluateObject("({foo: 'baz', bar: 1.5})", __FILE__, __LINE__);
+    JSObject *object = evaluateObject("({foo: 'baz', bar: 1.5})");
+    JSP_CHECK(!JSP::isInsideNursery(object), "OBJECT SOMEHOW TENURED");
     
     {
         if (true)
@@ -415,13 +420,13 @@ jsp::forceGC() | END
 
 void TestingRooting2::testHeapWrappedJSBarker1()
 {
-    JSObject *object = evaluateObject("new Barker('heap-wrapped-js 1')", __FILE__, __LINE__); // CREATED IN THE NURSERY, AS INTENDED
+    JSObject *object = evaluateObject("new Barker('heap-wrapped-js 1')"); // CREATED IN THE NURSERY, AS INTENDED
     
     {
         Heap<WrappedObject> heapWrapped(object);
         
         /*
-         * GC WILL MOVE THE BARKER TO THE "TENURED-HEAP", TURNING object INTO A DANGLING POINTER
+         * GC WILL MOVE THE BARKER TO THE TENURED-HEAP, TURNING object INTO A DANGLING POINTER
          *
          * DURING GC:
          *
@@ -452,7 +457,7 @@ void TestingRooting2::testHeapWrappedJSBarker1()
         JSP::forceGC();
         
         JSP_CHECK(!JSP::isHealthy(object), "MOVED BARKER"); // ACCESSING THE BARKER VIA object WOULD BE A GC-HAZARD
-        JSP_CHECK(Barker::bark(heapWrapped.address()), "HEALTHY BARKER"); // PASSING THROUGH Heap<WrappedObject> LEADS TO THE MOVED BARKER
+        JSP_CHECK(Barker::bark(&heapWrapped)); // PASSING THROUGH Heap<WrappedObject> LEADS TO THE MOVED BARKER
     }
     
     JSP::forceGC();
@@ -490,13 +495,13 @@ void TestingRooting2::testBarkerPassedToJS1()
 
 void TestingRooting2::testHeapWrappedJSBarker2()
 {
-    executeScript("new Barker('HEAP-WRAPPED 2')");
+    executeScript("new Barker('HEAP-WRAPPED 2')"); // CREATED IN THE NURSERY, AS INTENDED
 
     {
-        Heap<WrappedObject> heapWrapped(Barker::getInstance("HEAP-WRAPPED 2"));
+        Heap<WrappedValue> heapWrapped(Barker::getInstance("HEAP-WRAPPED 2"));
         
         JSP::forceGC();
-        JSP_CHECK(Barker::isHealthy("HEAP-WRAPPED 2"), "HEALTHY BARKER");
+        JSP_CHECK(Barker::bark(&heapWrapped));
     }
     
     JSP::forceGC();

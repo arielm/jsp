@@ -45,7 +45,7 @@ namespace jsp
     class WrappedValue;
 
     typedef std::function<void(JSTracer*)> TracerCallbackFnType;
-    typedef std::function<void(JSRuntime *rt, JSGCStatus status, void *data)> GCCallbackFnType;
+    typedef std::function<void(JSRuntime*, JSGCStatus, void*)> GCCallbackFnType;
 
     // ---
     

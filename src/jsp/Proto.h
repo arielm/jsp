@@ -25,7 +25,7 @@
 
 namespace jsp
 {
-    typedef std::function<bool(CallArgs args)> NativeCallbackFnType;
+    typedef std::function<bool(CallArgs)> NativeCallbackFnType;
     
     struct NativeCallback
     {
