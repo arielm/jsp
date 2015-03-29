@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,7 +44,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
@@ -73,11 +73,11 @@ void TestingWrappedValue::testStackCreationAndAssignment()
 
     // --
     
-    wrapped = Barker::construct("ASSIGNED-TO-VALUE 1");
+    wrapped = ObjectOrNullValue(Barker::construct("ASSIGNED-TO-VALUE 1"));
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
     
     // ---
     
@@ -85,7 +85,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
 }
 
 void TestingWrappedValue::testAutomaticConversion()
@@ -111,7 +111,7 @@ void TestingWrappedValue::testAutomaticConversion()
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
     
     // ---
     
@@ -119,7 +119,7 @@ void TestingWrappedValue::testAutomaticConversion()
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
 }
 
 // ---
@@ -127,7 +127,6 @@ void TestingWrappedValue::testAutomaticConversion()
 void TestingWrappedValue::testObjectStackRooting1()
 {
     RootedObject rootedObject(cx, Barker::construct("STACK-ROOTED STANDALONE"));
-    WrappedValue wrapped(rootedObject.get());
     
     JSP::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
@@ -148,15 +147,15 @@ void TestingWrappedValue::testStringStackRooting1()
     
     JSP::forceGC();
     
-    if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
+    if (JSP_CHECK(JSP::isHealthy(wrapped), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
     {
-        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B');
+        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B'); //
     }
 }
 
 void TestingWrappedValue::testStringStackRooting2()
 {
-    Rooted<WrappedValue> rootedWrapped(cx, toValue("stack-rooted via-value"));
+    Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-value");
     
     JSP::forceGC();
     
