@@ -39,6 +39,12 @@ void TestingRooting2::performRun(bool force)
     
     if (force || true)
     {
+        JSP_TEST(force || true, testBarkerJSFunctionality);
+        JSP_TEST(force || true, testBarkerMixedFunctionality);
+    }
+    
+    if (force || true)
+    {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
         JSP_TEST(force || true, testWrappedObjectAssignment2)
         JSP_TEST(force || true, testWrappedObjectAssignment3)
@@ -57,7 +63,7 @@ void TestingRooting2::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || true, testBarkerPassedToJS1);
-        JSP_TEST(force || true, testBarkerJSGlobalFunctionality);
+        JSP_TEST(force || true, testHeapWrappedJSBarker2);
     }
 }
 
@@ -140,6 +146,52 @@ void TestingRooting2::testAnalysis3()
     
     JSP_CHECK(!JSP::isHealthy(str)); // REASON: str NOT ROOTED
     JSP_CHECK(JSP::writeGCDescriptor(str) == 'P');
+}
+
+// ---
+
+void TestingRooting2::testBarkerJSFunctionality()
+{
+    /*
+     * FULL JS-SIDE FUNCTIONALITY:
+     *
+     * - CREATING UNROOTED BARKER
+     * - ACCESSING id AND name PROPERTIES
+     * - BARKING
+     * - FORCING-GC (BARKER FINALIZED WHILE IN THE NURSERY)
+     * - OBSERVING FINALIZATION
+     */
+    
+    executeScript("\
+                  print(new Barker('js-created unrooted 1').id, Barker.getInstance('js-created unrooted 1').name);\
+                  Barker.bark('js-created unrooted 1');\
+                  forceGC();\
+                  print(Barker.isFinalized('js-created unrooted 1'));\
+                  ");
+}
+
+void TestingRooting2::testBarkerMixedFunctionality()
+{
+    /*
+     * MIXED FUNCTIONALITY:
+     *
+     * - C++ SIDE:
+     *   - CREATING UNROOTED BARKER
+     *   - ACCESSING id AND name
+     *
+     * - JS-SIDE:
+     *   - BARKING
+     *   - FORCING-GC (BARKER FINALIZED WHILE IN THE NURSERY)
+     *   - OBSERVING FINALIZATION
+     */
+    
+    LOGI << Barker::getId(Barker::construct("CPP-CREATED UNROOTED 1")) << " " << Barker::getName(Barker::getInstance("CPP-CREATED UNROOTED 1")) << endl;
+    
+    executeScript("\
+                  Barker.bark('CPP-CREATED UNROOTED 1');\
+                  forceGC();\
+                  print(Barker.isFinalized('CPP-CREATED UNROOTED 1'));\
+                  ");
 }
 
 // ---
@@ -338,26 +390,28 @@ void TestingRooting2::testHeapWrappedBarker1()
  * BEFOREHAND: SIMILAR SOLUTIONS SHOULD BE INVESTIGATED, E.G. /js/src/gdb/
  */
 
-//testHeapWrappedBarker1
-//Barker CONSTRUCTED: 0x10c700000 {Barker 8} [n] | HEAP-WRAPPED 1
-//WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfda70 | value: 0x10c700000 {Barker 8} [n]
-//WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfda80 | value:
-//WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfd958 | value: 0x10c700000 {Barker 8} [n]
-//void WrappedObject::set(JSObject *) 0x7fff5fbfda80 | value: 0x10c700000 {Barker 8} [n]
-//void WrappedObject::postBarrier() 0x7fff5fbfda80 | value: 0x10c700000 {Barker 8} [n]
-//WrappedObject::~WrappedObject() 0x7fff5fbfd958
-//WrappedObject::~WrappedObject() 0x7fff5fbfda70
-//Barker GC-BEGIN
-//Barker TRACED: 0x10d843130 {Barker 8} [W] | HEAP-WRAPPED 1
-//void WrappedObject::trace(JSTracer *) 0x7fff5fbfda80 | value: 0x10d843130 {Barker 8} [W]
-//Barker TRACED: 0x10d843130 {Barker 8} [B] | HEAP-WRAPPED 1
-//Barker GC-END
-//Barker BARKED: 0x10d843130 {Barker 8} [B] | HEAP-WRAPPED 1
-//void WrappedObject::relocate() 0x7fff5fbfda80 | value: 0x10d843130 {Barker 8} [B]
-//WrappedObject::~WrappedObject() 0x7fff5fbfda80
-//Barker GC-BEGIN
-//Barker FINALIZED: 0x10d843130 {Barker 8} [f] | HEAP-WRAPPED 1
-//Barker GC-END
+/*
+testHeapWrappedBarker1
+Barker CONSTRUCTED: 0x10bd00000 {Barker 12} [n] | HEAP-WRAPPED 1
+jsp::WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfb0a0 | value: 0x10bd00000 {Barker 12} [n]
+jsp::WrappedObject::WrappedObject() 0x7fff5fbfb0b0 | value:
+jsp::WrappedObject::WrappedObject(const jsp::WrappedObject &) 0x7fff5fbfaf98 | value: 0x10bd00000 {Barker 12} [n]
+void jsp::WrappedObject::operator=(const jsp::WrappedObject &) 0x7fff5fbfb0b0 | value: 0x10bd00000 {Barker 12} [n]
+void jsp::WrappedObject::postBarrier() 0x7fff5fbfb0b0 | value: 0x10bd00000 {Barker 12} [n]
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfaf98
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb0a0
+jsp::forceGC() | BEGIN
+Barker TRACED: 0x10ce43130 {Barker 12} [W] | HEAP-WRAPPED 1
+void jsp::WrappedObject::trace(JSTracer *) 0x7fff5fbfb0b0 | value: 0x10ce43130 {Barker 12} [B]
+Barker TRACED: 0x10ce43130 {Barker 12} [B] | HEAP-WRAPPED 1
+jsp::forceGC() | END
+Barker BARKED: 0x10ce43130 {Barker 12} [B] | HEAP-WRAPPED 1
+void jsp::WrappedObject::relocate() 0x7fff5fbfb0b0 | value: 0x10ce43130 {Barker 12} [B]
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb0b0
+jsp::forceGC() | BEGIN
+Barker FINALIZED: 0x10ce43130 [P] | HEAP-WRAPPED 1
+jsp::forceGC() | END
+*/
 
 void TestingRooting2::testHeapWrappedJSBarker1()
 {
@@ -392,7 +446,7 @@ void TestingRooting2::testHeapWrappedJSBarker1()
          *      - AT THIS STAGE, THE BARKED WILL BE "BLACK"
          *    - WHY IS WrappedObject::trace INVOKED AT THE FIRST PLACE?
          *      - BECAUSE THE WrappedObject REGISTERED ITSELF TO OUR "CENTRALIZED EXTRA-ROOT-TRACING" SYSTEM
-         *        DURING WrappedObject::postBarrier(), WHICH AUTOMATICALLY CALLED WHILE ENCLOSED IN A Heap<WrappedObject>
+         *        DURING WrappedObject::postBarrier(), WHICH IS AUTOMATICALLY CALLED WHILE ENCLOSED IN A Heap<WrappedObject>
          */
         
         JSP::forceGC();
@@ -408,9 +462,12 @@ void TestingRooting2::testHeapWrappedJSBarker1()
 // ---
 
 /*
- * IT IS NECESSARY TO USE A ROOTED JS::Value WHEN PASSING ARGUMENTS TO A JS-FUNCTION CALLED FROM C++
+ * IT IS NECESSARY TO USE ROOTED VALUES WHEN PASSING ARGUMENTS TO A JS-FUNCTION CALLED FROM C++,
+ * WHICH IN TURNS AFFECTS THE CAPABILITY TO TEST NON-ROOTED OBJECTS FROM ONE "SIDE" (I.E. JS OR C++) TO THE OTHER
  *
- * I.E. ANOTHER STRATEGY IS REQUIRED IN ORDER TO TEST "NON-ROOTED BARKERS CREATED ON THE C++ SIDE" FROM THE JS-SIDE
+ * ANOTHER APPROACH MUST THEREFORE BE USED, AS DEMONSTRATED IN THE FOLLOWING:
+ * - testBarkerJSFunctionality()
+ * - testBarkerMixedFunctionality()
  */
 
 void TestingRooting2::testBarkerPassedToJS1()
@@ -431,47 +488,17 @@ void TestingRooting2::testBarkerPassedToJS1()
     JSP_CHECK(Barker::isFinalized("PASSED-TO-JS 1"), "FINALIZED BARKER"); // REASON: BARKER NOT ROOTED ANYMORE
 }
 
-void TestingRooting2::testBarkerJSGlobalFunctionality()
+void TestingRooting2::testHeapWrappedJSBarker2()
 {
-    /*
-     * UNROOTED BARKER CREATED ON THE JS-SIDE:
-     * - ACCESSING id AND name PROPERTIES FROM THE JS-SIDE, WITHOUT AFFECTING ROOTING
-     */
-    
-    executeScript("print(new Barker('js-created unrooted 1').id, Barker.instances('js-created unrooted 1').name)");
-    
-    JSP::forceGC();
-    JSP_CHECK(Barker::isFinalized("js-created unrooted 1"), "FINALIZED BARKER");
+    executeScript("new Barker('HEAP-WRAPPED 2')");
 
-    // ---
-    
-    /*
-     * UNROOTED BARKER CREATED ON THE C++ SIDE:
-     * - BARKING FROM THE JS-SIDE, WITHOUT AFFECTING ROOTING
-     */
-
-    Barker::construct("CPP-CREATED UNROOTED 1");
-    executeScript("Barker.instances('CPP-CREATED UNROOTED 1').bark();");
-    
-    JSP::forceGC();
-    JSP_CHECK(Barker::isFinalized("CPP-CREATED UNROOTED 1"), "FINALIZED BARKER");
-    
-    /*
-     * TODO:
-     *
-     * 1) IMPLEMENT Barker.isHealthy('name')
-     * 2) IMPLEMENT Barker.bark('name')?
-     * 3) CANCEL Barker::isFinalized()?
-     * 4) THEN CONTINUE WITH THE FOLLOWING...
-     */
-    
-    /*
     {
-        Heap<WrappedValue> heapWrapped(Barker::construct("HEAP-WRAPPED 2").as<Value>());
+        Heap<WrappedObject> heapWrapped(Barker::getInstance("HEAP-WRAPPED 2"));
         
-        executeScript("forceGC(); Barker.instances('HEAP-WRAPPED 2').bark()");
+        JSP::forceGC();
+        JSP_CHECK(Barker::isHealthy("HEAP-WRAPPED 2"), "HEALTHY BARKER");
     }
     
-    executeScript("forceGC(); print(Barker.isHealthy('HEAP-WRAPPED 2'))");
-    */
+    JSP::forceGC();
+    JSP_CHECK(Barker::isFinalized("HEAP-WRAPPED 2"), "FINALIZED BARKER");
 }

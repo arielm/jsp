@@ -167,34 +167,12 @@ namespace jsp
     
     const JSFunctionSpec Barker::static_functions[] =
     {
-        JS_FS("instances", static_function_instances, 1, 0),
+        JS_FS("getInstance", static_function_getInstance, 1, 0),
+        JS_FS("isFinalized", static_function_isFinalized, 1, 0),
+        JS_FS("isHealthy", static_function_isHealthy, 1, 0),
+        JS_FS("bark", static_function_bark, 1, 0),
         JS_FS_END
     };
-    
-    // ---
-    
-    ptrdiff_t Barker::getId(JSObject *instance)
-    {
-        if (JSP::isHealthy(instance))
-        {
-            if (JS_GetClass(instance) == &Barker::clazz)
-            {
-                auto barkerId = reinterpret_cast<ptrdiff_t>(JS_GetPrivate(instance));
-                
-                if (barker::instances.count(barkerId))
-                {
-                    return barkerId;
-                }
-            }
-        }
-        
-        return -1; // I.E. THERE IS NO SUCH A LIVING BARKER
-    }
-    
-    string Barker::getName(JSObject *instance)
-    {
-        return barker::getName(getId(instance));
-    }
     
     // ---
     
@@ -274,6 +252,46 @@ namespace jsp
     }
     
     // ---
+    
+    ptrdiff_t Barker::getId(JSObject *instance)
+    {
+        if (JSP::isHealthy(instance))
+        {
+            if (JS_GetClass(instance) == &Barker::clazz)
+            {
+                auto barkerId = reinterpret_cast<ptrdiff_t>(JS_GetPrivate(instance));
+                
+                if (barker::instances.count(barkerId))
+                {
+                    return barkerId;
+                }
+            }
+        }
+        
+        return -1; // I.E. THERE IS NO SUCH A LIVING BARKER
+    }
+    
+    string Barker::getName(JSObject *instance)
+    {
+        return barker::getName(getId(instance));
+    }
+    
+    JSObject* Barker::getInstance(const char *name)
+    {
+        bool found;
+        JSObject *instance;
+        tie(found, instance) = barker::getInstance(name);
+        
+        if (found)
+        {
+            if (JSP::isHealthy(instance))
+            {
+                return instance;
+            }
+        }
+        
+        return nullptr; // I.E. THERE IS NO SUCH A LIVING BARKER
+    }
     
     bool Barker::isFinalized(const char *name)
     {
@@ -388,7 +406,7 @@ namespace jsp
     
     // ---
     
-    bool Barker::static_function_instances(JSContext *cx, unsigned argc, Value *vp)
+    bool Barker::static_function_getInstance(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
         
@@ -405,7 +423,45 @@ namespace jsp
             }
         }
         
-        args.rval().setUndefined();
-        return true;
+        return false;
+    }
+    
+    bool Barker::static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(isFinalized(toString(args[0]).data()));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Barker::static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(isHealthy(toString(args[0]).data()));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Barker::static_function_bark(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(bark(toString(args[0]).data()));
+            return true;
+        }
+        
+        return false;
     }
 }

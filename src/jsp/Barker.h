@@ -74,6 +74,7 @@ namespace jsp
         
         static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
         static std::string getName(JSObject *instance); // RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
+        static JSObject* getInstance(const char *name); // RETURNS NULL IF THERE IS NO SUCH A LIVING BARKER
         
         static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
         static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
@@ -136,6 +137,9 @@ namespace jsp
         /*
          * STATIC JS FUNCTIONS
          */
-        static bool static_function_instances(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_getInstance(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_bark(JSContext *cx, unsigned argc, Value *vp);
     };
 }

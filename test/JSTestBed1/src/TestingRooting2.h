@@ -29,6 +29,9 @@ public:
     void testAnalysis1();
     void testAnalysis2();
     void testAnalysis3();
+    
+    void testBarkerJSFunctionality();
+    void testBarkerMixedFunctionality();
 
     void testWrappedObjectAssignment1();
     void testWrappedObjectAssignment2();
@@ -42,5 +45,5 @@ public:
     void testHeapWrappedJSBarker1();
     
     void testBarkerPassedToJS1();
-    void testBarkerJSGlobalFunctionality();
+    void testHeapWrappedJSBarker2();
 };
