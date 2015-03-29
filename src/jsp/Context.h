@@ -35,7 +35,7 @@
 
 #define BIND_INSTANCE1(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1)
 #define BIND_INSTANCE2(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1, std::placeholders::_2)
-#define BIND_INSTANCE3(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1, std::placeholders::_3)
+#define BIND_INSTANCE3(CALLABLE, INSTANCE) std::bind(CALLABLE, INSTANCE, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 
 namespace jsp
 {
