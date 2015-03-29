@@ -32,4 +32,6 @@ public:
     void testBooleanComparison();
     void testStringComparison();
     void testAutomaticComparison();
+    
+    void testStackRootedComparison();
 };

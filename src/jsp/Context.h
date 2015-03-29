@@ -301,7 +301,7 @@ namespace jsp
     // ---
     
     /*
-     * TODO: USE toObject TEMPLATE FOR toSource(), stringify(), isFunction(), isHealthy(), ETC.
+     * TODO: USE toObject TEMPLATE FOR toSource(), stringify(), isFunction(), ETC.
      */
     
     template <typename T>
@@ -380,7 +380,7 @@ namespace JSP
      *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
      *      - TODO: FOLLOW-UP
      *
-     * HENCE THE NEED FOR JSP::isHeathy(T*)
+     * HENCE THE NEED FOR JSP::isHealthy(T*)
      */
     
     template<typename T>

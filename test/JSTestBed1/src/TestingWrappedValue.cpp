@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,20 +44,25 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || true)
+    if (force || false)
     {
-        /*
-         * TODO:
-         *
-         * 1) USE STACK-ROOTED, HEAP-ROOTED, ETC. IN COMPARISONS
-         */
-        
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
         
         JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testStringComparison);
         JSP_TEST(force || true, testAutomaticComparison);
+    }
+    
+    if (force || true)
+    {
+        /*
+         * TODO:
+         *
+         * 1) USE HEAP<WrappedValue> IN COMPARISONS
+         */
+        
+        JSP_TEST(force || true, testStackRootedComparison);
     }
 
     /*
@@ -247,6 +252,24 @@ void TestingWrappedValue::testAutomaticComparison()
 
     wrapped = 0;
     JSP_CHECK(!wrapped, "FALSE");
+}
+
+// ---
+
+void TestingWrappedValue::testStackRootedComparison()
+{
+    Rooted<WrappedValue> rootedWrapped1A(cx, 123);
+    Rooted<WrappedValue> rootedWrapped1B(cx, 123);
+    JSP_CHECK(rootedWrapped1A == rootedWrapped1B, "EQUALITY");
+
+    Rooted<WrappedValue> rootedWrapped2A(cx, "hello");
+    Rooted<WrappedValue> rootedWrapped2B(cx, "hello");
+    JSP_CHECK(rootedWrapped2A == rootedWrapped2B, "EQUALITY");
+    
+    JSObject *barker = Barker::construct("BARKER 3");
+    Rooted<WrappedValue> rootedWrapped3A(cx, barker);
+    Rooted<WrappedValue> rootedWrapped3B(cx, barker);
+    JSP_CHECK(rootedWrapped3A == rootedWrapped3B, "EQUALITY");
 }
 
 /*
