@@ -33,5 +33,6 @@ public:
     void testStringComparison();
     void testAutomaticComparison();
     
-    void testStackRootedComparison();
+    void testRootedComparison();
+    void testHeapComparison();
 };

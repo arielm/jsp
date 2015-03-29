@@ -56,20 +56,9 @@ void TestingWrappedValue::performRun(bool force)
     
     if (force || true)
     {
-        /*
-         * TODO:
-         *
-         * 1) USE HEAP<WrappedValue> IN COMPARISONS
-         */
-        
-        JSP_TEST(force || true, testStackRootedComparison);
+        JSP_TEST(force || true, testRootedComparison);
+        JSP_TEST(force || true, testHeapComparison);
     }
-
-    /*
-     * TODO:
-     *
-     * 1) TEST ARRAY-ASSIGNMENT IN Proto
-     */
 }
 
 // ---
@@ -256,7 +245,7 @@ void TestingWrappedValue::testAutomaticComparison()
 
 // ---
 
-void TestingWrappedValue::testStackRootedComparison()
+void TestingWrappedValue::testRootedComparison()
 {
     Rooted<WrappedValue> rootedWrapped1A(cx, 123);
     Rooted<WrappedValue> rootedWrapped1B(cx, 123);
@@ -270,6 +259,22 @@ void TestingWrappedValue::testStackRootedComparison()
     Rooted<WrappedValue> rootedWrapped3A(cx, barker);
     Rooted<WrappedValue> rootedWrapped3B(cx, barker);
     JSP_CHECK(rootedWrapped3A == rootedWrapped3B, "EQUALITY");
+}
+
+void TestingWrappedValue::testHeapComparison()
+{
+    Heap<WrappedValue> heapWrapped1A(123);
+    Heap<WrappedValue> heapWrapped1B(123);
+    JSP_CHECK(heapWrapped1A == heapWrapped1B, "EQUALITY");
+    
+    Heap<WrappedValue> heapWrapped2A("hello");
+    Heap<WrappedValue> heapWrapped2B("hello");
+    JSP_CHECK(heapWrapped2A == heapWrapped2B, "EQUALITY");
+    
+    JSObject *barker = Barker::construct("BARKER 4");
+    Heap<WrappedValue> heapWrapped3A(barker);
+    Heap<WrappedValue> heapWrapped3B(barker);
+    JSP_CHECK(heapWrapped3A == heapWrapped3B, "EQUALITY");
 }
 
 /*
