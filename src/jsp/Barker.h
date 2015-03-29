@@ -70,9 +70,6 @@ namespace jsp
             return ObjectOrNullValue(object);
         }
 
-        template<class T>
-        T as() const;
-        
         // ---
         
         static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
@@ -90,7 +87,7 @@ namespace jsp
         static bool bark(const char *name);
         
         template <typename T>
-        static bool bark(T &&thing)
+        static bool bark(T&& thing)
         {
             return maybeBark(toObject(std::forward<T>(thing)));
         }

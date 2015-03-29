@@ -275,26 +275,6 @@ namespace jsp
     
     // ---
     
-    /*
-     * TODO:
-     *
-     * CHECK IF THIS CAN HELP WITH THE FOLOWING 2: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsobj.h#L1128-1138
-     */
-    
-    template <>
-    JSObject* Barker::as() const
-    {
-        return object;
-    }
-    
-    template <>
-    Value Barker::as() const
-    {
-        return ObjectOrNullValue(object);
-    }
-    
-    // ---
-    
     bool Barker::isFinalized(const char *name)
     {
         bool found;
