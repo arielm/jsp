@@ -130,7 +130,7 @@ void TestingJS::testSetter1()
     RootedObject function(cx, JS_GetFunctionObject(JS_NewFunction(cx, setter1, 0, 0, NullPtr(), "set")));
     
     JS_DefineProperty(cx, globalHandle(), "oneW",
-                      JS::UndefinedHandleValue, JSPROP_SETTER| JSPROP_PERMANENT,
+                      JS::UndefinedHandleValue, JSPROP_SETTER | JSPROP_PERMANENT,
                       nullptr,
                       JS_DATA_TO_FUNC_PTR(JSStrictPropertyOp, (JSObject*)function));
     
@@ -194,7 +194,6 @@ void TestingJS::testGetterSetter1()
  * MORE:
  * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/Shape.h#L37-100
  * https://github.com/ricardoquesada/Spidermonkey/blob/master/js/src/vm/Shape.h#L469-514
- *
  */
 
 void TestingJS::testShapes1()

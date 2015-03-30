@@ -26,6 +26,8 @@
 
 #include <functional>
 #include <cassert>
+#include <map>
+#include <sstream>
 
 #include "unicode/unistr.h" // TODO: CONSIDER REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
 
@@ -341,63 +343,37 @@ namespace js
     };
 }
 
-namespace JSP
+class JSP
 {
-    using namespace jsp;
+public:
+    static void dumpString(JSString *str);
+    static void dumpAtom(JSAtom *atom);
+    static void dumpObject(JSObject *obj);
+
+    static std::string write(const JS::Value &value);
+    static std::string write(jsid id);
+
+    static char writeMarkDescriptor(void *thing);
+
+    static char writeGCDescriptor(const JS::Value &value);
+    static std::string writeTraceThingInfo(const JS::Value &value, bool details = true);
+    static std::string writeDetailed(const JS::Value &value);
     
     // ---
-    
-    void dumpString(JSString *str);
-    void dumpAtom(JSAtom *atom);
-    void dumpObject(JSObject *obj);
 
-    std::string write(const Value &value);
-    std::string write(jsid id);
-
-    char writeMarkDescriptor(void *thing);
-
-    template<typename T>
-    char writeGCDescriptor(T *thing);
+    static bool isInsideNursery(void *thing);
     
-    char writeGCDescriptor(const Value &value);
-
-    std::string writeTraceThingInfo(JSObject *object, bool details = true);
-    std::string writeTraceThingInfo(const Value &value, bool details = true);
-
-    std::string writeDetailed(JSObject *object);
-    std::string writeDetailed(const Value &value);
-    
-    // ---
-    
-    /*
-     * USING JSP::isPoisoned(T*) STANDALONE IS ACTUALLY NOT ENOUGH:
-     *
-     * 1) THE thing COULD BE NULL
-     *
-     * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
-     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
-     *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
-     *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
-     *      - TODO: FOLLOW-UP
-     *
-     * HENCE THE NEED FOR JSP::isHealthy(T*)
-     */
-    
-    template<typename T>
-    bool isHealthy(T *thing);
-    
-    bool isHealthy(const Value &value);
-    
-    bool isInsideNursery(void *thing);
-
-    /*
-     * MOSTLY FOR INTERNAL USAGE (HERE AGAIN: RESULTS ARE NOT AS-OBVIOUS-AS STATED IN THE NAMING)
-     */
-    template<typename T>
-    bool isAboutToBeFinalized(T **thing);
+    static bool isPoisoned(const JS::Value &value);
+    static bool isHealthy(const JS::Value &value);
     
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
     
+    /*
+     * MOSTLY FOR INTERNAL USAGE (RESULTS ARE NOT AS-OBVIOUS-AS STATED IN THE NAMING)
+     */
+    template<typename T>
+    static bool isAboutToBeFinalized(T **thing);
+
     /*
      * BORROWED FROM: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L101-130
      *
@@ -416,9 +392,8 @@ namespace JSP
      * - IT WAS DECLARED AS 0xDA UNTIL ~SPIDERMONKEY 24
      * - IT WAS PROBABLY REMOVED (STARTING FROM ~SPIDERMONKEY 28) IN PREVISION OF THE "REVISED POISONING" POLICY
      */
-    
     template<typename T>
-    inline bool isPoisoned(T *thing)
+    static inline bool isPoisoned(T *thing)
     {
         static_assert(sizeof(T) >= sizeof(js::gc::FreeSpan) + sizeof(uint32_t),
                       "Ensure it is well defined to look past any free span that "
@@ -446,55 +421,172 @@ namespace JSP
         }
         return false;
     }
-
-    inline bool isPoisoned(const Value &value)
+    
+    /*
+     * USING JSP::isPoisoned(T*) STANDALONE IS ACTUALLY NOT ENOUGH:
+     *
+     * 1) THE thing COULD BE NULL
+     *
+     * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
+     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
+     *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
+     *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
+     *      - TODO: FOLLOW-UP
+     *
+     * HENCE THE NEED FOR JSP::isHealthy(T*)
+     */
+    template<typename T>
+    static bool isHealthy(T *thing)
     {
-        if (value.isString())
+        if (thing)
         {
-            return isPoisoned(value.toString());
-        }
-        
-        if (value.isObject())
-        {
-            return isPoisoned(&value.toObject());
+            /*
+             * REFERENCES:
+             * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsfriendapi.cpp#L737-745
+             * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L193-200
+             *
+             * IN PRACTICE:
+             * thing->zone()->runtimeFromMainThread()->isHeapBusy() SEEMS TO NEVER RETURN TRUE
+             *
+             * SEE ALSO: writeMarkDescriptor(void*)
+             */
+            
+            auto cell = static_cast<js::gc::Cell*>(thing);
+            
+            if (cell->isTenured() && cell->arenaHeader()->allocated())
+            {
+                if (!InFreeList(cell->arenaHeader(), thing))
+                {
+                    if (!cell->isMarked(js::gc::GRAY))
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return !isPoisoned(thing);
         }
         
         return false;
     }
     
-    /*
-     * XXX: NOT CLEAR WHY TEMPLATE-MATCHING DOESN'T WORK FOR JSFunction (HENCE THE NEED FOR THE FOLLOWING 2...)
-     */
-
-    inline char writeGCDescriptor(JSFunction *function)
+    template<typename T>
+    static std::string writeDetailed(T *thing)
     {
-        return writeGCDescriptor(static_cast<JSObject*>(function));
+        if (thing)
+        {
+            std::stringstream ss;
+            ss << thing;
+            
+            const auto traceThingInfo = writeTraceThingInfo(thing, true);
+            
+            if (!traceThingInfo.empty())
+            {
+                ss << " {" << traceThingInfo << "}";
+            }
+            
+            auto gcDescriptor = writeGCDescriptor(thing);
+            
+            if (gcDescriptor != '?')
+            {
+                ss << " [" << gcDescriptor << "]";
+            }
+            
+            return ss.str();
+        }
+        
+        return "";
     }
 
-    inline bool isHealthy(JSFunction *function)
+    template<typename T>
+    static char writeGCDescriptor(T *thing)
     {
-        return isHealthy(static_cast<JSObject*>(function));
+        if (thing)
+        {
+            if (isInsideNursery(thing))
+            {
+                if (isPoisoned(thing))
+                {
+                    return 'P';
+                }
+                
+                return 'n';
+            }
+            
+            // ---
+            
+            T *forwarded = thing;
+            
+            if (isAboutToBeFinalized(&forwarded))
+            {
+                return 'f';
+            }
+            
+            // ---
+            
+            auto markDescriptor = writeMarkDescriptor(thing);
+            
+            if ((markDescriptor != 'B') && (markDescriptor != 'W'))
+            {
+                if (isPoisoned(thing))
+                {
+                    return 'P';
+                }
+            }
+            
+            return markDescriptor;
+        }
+        
+        return '?';
     }
+
+    template<typename T>
+    static std::string writeTraceThingInfo(T *thing, bool details = true);
 
 #else
     
     template<typename T>
-    inline bool isPoisoned(T *thing)
+    static bool isAboutToBeFinalized(T **thing)
     {
         return false;
     }
     
-    inline bool isPoisoned(const Value &value)
+    template<typename T>
+    static inline bool isPoisoned(T *thing)
     {
         return false;
+    }
+    
+    template<typename T>
+    static bool isHealthy(T *thing)
+    {
+        return false;
+    }
+    
+    template<typename T>
+    static std::string writeDetailed(T *thing)
+    {
+        return "";
+    }
+    
+    template<typename T>
+    static char writeGCDescriptor(T *thing)
+    {
+        return '?';
+    }
+    
+    template<typename T>
+    static std::string writeTraceThingInfo(T *thing, bool details = true)
+    {
+        return "";
     }
     
 #endif
 
     // ---
     
-    void forceGC();
-    void setGCZeal(uint8_t zeal, uint32_t frequency = 100);
+    static void forceGC();
+    static void setGCZeal(uint8_t zeal, uint32_t frequency = 100);
     
     // ---
     
@@ -502,6 +594,17 @@ namespace JSP
      * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THIS TO SOME MORE "SPECIALIZED" CLASS...)
      */
 
-    uint32_t toHTMLColor(const std::string &c, uint32_t defaultValue = 0x000000);
-    uint32_t toHTMLColor(HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
+    static uint32_t toHTMLColor(const std::string &c, uint32_t defaultValue = 0x000000);
+    static uint32_t toHTMLColor(JS::HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
+    
+private:
+    static constexpr size_t TRACE_BUFFER_SIZE = 256;
+    static char traceBuffer[TRACE_BUFFER_SIZE];
+    
+    // ---
+    
+    static std::map<std::string, uint32_t> htmlColors;
+    
+    static bool defineHTMLColors();
+    static bool lookupHTMLColor(const std::string &c, uint32_t *result);
 };

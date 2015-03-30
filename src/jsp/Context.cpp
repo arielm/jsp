@@ -13,8 +13,6 @@
 #include "chronotext/Log.h"
 #include "chronotext/incubator/utils/FileCapture.h"
 
-#include <map>
-
 using namespace std;
 using namespace chr;
 
@@ -429,501 +427,372 @@ namespace jsp
     }
 }
 
-#pragma mark ---------------------------------------- JSP NAMESPACE ----------------------------------------
+#pragma mark ---------------------------------------- JSP STATIC HELPER ----------------------------------------
 
-namespace JSP
-{
-    namespace intern
-    {
-        constexpr size_t TRACE_BUFFER_SIZE = 256;
-        char traceBuffer[TRACE_BUFFER_SIZE];
+using namespace jsp;
 
-        // ---
-        
-        map<string, uint32_t> htmlColors;
-        
-        bool defineHTMLColors();
-        bool lookupHTMLColor(const string &c, uint32_t *result);
-    }
-    
+char JSP::traceBuffer[TRACE_BUFFER_SIZE];
+map<string, uint32_t> JSP::htmlColors;
+
 #pragma mark ---------------------------------------- DEBUG / DUMP ----------------------------------------
-    
+
 #if defined(JS_DEBUG)
-    
-    void dumpString(JSString *str)
-    {
-        js_DumpString(str);
-    }
-    
-    void dumpAtom(JSAtom *atom)
-    {
-        js_DumpAtom(atom);
-    }
-    
-    void dumpObject(JSObject *obj)
-    {
-        js_DumpObject(obj);
-    }
-    
+
+void JSP::dumpString(JSString *str)
+{
+    js_DumpString(str);
+}
+
+void JSP::dumpAtom(JSAtom *atom)
+{
+    js_DumpAtom(atom);
+}
+
+void JSP::dumpObject(JSObject *obj)
+{
+    js_DumpObject(obj);
+}
+
 #else
-    
-    void dumpString(JSString *str) {}
-    void dumpAtom(JSAtom *atom) {}
-    void dumpObject(JSObject *obj) {}
-    
+
+void JSP::dumpString(JSString *str) {}
+void JSP::dumpAtom(JSAtom *atom) {}
+void JSP::dumpObject(JSObject *obj) {}
+
 #endif
-    
+
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
-    
-    string write(const Value &value)
+
+string JSP::write(const Value &value)
+{
+    FileCapture capture(stderr);
+    js_DumpValue(value);
+    return capture.flushAsString(true);
+}
+
+string JSP::write(jsid id)
+{
+    FileCapture capture(stderr);
+    js_DumpId(id);
+    return capture.flushAsString(true);
+}
+
+/*
+ * REFERENCES:
+ * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsfriendapi.cpp#L737-745
+ * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L193-200
+ *
+ * IN PRACTICE:
+ * MarkDescriptor(void *thing) IN jsfriendapi.cpp SEEMS TO RETURN ONLY 'B' OR 'W'
+ *
+ * SEE ALSO: isHealthy(T*)
+ */
+char JSP::writeMarkDescriptor(void *thing)
+{
+    if (thing)
     {
-        FileCapture capture(stderr);
-        js_DumpValue(value);
-        return capture.flushAsString(true);
-    }
-    
-    string write(jsid id)
-    {
-        FileCapture capture(stderr);
-        js_DumpId(id);
-        return capture.flushAsString(true);
-    }
-    
-    /*
-     * REFERENCES:
-     *
-     * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsfriendapi.cpp#L737-745
-     * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L193-200
-     *
-     * IN PRACTICE:
-     * MarkDescriptor(void *thing) IN jsfriendapi.cpp SEEMS TO RETURN ONLY 'B' OR 'W'
-     *
-     * SEE ALSO: isHealthy(JSString *thing)
-     */
-    
-    char writeMarkDescriptor(void *thing)
-    {
-        if (thing)
+        auto cell = static_cast<js::gc::Cell*>(thing);
+        
+        if (cell->isTenured() && cell->arenaHeader()->allocated())
         {
-            auto cell = static_cast<js::gc::Cell*>(thing);
-            
-            if (cell->isTenured() && cell->arenaHeader()->allocated())
+            if (!InFreeList(cell->arenaHeader(), thing))
             {
-                if (!InFreeList(cell->arenaHeader(), thing))
+                if (!cell->isMarked(js::gc::GRAY))
                 {
-                    if (!cell->isMarked(js::gc::GRAY))
-                    {
-                        return cell->isMarked(js::gc::BLACK) ? 'B' : 'W';
-                    }
+                    return cell->isMarked(js::gc::BLACK) ? 'B' : 'W';
                 }
             }
         }
-        
-        return '?';
     }
     
-    template <typename T>
-    char writeGCDescriptor(T *thing)
+    return '?';
+}
+
+char JSP::writeGCDescriptor(const Value &value)
+{
+    char gcDescriptor = '?';
+    
+    if (value.isMarkable())
     {
-        if (thing)
+        if (value.isObject())
         {
-            if (isInsideNursery(thing))
-            {
-                if (isPoisoned(thing))
-                {
-                    return 'P';
-                }
-                
-                return 'n';
-            }
-            
-            // ---
-            
-            T *forwarded = thing;
-            
-            if (isAboutToBeFinalized(&forwarded))
-            {
-                return 'f';
-            }
-            
-            // ---
-            
-            auto markDescriptor = writeMarkDescriptor(thing);
-            
-            if ((markDescriptor != 'B') && (markDescriptor != 'W'))
-            {
-                if (isPoisoned(thing))
-                {
-                    return 'P';
-                }
-            }
-            
-            return markDescriptor;
+            gcDescriptor = writeGCDescriptor(value.toObjectOrNull());
         }
-        
-        return '?';
+        else if (value.isString())
+        {
+            gcDescriptor = writeGCDescriptor(value.toString());
+        }
     }
     
-    char writeGCDescriptor(const Value &value)
+    return gcDescriptor;
+}
+
+template <>
+string JSP::writeTraceThingInfo(JSObject *object, bool details)
+{
+    if (isHealthy(object))
     {
-        char gcDescriptor = '?';
-        
-        if (value.isMarkable())
-        {
-            if (value.isObject())
-            {
-                gcDescriptor = writeGCDescriptor(value.toObjectOrNull());
-            }
-            else if (value.isString())
-            {
-                gcDescriptor = writeGCDescriptor(value.toString());
-            }
-        }
-        
-        return gcDescriptor;
+        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, details);
+        return traceBuffer;
     }
     
-    string writeTraceThingInfo(JSObject *object, bool details)
+    return "";
+}
+
+template <>
+string JSP::writeTraceThingInfo(JSFunction *function, bool details)
+{
+    if (isHealthy(function))
     {
-        if (isHealthy(object))
-        {
-            JS_GetTraceThingInfo(intern::traceBuffer, intern::TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, details);
-            return intern::traceBuffer;
-        }
-        
-        return "";
+        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, function, JSTRACE_OBJECT, details);
+        return traceBuffer;
     }
     
-    string writeTraceThingInfo(const Value &value, bool details)
+    return "";
+}
+
+template <>
+string JSP::writeTraceThingInfo(JSString *s, bool details)
+{
+    if (isHealthy(s))
     {
-        if (isHealthy(value))
-        {
-            if (value.isMarkable())
-            {
-                JS_GetTraceThingInfo(intern::traceBuffer, intern::TRACE_BUFFER_SIZE, nullptr, value.toGCThing(), value.gcKind(), details);
-                return intern::traceBuffer;
-            }
-        }
-        
-        return "";
+        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, s, JSTRACE_STRING, details);
+        return traceBuffer;
     }
     
-    string writeDetailed(JSObject *object)
-    {
-        if (object)
-        {
-            stringstream ss;
-            ss << object;
-            
-            const auto traceThingInfo = writeTraceThingInfo(object, true);
-            
-            if (!traceThingInfo.empty())
-            {
-                ss << " {" << traceThingInfo << "}";
-            }
-            
-            auto gcDescriptor = writeGCDescriptor(object);
-            
-            if (gcDescriptor != '?')
-            {
-                ss << " [" << gcDescriptor << "]";
-            }
-            
-            return ss.str();
-        }
-        
-        return "";
-    }
-    
-    string writeDetailed(const Value &value)
+    return "";
+}
+
+string JSP::writeTraceThingInfo(const Value &value, bool details)
+{
+    if (isHealthy(value))
     {
         if (value.isMarkable())
         {
-            stringstream ss;
-            ss << value.toGCThing();
-            
-            const auto traceThingInfo = writeTraceThingInfo(value, true);
-            
-            if (!traceThingInfo.empty())
-            {
-                ss << " {" << traceThingInfo << "}";
-            }
-            
-            auto gcDescriptor = writeGCDescriptor(value);
-            
-            if (gcDescriptor != '?')
-            {
-                ss << " [" << gcDescriptor << "]";
-            }
-            
-            return ss.str();
+            JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, value.toGCThing(), value.gcKind(), details);
+            return traceBuffer;
         }
-        
-        return write(value);
     }
     
+    return "";
+}
+
+string JSP::writeDetailed(const Value &value)
+{
+    if (value.isMarkable())
+    {
+        stringstream ss;
+        ss << value.toGCThing();
+        
+        const auto traceThingInfo = writeTraceThingInfo(value, true);
+        
+        if (!traceThingInfo.empty())
+        {
+            ss << " {" << traceThingInfo << "}";
+        }
+        
+        auto gcDescriptor = writeGCDescriptor(value);
+        
+        if (gcDescriptor != '?')
+        {
+            ss << " [" << gcDescriptor << "]";
+        }
+        
+        return ss.str();
+    }
+    
+    return write(value);
+}
+
 #else
-    
-    string write(const Value &value) { return ""; }
-    string write(jsid id) { return ""; }
-    
-    char writeMarkDescriptor(void *thing) { return '?'; }
-    
-    template <>
-    char writeGCDescriptor(JSObject *thing)
-    {
-        return '?';
-    }
-    
-    template <>
-    char writeGCDescriptor(JSFunction *thing)
-    {
-        return '?';
-    }
-    
-    template <>
-    char writeGCDescriptor(JSString *thing)
-    {
-        return '?';
-    }
-    
-    char writeGCDescriptor(const Value &value) { return '?'; }
-    
-    string writeDetailed(JSObject *object) { return ""; }
-    string writeDetailed(const Value &value) { return ""; }
-    
+
+string JSP::write(const Value &value) { return ""; }
+string JSP::write(jsid id) { return ""; }
+
+char JSP::writeMarkDescriptor(void *thing) { return '?'; }
+
+char JSP::writeGCDescriptor(const Value &value) { return '?'; }
+string JSP::writeDetailed(const Value &value) { return ""; }
+
 #endif
 
 #pragma mark ---------------------------------------- DEBUG / INFO ----------------------------------------
-    
+
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
-    
-    template <>
-    bool isAboutToBeFinalized(JSObject **thing)
-    {
-        return js::gc::IsObjectAboutToBeFinalized(thing);
-    }
-    
-    template <>
-    bool isAboutToBeFinalized(JSFunction **thing)
-    {
-        return js::gc::IsObjectAboutToBeFinalized(thing);
-    }
-    
-    template <>
-    bool isAboutToBeFinalized(JSString **thing)
-    {
-        return js::gc::IsStringAboutToBeFinalized(thing);
-    }
-    
-    /*
-     * REFERENCES:
-     *
-     * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsfriendapi.cpp#L737-745
-     * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L193-200
-     *
-     * IN PRACTICE:
-     * thing->zone()->runtimeFromMainThread()->isHeapBusy() SEEMS TO NEVER RETURN TRUE
-     *
-     * SEE ALSO: writeMarkDescriptor(void *thing)
-     */
-    
-    template<typename T>
-    bool isHealthy(T *thing)
-    {
-        if (thing)
-        {
-            auto cell = static_cast<js::gc::Cell*>(thing);
-            
-            if (cell->isTenured() && cell->arenaHeader()->allocated())
-            {
-                if (!InFreeList(cell->arenaHeader(), thing))
-                {
-                    if (!cell->isMarked(js::gc::GRAY))
-                    {
-                        return true;
-                    }
-                }
-            }
-            
-            return !isPoisoned(thing);
-        }
-        
-        return false;
-    }
 
-    bool isHealthy(const Value &value)
+bool JSP::isInsideNursery(void *thing)
+{
+    if (thing)
     {
-        if (value.isMarkable())
-        {
-            void *thing = value.toGCThing();
-            
-            if (value.isString())
-            {
-                return isHealthy((JSString*)thing);
-            }
-            
-            if (value.isObject())
-            {
-                return isHealthy((JSObject*)thing);
-            }
-        }
-        
-        return false;
+        auto cell = static_cast<js::gc::Cell*>(thing);
+        return !cell->isTenured();
     }
     
-    bool isInsideNursery(void *thing)
-    {
-        if (thing)
-        {
-            auto cell = static_cast<js::gc::Cell*>(thing);
-            return !cell->isTenured();
-        }
-        
-        return false;
-    }
-    
-#else
-    
-    template <>
-    bool isAboutToBeFinalized(JSObject **thing)
-    {
-        return false;
-    }
-    
-    template <>
-    bool isAboutToBeFinalized(JSFunction **thing)
-    {
-        return false;
-    }
-    
-    template <>
-    bool isAboutToBeFinalized(JSString **thing)
-    {
-        return false;
-    }
-    
-    template <>
-    bool isHealthy(JSObject *thing)
-    {
-        return false;
-    }
-    
-    template <>
-    bool isHealthy(JSFunction *thing)
-    {
-        return false;
-    }
-    
-    template <>
-    bool isHealthy(JSString *thing)
-    {
-        return false;
-    }
-    
-    bool isHealthy(const Value &value)
-    {
-        return false;
-    }
-    
-    bool isInsideNursery(void *thing)
-    {
-        return false;
-    }
-    
-#endif
-    
-#pragma mark ---------------------------------------- GC AND ROOTING ----------------------------------------
-    
-    void forceGC()
-    {
-        LOGD << "jsp::forceGC() | BEGIN" << endl; // LOG: VERBOSE
+    return false;
+}
 
-        JS_SetGCParameter(rt, JSGC_MODE, JSGC_MODE_GLOBAL);
-        JS_GC(rt);
-        
-        LOGD << "jsp::forceGC() | END" << endl; // LOG: VERBOSE
-    }
-    
-    void setGCZeal(uint8_t zeal, uint32_t frequency)
-    {
-#if defined(JS_GC_ZEAL)
-        JS_SetGCZeal(cx, zeal, frequency);
-#endif
-    }
-    
-#pragma mark ---------------------------------------- HTML COLORS ----------------------------------------
+template <>
+bool JSP::isAboutToBeFinalized(JSObject **thing)
+{
+    return js::gc::IsObjectAboutToBeFinalized(thing);
+}
 
-    bool intern::defineHTMLColors()
+template <>
+bool JSP::isAboutToBeFinalized(JSFunction **thing)
+{
+    return js::gc::IsObjectAboutToBeFinalized(thing);
+}
+
+template <>
+bool JSP::isAboutToBeFinalized(JSString **thing)
+{
+    return js::gc::IsStringAboutToBeFinalized(thing);
+}
+
+bool JSP::isPoisoned(const Value &value)
+{
+    if (value.isString())
     {
-        /*
-         * XXX: THERE SHOULD BE MORE COLORS
-         */
-        
-        if (htmlColors.empty())
-        {
-            htmlColors["black"] = 0x000000;
-            htmlColors["blue"] = 0x0000ff;
-            htmlColors["gray"] = 0x808080;
-            htmlColors["green"] = 0x00ff00;
-            htmlColors["orange"] = 0xffa500;
-            htmlColors["purple"] = 0x800080;
-            htmlColors["red"] = 0xff0000;
-            htmlColors["white"] = 0xffffff;
-            htmlColors["yellow"] = 0xffff00;
-        }
-        
-        return true;
+        return isPoisoned(value.toString());
     }
     
-    bool intern::lookupHTMLColor(const string &c, uint32_t *result)
+    if (value.isObject())
     {
-        if (defineHTMLColors())
-        {
-            auto color = htmlColors.find(c);
-            
-            if (color != htmlColors.end())
-            {
-                *result = color->second;
-                return true;
-            }
-        }
+        return isPoisoned(&value.toObject());
+    }
+    
+    return false;
+}
+
+bool JSP::isHealthy(const Value &value)
+{
+    if (value.isMarkable())
+    {
+        void *thing = value.toGCThing();
         
-        return false;
-    }
-    
-    uint32_t toHTMLColor(const string &c, uint32_t defaultValue)
-    {
-        uint32_t result;
-        return intern::lookupHTMLColor(c, &result) ? result : defaultValue;
-    }
-    
-    uint32_t toHTMLColor(HandleValue &&value, uint32_t defaultValue)
-    {
         if (value.isString())
         {
-            string tmp = toString(forward<HandleValue>(value));
-            
-            if (!tmp.empty())
-            {
-                if ((tmp[0] == '#') && (tmp.size() == 7))
-                {
-                    uint32_t result;
-                    stringstream ss;
-                    ss << hex << tmp.substr(1, string::npos);
-                    ss >> result;
-                    
-                    return result;
-                }
-                
-                return toHTMLColor(tmp, defaultValue);
-            }
-        }
-        else
-        {
-            return toUInt32Safely(forward<HandleValue>(value), defaultValue);
+            return isHealthy((JSString*)thing);
         }
         
-        return defaultValue;
+        if (value.isObject())
+        {
+            return isHealthy((JSObject*)thing);
+        }
     }
+    
+    return false;
+}
+
+#else
+
+bool JSP::isInsideNursery(void *thing)
+{
+    return false;
+}
+
+bool JSP::isPoisoned(const Value &value)
+{
+    return false;
+}
+
+bool JSP::isHealthy(const Value &value)
+{
+    return false;
+}
+
+#endif
+
+#pragma mark ---------------------------------------- GC AND ROOTING ----------------------------------------
+
+void JSP::forceGC()
+{
+    LOGD << "jsp::forceGC() | BEGIN" << endl; // LOG: VERBOSE
+    
+    JS_SetGCParameter(rt, JSGC_MODE, JSGC_MODE_GLOBAL);
+    JS_GC(rt);
+    
+    LOGD << "jsp::forceGC() | END" << endl; // LOG: VERBOSE
+}
+
+void JSP::setGCZeal(uint8_t zeal, uint32_t frequency)
+{
+#if defined(JS_GC_ZEAL)
+    JS_SetGCZeal(cx, zeal, frequency);
+#endif
+}
+
+#pragma mark ---------------------------------------- HTML COLORS ----------------------------------------
+
+bool JSP::defineHTMLColors()
+{
+    /*
+     * XXX: THERE SHOULD BE MORE COLORS
+     */
+    
+    if (htmlColors.empty())
+    {
+        htmlColors["black"] = 0x000000;
+        htmlColors["blue"] = 0x0000ff;
+        htmlColors["gray"] = 0x808080;
+        htmlColors["green"] = 0x00ff00;
+        htmlColors["orange"] = 0xffa500;
+        htmlColors["purple"] = 0x800080;
+        htmlColors["red"] = 0xff0000;
+        htmlColors["white"] = 0xffffff;
+        htmlColors["yellow"] = 0xffff00;
+    }
+    
+    return true;
+}
+
+bool JSP::lookupHTMLColor(const string &c, uint32_t *result)
+{
+    if (defineHTMLColors())
+    {
+        auto color = htmlColors.find(c);
+        
+        if (color != htmlColors.end())
+        {
+            *result = color->second;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+uint32_t JSP::toHTMLColor(const string &c, uint32_t defaultValue)
+{
+    uint32_t result;
+    return lookupHTMLColor(c, &result) ? result : defaultValue;
+}
+
+uint32_t JSP::toHTMLColor(HandleValue &&value, uint32_t defaultValue)
+{
+    if (value.isString())
+    {
+        string tmp = toString(forward<HandleValue>(value));
+        
+        if (!tmp.empty())
+        {
+            if ((tmp[0] == '#') && (tmp.size() == 7))
+            {
+                uint32_t result;
+                stringstream ss;
+                ss << hex << tmp.substr(1, string::npos);
+                ss >> result;
+                
+                return result;
+            }
+            
+            return toHTMLColor(tmp, defaultValue);
+        }
+    }
+    else
+    {
+        return toUInt32Safely(forward<HandleValue>(value), defaultValue);
+    }
+    
+    return defaultValue;
 }

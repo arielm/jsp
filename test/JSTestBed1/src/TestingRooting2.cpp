@@ -120,8 +120,8 @@ void TestingRooting2::testAnalysis2()
     RootedObject object(cx, Barker::construct("ROOTED"));
     JSFunction *function = JS_DefineFunction(cx, object, "someFunction", nativeCallback, 0, 0);
     
-    JSP_CHECK(!JSP::isInsideNursery(function)); // TODO: FIND OUT WHY IT IS NOT CREATED IN THE NURSERY
-    JSP_CHECK(JSP::writeGCDescriptor(function) == 'W');
+    LOGI << JSP::writeDetailed(function) << endl;
+    JSP_CHECK(!JSP::isInsideNursery(function)); // XXX: IS function TENURED BECAUSE object IS ROOTED, OR IS IT ALWAYS THE CASE FOR NEW JSFunctions?
     
     JSP::forceGC();
     
@@ -131,21 +131,21 @@ void TestingRooting2::testAnalysis2()
     JS_DeleteProperty(cx, object, "someFunction");
     JSP::forceGC();
 
-    JSP_CHECK(!JSP::isHealthy(function)); // REASON: function NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(function)); // REASON: function NOT ROOTED ANYMORE
     JSP_CHECK(JSP::writeGCDescriptor(function) == 'P');
 }
 
 void TestingRooting2::testAnalysis3()
 {
-    JSString *str = toJSString("whatever");
-    
-    JSP_CHECK(!JSP::isInsideNursery(str)); // TODO: FIND OUT WHY IT IS NOT CREATED IN THE NURSERY
-    JSP_CHECK(JSP::writeGCDescriptor(str) == 'W');
+    JSString *s = toJSString("whatever");
+
+    LOGI << JSP::writeDetailed(s) << endl;
+    JSP_CHECK(!JSP::isInsideNursery(s)); // XXX: IT SEEMS THAT NEW JSStrings ARE ALWAYS TENURED
 
     JSP::forceGC();
     
-    JSP_CHECK(!JSP::isHealthy(str)); // REASON: str NOT ROOTED
-    JSP_CHECK(JSP::writeGCDescriptor(str) == 'P');
+    JSP_CHECK(!JSP::isHealthy(s)); // REASON: s NOT ROOTED
+    JSP_CHECK(JSP::writeGCDescriptor(s) == 'P');
 }
 
 // ---
