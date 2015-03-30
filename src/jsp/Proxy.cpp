@@ -23,12 +23,12 @@ namespace jsp
         map<int32_t, Proxy*> instances;
         int32_t lastInstanceId = -1;
         
-        int32_t instanceCreated(Proxy *instance);
+        int32_t instanceCreated(Proxy *instance, const PeerProperties &peerProperties);
         void instanceDestroyed(int32_t instanceId);
         Proxy* getInstance(int32_t instanceId);
     }
     
-    int32_t proxy::instanceCreated(Proxy *instance)
+    int32_t proxy::instanceCreated(Proxy *instance, const PeerProperties &peerProperties)
     {
         proxy::instances.emplace(++proxy::lastInstanceId, instance);
         return proxy::lastInstanceId;
@@ -52,25 +52,24 @@ namespace jsp
     }
     
 #pragma mark ---------------------------------------- Proxy NAMESPACE ----------------------------------------
-
-    Proxy::Proxy(Proto *target)
+    
+    Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
     {
-        if (!target)
-        {
-            this->target = BaseProto::instance();
-        }
-        else
-        {
-            this->target = target;
-        }
-        
-        instanceId = proxy::instanceCreated(this);
+        this->target = target;
+        instanceId = proxy::instanceCreated(this, peerProperties);
     }
     
-    Proxy::Proxy(Proxy *target)
-    :
-    Proxy(static_cast<Proto*>(target))
-    {}
+    Proxy::Proxy(Proto *target)
+    {
+        this->target = target ? target : defaultTarget();
+        instanceId = proxy::instanceCreated(this, defaultPeerProperties());
+    }
+    
+    Proxy::Proxy(const PeerProperties &peerProperties)
+    {
+        target = defaultTarget();
+        instanceId = proxy::instanceCreated(this, peerProperties);
+    }
 
     Proxy::~Proxy()
     {
@@ -119,16 +118,18 @@ namespace jsp
         return false;
     }
     
-    string Proxy::peerName()
+    // ---
+    
+    Proto* Proxy::defaultTarget() const
     {
-        return "Proxy";
-    }
-
-    bool Proxy::isSingleton()
-    {
-        return false;
+        return BaseProto::target();
     }
     
+    const PeerProperties Proxy::defaultPeerProperties() const
+    {
+        return PeerProperties("Proxy", false);
+    }
+
     // ---
     
     NativeCall* Proxy::getNativeCall(int32_t nativeCallId)

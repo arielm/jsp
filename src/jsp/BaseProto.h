@@ -17,7 +17,7 @@ namespace jsp
     class BaseProto : public Proto
     {
     public:
-        static BaseProto* instance();
+        static BaseProto* target();
 
         /*
          * EVALUATION

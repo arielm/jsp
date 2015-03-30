@@ -16,11 +16,24 @@
 
 namespace jsp
 {
+    struct PeerProperties
+    {
+        std::string name;
+        bool isSingleton;
+        
+        PeerProperties(const std::string &name = "", bool isSingleton = false)
+        :
+        name(name),
+        isSingleton(isSingleton)
+        {}
+    };
+    
     class Proxy : public Proto
     {
     public:
+        Proxy(Proto *target, const PeerProperties &peerProperties);
         Proxy(Proto *target = nullptr);
-        Proxy(Proxy *target);
+        Proxy(const PeerProperties &peerProperties);
         
         ~Proxy();
 
@@ -29,9 +42,9 @@ namespace jsp
 
         bool setTarget(Proxy *target);
         bool setHandler(Proxy *handler);
-
-        virtual std::string peerName();
-        virtual bool isSingleton();
+        
+        virtual Proto* defaultTarget() const;
+        virtual const PeerProperties defaultPeerProperties() const;
         
         // ---
         

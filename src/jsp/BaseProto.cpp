@@ -13,16 +13,16 @@ using namespace chr;
 
 namespace jsp
 {
-    BaseProto* BaseProto::instance()
+    BaseProto* BaseProto::target()
     {
-        static shared_ptr<BaseProto> instance = nullptr;
+        static shared_ptr<BaseProto> target;
 
-        if (!instance)
+        if (!target)
         {
-            instance = shared_ptr<BaseProto>(new BaseProto);
+            target = shared_ptr<BaseProto>(new BaseProto);
         }
         
-        return instance.get();
+        return target.get();
     }
 
 #pragma mark ---------------------------------------- EVALUATION ----------------------------------------
