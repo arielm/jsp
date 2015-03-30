@@ -707,12 +707,12 @@ bool JSP::isHealthy(const Value &value)
 
 void JSP::forceGC()
 {
-    LOGD << "jsp::forceGC() | BEGIN" << endl; // LOG: VERBOSE
+    LOGD << "JSP::forceGC() | BEGIN" << endl; // LOG: VERBOSE
     
     JS_SetGCParameter(rt, JSGC_MODE, JSGC_MODE_GLOBAL);
     JS_GC(rt);
     
-    LOGD << "jsp::forceGC() | END" << endl; // LOG: VERBOSE
+    LOGD << "JSP::forceGC() | END" << endl; // LOG: VERBOSE
 }
 
 void JSP::setGCZeal(uint8_t zeal, uint32_t frequency)
@@ -746,11 +746,11 @@ bool JSP::defineHTMLColors()
     return true;
 }
 
-bool JSP::lookupHTMLColor(const string &c, uint32_t *result)
+bool JSP::lookupHTMLColor(const string &colorName, uint32_t *result)
 {
     if (defineHTMLColors())
     {
-        auto color = htmlColors.find(c);
+        auto color = htmlColors.find(colorName);
         
         if (color != htmlColors.end())
         {
@@ -762,10 +762,10 @@ bool JSP::lookupHTMLColor(const string &c, uint32_t *result)
     return false;
 }
 
-uint32_t JSP::toHTMLColor(const string &c, uint32_t defaultValue)
+uint32_t JSP::toHTMLColor(const string &colorName, uint32_t defaultValue)
 {
     uint32_t result;
-    return lookupHTMLColor(c, &result) ? result : defaultValue;
+    return lookupHTMLColor(colorName, &result) ? result : defaultValue;
 }
 
 uint32_t JSP::toHTMLColor(HandleValue &&value, uint32_t defaultValue)

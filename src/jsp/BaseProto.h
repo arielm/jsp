@@ -35,10 +35,10 @@ namespace jsp
         Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) override;
         
         /*
-         * NATIVE-CALLBACKS
+         * NATIVE CALLS
          */
         
-        inline bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) override
+        inline bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) override
         {
             return fn(args);
         }

@@ -10,8 +10,6 @@
 
 #include "jsp/Proto.h"
 
-#include <map>
-
 #define TARGET(FN, ...) target->FN(__VA_ARGS__)
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
 #define FORWARD(FN, ...) handler ? HANDLE(FN, __VA_ARGS__) : TARGET(FN, __VA_ARGS__)
@@ -64,9 +62,9 @@ namespace jsp
         
         // ---
         
-        inline bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) final
+        inline bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) final
         {
-            return FORWARD(applyNativeCallback, fn, args);
+            return FORWARD(applyNativeCall, fn, args);
         }
         
         // ---
@@ -151,7 +149,7 @@ namespace jsp
          *        - NAME COULD BE AUTOMATICALLY GENERATED (E.G. VIA "CLASS-NAME DEMANGLING")
          *          - BETTER ALTERNATIVE: A VIRTUAL string Proxy.peerName() METHOD
          *            - BECAUSE CLASS-NAME DEMANGLING IS NOT STANDARD
-         *            - MORE FLEXIBLE ANYWAY
+         *            - MORE FLEXIBLE ANYWAY, E.G. NOT BEING BOUND SOLELY TO C++ CLASS NAMES
          *        - INDEX SHOULD BE AUTOMATICALLY INCREMENTED BASED ON INSTANCE-COUNT
          *        - E.G. SomeProxy proxy(); SomeProxy anotherProxy();
          *          - proxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 0
@@ -159,12 +157,12 @@ namespace jsp
          *    - GLOBALLY-ACCESSIBLE FROM THE JS-SIDE:
          *      - E.G. Peers.SomeProxy[0] (OR peers.SomeProxy[0]?)
          *      - THE GLOBAL Peers (OR peers?) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
-         * 2) registerCallback(HandleObject object, ...) AND unregisterCallback(HandleObject object, ...)
+         * 2) registerNativeCall(HandleObject object, ...) AND unregisterNativeCall(HandleObject object, ...)
          *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
-         *    - proxy.registerCallback("method1", BIND_STATIC_CALLBACK(staticMethod1));
-         *      proxy.unregisterCallback("method1");
+         *    - proxy.registerNativeCall("method1", BIND_STATIC1(staticMethod1));
+         *      proxy.unregisterNativeCall("method1");
          *    - CONSIDER ADOPTING A "SIGNALS/SLOTS" SYNTAX, E.G.
-         *      - proxy.registerSignal("signal1", BIND_STATIC_CALLBACK(staticMethod1));
+         *      - proxy.registerSignal("signal1", BIND_STATIC1(staticMethod1));
          *      - proxy.unregisterSignal("signal1");
          * 3) THEN IT SHOULD BE POSSIBLE TO "CONNECT/DISCONNECT":
          *    - FROM THE C++ SIDE, E.G.
@@ -175,22 +173,22 @@ namespace jsp
          *        - peers.SomeProxy[0].method1 SHOULD BE A READ-ONLY PROPERTY
          */
 
-        bool registerCallback(JS::HandleObject object, const std::string &name, const NativeCallbackFnType &fn);
-        void unregisterCallback(JS::HandleObject object, const std::string &name);
-        static bool dispatchCallback(JSContext *cx, unsigned argc, Value *vp);
+        bool registerNativeCall(HandleObject object, const std::string &name, const NativeCallFnType &fn);
+        void unregisterNativeCall(HandleObject object, const std::string &name);
+        static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
         int32_t instanceId = -1;
-        int32_t lastCallbackId = -1;
-        std::map<int32_t, NativeCallback> callbacks;
+        int32_t lastNativeCallId = -1;
+        std::map<int32_t, NativeCall> nativeCalls;
         
         void instanceCreated();
         void instanceDestroyed();
         
-        NativeCallback* getCallback(int32_t callbackId);
-        int32_t getCallbackId(const std::string &name);
-        int32_t addCallback(const std::string &name, const NativeCallbackFnType &fn);
-        void removeCallback(int32_t callbackId);
+        NativeCall* getNativeCall(int32_t nativeCallId);
+        int32_t getNativeCallId(const std::string &name);
+        int32_t addNativeCall(const std::string &name, const NativeCallFnType &fn);
+        void removeNativeCall(int32_t nativeCallId);
     };
 }
 

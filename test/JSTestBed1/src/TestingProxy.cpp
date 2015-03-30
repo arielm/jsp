@@ -18,7 +18,7 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || true, testCallbacks1);
+    JSP_TEST(force || true, testNativeCalls1);
 }
 
 // ---
@@ -45,12 +45,12 @@ bool TestingProxy::instanceMethod1(CallArgs args)
     return false;
 }
 
-void TestingProxy::testCallbacks1()
+void TestingProxy::testNativeCalls1()
 {
-    registerCallback(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
-    registerCallback(globalHandle(), "instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
+    registerNativeCall(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
+    registerNativeCall(globalHandle(), "instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
     
-    registerCallback(globalHandle(), "lambda1", [=](CallArgs args)->bool
+    registerNativeCall(globalHandle(), "lambda1", [=](CallArgs args)->bool
     {
         if (args.hasDefined(0) && args[0].isNumber())
         {

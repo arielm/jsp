@@ -115,11 +115,11 @@ namespace jsp
     
     // ---
     
-    NativeCallback* Proxy::getCallback(int32_t callbackId)
+    NativeCall* Proxy::getNativeCall(int32_t nativeCallId)
     {
-        auto found = callbacks.find(callbackId);
+        auto found = nativeCalls.find(nativeCallId);
         
-        if (found != callbacks.end())
+        if (found != nativeCalls.end())
         {
             return &found->second;
         }
@@ -127,9 +127,9 @@ namespace jsp
         return nullptr;
     }
     
-    int32_t Proxy::getCallbackId(const std::string &name)
+    int32_t Proxy::getNativeCallId(const string &name)
     {
-        for (auto &element : callbacks)
+        for (auto &element : nativeCalls)
         {
             if (name == element.second.name)
             {
@@ -140,33 +140,33 @@ namespace jsp
         return -1;
     }
     
-    int32_t Proxy::addCallback(const string &name, const NativeCallbackFnType &fn)
+    int32_t Proxy::addNativeCall(const string &name, const NativeCallFnType &fn)
     {
-        callbacks.emplace(++lastCallbackId, NativeCallback(name, fn));
-        return lastCallbackId;
+        nativeCalls.emplace(++lastNativeCallId, NativeCall(name, fn));
+        return lastNativeCallId;
     }
     
-    void Proxy::removeCallback(int32_t callbackId)
+    void Proxy::removeNativeCall(int32_t nativeCallId)
     {
-        callbacks.erase(callbackId);
+        nativeCalls.erase(nativeCallId);
     }
 
     // ---
     
-    bool Proxy::registerCallback(HandleObject object, const string &name, const NativeCallbackFnType &fn)
+    bool Proxy::registerNativeCall(HandleObject object, const string &name, const NativeCallFnType &fn)
     {
-        auto callbackId = getCallbackId(name);
+        auto nativeCallId = getNativeCallId(name);
         
-        if (callbackId == -1)
+        if (nativeCallId == -1)
         {
-            auto function = DefineFunctionWithReserved(cx, object, name.data(), dispatchCallback, 0, 0);
+            auto function = DefineFunctionWithReserved(cx, object, name.data(), forwardNativeCall, 0, 0);
             
             if (function)
             {
-                callbackId = addCallback(name, fn);
+                nativeCallId = addNativeCall(name, fn);
                 
                 SetFunctionNativeReserved(function, 0, NumberValue(instanceId));
-                SetFunctionNativeReserved(function, 1, NumberValue(callbackId));
+                SetFunctionNativeReserved(function, 1, NumberValue(nativeCallId));
                 
                 return true;
             }
@@ -175,13 +175,13 @@ namespace jsp
         return false;
     }
     
-    void Proxy::unregisterCallback(JS::HandleObject object, const std::string &name)
+    void Proxy::unregisterNativeCall(HandleObject object, const string &name)
     {
-        auto callbackId = getCallbackId(name);
+        auto nativeCallId = getNativeCallId(name);
         
-        if (callbackId != -1)
+        if (nativeCallId != -1)
         {
-            removeCallback(callbackId);
+            removeNativeCall(nativeCallId);
             
             /*
              * TODO: SOME CONDITIONS SHOULD BE MET IN ORDER TO DELETE
@@ -189,13 +189,13 @@ namespace jsp
              * 1) object HAS A name PROPERTY CONTAINING A JSFunction
              * 2) JSFunction HAS 2 NATIVE-RESERVED SLOTS
              * 3) SLOT 1 CONTAINS VALUE EQUAL TO instanceId
-             * 4) SLOT 2 CONTAINS VALUE EQUAL TO callbackId
+             * 4) SLOT 2 CONTAINS VALUE EQUAL TO nativeCallId
              */
             JS_DeleteProperty(cx, object, name.data());
         }
     }
 
-    bool Proxy::dispatchCallback(JSContext *cx, unsigned argc, Value *vp)
+    bool Proxy::forwardNativeCall(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
         auto function = &args.callee().as<JSFunction>();
@@ -205,12 +205,12 @@ namespace jsp
         
         if (proxy)
         {
-            auto callbackId = GetFunctionNativeReserved(function, 1).toInt32();
-            auto callback = proxy->getCallback(callbackId);
+            auto nativeCallId = GetFunctionNativeReserved(function, 1).toInt32();
+            auto nativeCall = proxy->getNativeCall(nativeCallId);
             
-            if (callback)
+            if (nativeCall)
             {
-                return proxy->applyNativeCallback(callback->fn, args);
+                return proxy->applyNativeCall(nativeCall->fn, args);
             }
         }
         

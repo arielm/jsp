@@ -184,7 +184,7 @@ namespace jsp
         
         if (value.isDouble())
         {
-            return other == uint32_t(value.toDouble()); // TODO: TEST
+            return other == uint32_t(value.toDouble());
         }
         
         return false;
@@ -428,12 +428,10 @@ public:
      * 1) THE thing COULD BE NULL
      *
      * 2) THE "POISON PATTERN" CAN STILL BE DETECTED IN NEWLY ALLOCATED "CELLS"
-     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy()
+     *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy(T*)
      *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
      *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
      *      - TODO: FOLLOW-UP
-     *
-     * HENCE THE NEED FOR JSP::isHealthy(T*)
      */
     template<typename T>
     static bool isHealthy(T *thing)
@@ -591,10 +589,10 @@ public:
     // ---
     
     /*
-     * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THIS TO SOME MORE "SPECIALIZED" CLASS...)
+     * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THESE 2 TO SOME MORE "SPECIALIZED" CLASS...)
      */
 
-    static uint32_t toHTMLColor(const std::string &c, uint32_t defaultValue = 0x000000);
+    static uint32_t toHTMLColor(const std::string &colorName, uint32_t defaultValue = 0x000000);
     static uint32_t toHTMLColor(JS::HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
     
 private:

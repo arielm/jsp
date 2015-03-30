@@ -19,5 +19,5 @@ public:
     
     double instanceValue1 = 5;
     bool instanceMethod1(JS::CallArgs args);
-    void testCallbacks1();
+    void testNativeCalls1();
 };

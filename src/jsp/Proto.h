@@ -14,7 +14,7 @@
  *    - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
  *
  * 2) CONSIDER NOT THROWING C++ EXCEPTIONS IN ANY CODE POTENTIALLY INVOCABLE FROM JS
- *    - E.G. VIA JSNative CALLS
+ *    - E.G. VIA "NATIVE CALLS"
  */
 
 #pragma once
@@ -25,14 +25,14 @@
 
 namespace jsp
 {
-    typedef std::function<bool(CallArgs)> NativeCallbackFnType;
+    typedef std::function<bool(CallArgs)> NativeCallFnType;
     
-    struct NativeCallback
+    struct NativeCall
     {
         std::string name;
-        NativeCallbackFnType fn;
+        NativeCallFnType fn;
         
-        NativeCallback(const std::string &name, const NativeCallbackFnType &fn)
+        NativeCall(const std::string &name, const NativeCallFnType &fn)
         :
         name(name),
         fn(fn)
@@ -125,7 +125,7 @@ namespace jsp
         
         // ---
         
-        virtual bool applyNativeCallback(const NativeCallbackFnType &fn, CallArgs args) = 0;
+        virtual bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) = 0;
 
         // ---
         
