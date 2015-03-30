@@ -19,10 +19,9 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
-        Proxy(Proto *target);
+        Proxy(Proto *target = nullptr);
         Proxy(Proxy *target);
         
-        Proxy();
         ~Proxy();
 
         bool setTarget(Proto *target);
@@ -31,6 +30,9 @@ namespace jsp
         bool setTarget(Proxy *target);
         bool setHandler(Proxy *handler);
 
+        virtual std::string peerName();
+        virtual bool isSingleton();
+        
         // ---
         
         inline bool exec(const std::string &source, const ReadOnlyCompileOptions &options) final
@@ -159,10 +161,10 @@ namespace jsp
          *      - THE GLOBAL Peers (OR peers?) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
          * 2) registerNativeCall(HandleObject object, ...) AND unregisterNativeCall(HandleObject object, ...)
          *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
-         *    - proxy.registerNativeCall("method1", BIND_STATIC1(staticMethod1));
+         *    - proxy.registerNativeCall("method1", BIND_STATIC1(staticMethod1);
          *      proxy.unregisterNativeCall("method1");
          *    - CONSIDER ADOPTING A "SIGNALS/SLOTS" SYNTAX, E.G.
-         *      - proxy.registerSignal("signal1", BIND_STATIC1(staticMethod1));
+         *      - proxy.registerSignal("signal1", BIND_STATIC1(staticMethod1);
          *      - proxy.unregisterSignal("signal1");
          * 3) THEN IT SHOULD BE POSSIBLE TO "CONNECT/DISCONNECT":
          *    - FROM THE C++ SIDE, E.G.
@@ -181,9 +183,6 @@ namespace jsp
         int32_t instanceId = -1;
         int32_t lastNativeCallId = -1;
         std::map<int32_t, NativeCall> nativeCalls;
-        
-        void instanceCreated();
-        void instanceDestroyed();
         
         NativeCall* getNativeCall(int32_t nativeCallId);
         int32_t getNativeCallId(const std::string &name);

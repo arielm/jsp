@@ -16,12 +16,27 @@ using namespace chr;
 
 namespace jsp
 {
+#pragma mark ---------------------------------------- proxy NAMESPACE ----------------------------------------
+    
     namespace proxy
     {
         map<int32_t, Proxy*> instances;
         int32_t lastInstanceId = -1;
         
+        int32_t instanceCreated(Proxy *instance);
+        void instanceDestroyed(int32_t instanceId);
         Proxy* getInstance(int32_t instanceId);
+    }
+    
+    int32_t proxy::instanceCreated(Proxy *instance)
+    {
+        proxy::instances.emplace(++proxy::lastInstanceId, instance);
+        return proxy::lastInstanceId;
+    }
+    
+    void proxy::instanceDestroyed(int32_t instanceId)
+    {
+        proxy::instances.erase(instanceId);
     }
     
     Proxy* proxy::getInstance(int32_t instanceId)
@@ -36,13 +51,20 @@ namespace jsp
         return nullptr;
     }
     
-    // ---
-    
+#pragma mark ---------------------------------------- Proxy NAMESPACE ----------------------------------------
+
     Proxy::Proxy(Proto *target)
-    :
-    target(target)
     {
-        instanceCreated();
+        if (!target)
+        {
+            this->target = BaseProto::instance();
+        }
+        else
+        {
+            this->target = target;
+        }
+        
+        instanceId = proxy::instanceCreated(this);
     }
     
     Proxy::Proxy(Proxy *target)
@@ -50,14 +72,9 @@ namespace jsp
     Proxy(static_cast<Proto*>(target))
     {}
 
-    Proxy::Proxy()
-    :
-    Proxy(BaseProto::instance())
-    {}
-    
     Proxy::~Proxy()
     {
-        instanceDestroyed();
+        proxy::instanceDestroyed(instanceId);
     }
     
     bool Proxy::setTarget(Proto *target)
@@ -102,15 +119,14 @@ namespace jsp
         return false;
     }
     
-    void Proxy::instanceCreated()
+    string Proxy::peerName()
     {
-        proxy::instances.emplace(++proxy::lastInstanceId, this);
-        instanceId = proxy::lastInstanceId;
+        return "Proxy";
     }
 
-    void Proxy::instanceDestroyed()
+    bool Proxy::isSingleton()
     {
-        proxy::instances.erase(instanceId);
+        return false;
     }
     
     // ---
