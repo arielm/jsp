@@ -9,6 +9,7 @@
 #pragma once
 
 #include "jsp/Proto.h"
+#include "jsp/WrappedObject.h"
 
 #define TARGET(FN, ...) target->FN(__VA_ARGS__)
 #define HANDLE(FN, ...) handler->FN(__VA_ARGS__)
@@ -35,6 +36,8 @@ namespace jsp
         static void uninit();
         
         // ---
+        
+        Heap<WrappedObject> peer;
         
         Proxy(Proto *target, const PeerProperties &peerProperties);
         Proxy(Proto *target = nullptr);

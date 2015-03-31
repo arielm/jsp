@@ -26,12 +26,28 @@ void TestingProxy::performRun(bool force)
 
 void TestingProxy::testPeers1()
 {
-    Proxy p1;
-    Proxy singleton("Foo", true);
+    Proxy vanilla1;
+    Proxy singleton("ScriptManager", true);
     
     try
     {
-        executeScript("peers.foo = 123; peers.Proxy[0].bar = 'baz'; peers.Foo = 456");
+        /*
+         * ALLOWED
+         */
+        executeScript("peers.Proxy[0].bar = 'baz';");
+
+        /*
+         * INTENTIONALLY NOT ALLOWED
+         */
+        executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
+        
+        /*
+         * SHOULD NOT BE ALLOWED AS WELL (I.E. ONLY GENERATE A "WARNING")
+         *
+         * TODO: FIND OUT HOW (SPOILER: NON-TRIVIAL)
+         */
+        executeScript("peers.foo = 123");
+
     }
     catch (exception &e)
     {

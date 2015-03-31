@@ -41,40 +41,33 @@ namespace jsp
         
         const char *name = peerProperties.name.data();
         
-        /*
-         * TODO: SHOULD PROBABLY BE STORED AS Heap<WrappedObject> IN instance
-         */
-        RootedObject peer(cx, JS_NewObject(cx, nullptr, NullPtr(), NullPtr()));
+        instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
         
         if (peerProperties.isSingleton)
         {
-            JS_DefineProperty(cx, proxy::peers, name, peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            JS_DefineProperty(cx, proxy::peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         }
         else
         {
             RootedObject peerArray(cx);
             uint32_t peerCount = 0;
             
-            RootedValue tmp(cx);
-            JS_GetProperty(cx, proxy::peers, name, &tmp);
+            RootedValue tmp1(cx);
+            JS_GetProperty(cx, proxy::peers, name, &tmp1);
             
-            if (tmp.isUndefined())
+            if (tmp1.isUndefined())
             {
                 peerArray = JS_NewArrayObject(cx, 0);
                 JS_DefineProperty(cx, proxy::peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
             }
             else
             {
-                peerArray = tmp.toObjectOrNull();
+                peerArray = tmp1.toObjectOrNull();
                 JS_GetArrayLength(cx, peerArray, &peerCount);
             }
             
-            /*
-             * TODO: CHECK HOW IT IS POSSIBLE TO MAKE ELEMENT "READ-ONLY" AND "PERMANENT"
-             *
-             * HINT: JS_DefineElement(cx, peerArray, peerCount, peer, JS_PropertyStub, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
-             */
-            JS_SetElement(cx, peerArray, peerCount, peer);
+            RootedValue tmp2(cx, instance->peer.get());
+            JS_DefineElement(cx, peerArray, peerCount, tmp2, nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
         return proxy::lastInstanceId;
