@@ -50,11 +50,9 @@ public:
     // ---
     
     static const JSClass CustomClass1;
-    static bool CustomConstructor1(JSContext *cx, unsigned argc, JS::Value *vp);
-
     static const JSClass CustomClass2;
-    static bool CustomConstructor2(JSContext *cx, unsigned argc, JS::Value *vp);
+    static bool CustomConstructor(JSContext *cx, unsigned argc, JS::Value *vp);
 
-    void testCustomObject1();
-    void testCustomObject2();
+    void testCustomConstruction1();
+    void testCustomConstruction2();
 };

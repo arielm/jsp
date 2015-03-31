@@ -78,12 +78,12 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testCustomObject1)
-        JSP_TEST(force || false, testCustomObject2)
+        JSP_TEST(force || true, testCustomConstruction1)
+        JSP_TEST(force || true, testCustomConstruction2)
     }
 }
 
-#pragma mark ---------------------------------------- CUSTOM OBJECTS ----------------------------------------
+#pragma mark ---------------------------------------- CUSTOM CONSTRUCTION ----------------------------------------
 
 const JSClass TestingJS::CustomClass1 =
 {
@@ -97,36 +97,6 @@ const JSClass TestingJS::CustomClass1 =
     JS_ResolveStub,
     JS_ConvertStub,
 };
-
-bool TestingJS::CustomConstructor1(JSContext *cx, unsigned argc, Value *vp)
-{
-    auto args = CallArgsFromVp(argc, vp);
-    
-    JSObject &callee = args.callee();
-    LOGI << "CALLEE: " << JSP::writeDetailed(&callee) << endl;
-    
-    JSObject *obj = JS_NewObjectForConstructor(cx, &CustomClass1, args);
-    
-    if (obj)
-    {
-        LOGI << "ARGUMENT-COUNT: " << args.length() << endl;
-        
-        args.rval().setObject(*obj);
-        return true;
-    }
-    
-    return false;
-}
-
-void TestingJS::testCustomObject1()
-{
-    RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor1, 0, nullptr, nullptr, nullptr, nullptr));
-    JSP::dumpObject(constructor1);
-    
-    executeScript("new CustomObject1(1, 'foo');");
-}
-
-// ---
 
 const JSClass TestingJS::CustomClass2 =
 {
@@ -142,30 +112,81 @@ const JSClass TestingJS::CustomClass2 =
     nullptr,
     nullptr,
     nullptr,
-    CustomConstructor2      // construct
+    CustomConstructor       // construct
 };
 
-bool TestingJS::CustomConstructor2(JSContext *cx, unsigned argc, Value *vp)
+bool TestingJS::CustomConstructor(JSContext *cx, unsigned argc, Value *vp)
 {
     auto args = CallArgsFromVp(argc, vp);
     
-    JSObject &callee = args.callee();
-    LOGI << "CALLEE: " << JSP::writeDetailed(&callee) << endl;
-    
-    JSObject *obj = JS_NewObjectForConstructor(cx, &CustomClass2, args);
-    
-    if (obj)
+    if (!args.isConstructing() || !args.calleev().isObject())
     {
-        LOGI << "ARGUMENT-COUNT: " << args.length() << endl;
-        
-        args.rval().setObject(*obj);
-        return true;
+        JS_ReportError(cx, "CONSTRUCTION FAILED");
+        return false;
     }
     
-    return false;
+    JSObject &callee = args.callee();
+    const JSClass *classp;
+    
+    if (callee.is<JSFunction>())
+    {
+        if (!(&callee.as<JSFunction>())->isNative())
+        {
+            JS_ReportError(cx, "CONSTRUCTION FAILED");
+            return false;
+        }
+        
+        /*
+         * CALLED VIA JS
+         */
+        classp = &CustomClass1; // IMPOSSIBLE TO INFER JSClass
+    }
+    else
+    {
+        if (!callee.getClass()->construct)
+        {
+            JS_ReportError(cx, "CONSTRUCTION FAILED");
+            return false;
+        }
+        
+        /*
+         * CALLED VIA C++
+         */
+        classp = js::Jsvalify(callee.getClass()); // I.E. CustomClass2
+    }
+    
+    LOGI << "CONSTRUCTING " << classp->name << " WITH " << args.length() << " ARGUMENTS" << endl;
+    
+    JSObject *obj = JS_NewObjectForConstructor(cx, classp, args);
+    
+    if (!obj)
+    {
+        JS_ReportError(cx, "CONSTRUCTION FAILED");
+        return false;
+    }
+    
+    args.rval().setObject(*obj);
+    return true;
 }
 
-void TestingJS::testCustomObject2()
+/*
+ * INSTANTIATION WITH ARGUMENTS, FROM THE JS-SIDE
+ */
+void TestingJS::testCustomConstruction1()
+{
+    RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor, 0, nullptr, nullptr, nullptr, nullptr));
+    JSP::dumpObject(constructor1);
+    
+    /*
+     * REQUIRED: CustomConstructor PASSED AS JSNative CONSTRUCTOR-ARGUMENT TO JS_InitClass()
+     */
+    executeScript("new CustomObject1(1, 'foo');");
+}
+
+/*
+ * INSTANTIATION WITH ARGUMENTS, FROM THE C++ SIDE
+ */
+void TestingJS::testCustomConstruction2()
 {
     RootedObject constructor2(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
     JSP::dumpObject(constructor2);
@@ -173,6 +194,9 @@ void TestingJS::testCustomObject2()
     AutoValueArray<1> args(cx);
     args[0].setNumber(33.0);
     
+    /*
+     * REQUIRED: CustomConstructor DEFINED AS construct HOOK IN JSClass DECLARATION
+     */
     JS_New(cx, constructor2, args);
 }
 
