@@ -193,17 +193,17 @@ namespace js
         return MutableHandle<WrappedObject>::fromMarkedLocation(reinterpret_cast<WrappedObject*>(self.unsafeGet()));
     }
     
-    HeapBase<WrappedObject>::operator Handle<Value> () const
-    {
-        const Heap<WrappedObject> &self = *static_cast<const Heap<WrappedObject>*>(this);
-        return Handle<Value>::fromMarkedLocation(reinterpret_cast<Value const*>(self.address()));
-    }
-    
-    HeapBase<WrappedObject>::operator MutableHandle<Value> ()
-    {
-        Heap<WrappedObject> &self = *static_cast<Heap<WrappedObject>*>(this);
-        return MutableHandle<Value>::fromMarkedLocation(reinterpret_cast<Value*>(self.unsafeGet()));
-    }
+//  HeapBase<WrappedObject>::operator Handle<Value> () const
+//  {
+//      const Heap<WrappedObject> &self = *static_cast<const Heap<WrappedObject>*>(this);
+//      return Handle<Value>::fromMarkedLocation(reinterpret_cast<Value const*>(self.address()));
+//  }
+//
+//  HeapBase<WrappedObject>::operator MutableHandle<Value> ()
+//  {
+//      Heap<WrappedObject> &self = *static_cast<Heap<WrappedObject>*>(this);
+//      return MutableHandle<Value>::fromMarkedLocation(reinterpret_cast<Value*>(self.unsafeGet()));
+//  }
     
     HeapBase<WrappedObject>::operator const bool () const
     {

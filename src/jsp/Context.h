@@ -336,8 +336,8 @@ namespace js
         operator JS::MutableHandle<JSObject*> ();
         operator JS::MutableHandle<WrappedObject> ();
         
-        operator JS::Handle<JS::Value> () const;
-        operator JS::MutableHandle<JS::Value> ();
+//      operator JS::Handle<JS::Value> () const;
+//      operator JS::MutableHandle<JS::Value> ();
         
         explicit operator const bool () const;
     };
@@ -377,20 +377,23 @@ public:
     /*
      * BORROWED FROM: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L101-130
      *
-     * THE ONLY VALID WAY OF CHECKING FOR POISONING, AT LEAST UNDER "GENERATIONAL GC"
-     * IT SHOULD PROBABLY BE INTEGRATED IN THE OFFICIAL SPIDERMONKEY API SOON
+     * THIS IS THE ONLY VALID WAY OF CHECKING FOR POISONING, AT LEAST UNDER GENERATIONAL-GC
+     * AS OF SPIDERMONKEY 31: NOT YET "INTEGRATED" IN THE OFFICIAL API
      *
      *
      * BACKGROUND:
      *
      * THE JS::IsPoisonedPtr() IMPLEMENTATION (DEFINED IN /js/public/Utility.h)
-     * IS NOT WORKING AS INTENDED, AT LEAST UNDER "GENERATIONAL GC":
+     * IS NOT WORKING AS INTENDED, AT LEAST UNDER GENERATIONAL-GC:
      *
      * IT IS EITHER RETURNING false (UNLESS THE "JSGC_ROOT_ANALYSIS" MACRO IS DEFINED)
      *
      * OTHERWISE: IT RELIES ON THE "JS_FREE_PATTERN" MACRO WHICH IS NOT DECLARED (ANYMORE)
      * - IT WAS DECLARED AS 0xDA UNTIL ~SPIDERMONKEY 24
-     * - IT WAS PROBABLY REMOVED (STARTING FROM ~SPIDERMONKEY 28) IN PREVISION OF THE "REVISED POISONING" POLICY
+     * - IT WAS PROBABLY REMOVED (STARTING FROM ~SPIDERMONKEY 28) IN PREVISION OF SOME "REVISED POISONING" POLICY
+     *
+     *
+     * MOSTLY FOR INTERNAL USAGE (JSP::isHealthy(T*) IS RECOMMENDED INSTEAD)
      */
     template<typename T>
     static inline bool isPoisoned(T *thing)
@@ -538,6 +541,9 @@ public:
         return '?';
     }
 
+    /*
+     * MOSTLY FOR INTERNAL USAGE
+     */
     template<typename T>
     static std::string writeTraceThingInfo(T *thing, bool details = true);
 
