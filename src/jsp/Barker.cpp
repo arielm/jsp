@@ -20,8 +20,8 @@ namespace jsp
     namespace barker
     {
         bool initialized = false;
-        ptrdiff_t constructCount = 0; // CLASS-INSTANCE IS NOT COUNTED
         
+        ptrdiff_t constructCount = 0; // CLASS-INSTANCE IS NOT COUNTED
         map<ptrdiff_t, string> names;
         map<ptrdiff_t, JSObject*> instances;
         
@@ -354,6 +354,16 @@ namespace jsp
         
         return barker::initialized;
     }
+    
+    /*
+     * TODO: COMPLETE UN-INITIALIZATION
+     */
+    void Barker::uninit()
+    {
+        barker::initialized = false;
+    }
+    
+    // ---
     
     const Barker& Barker::construct(const string &name)
     {

@@ -8,6 +8,7 @@
 
 #include "jsp/Proxy.h"
 #include "jsp/BaseProto.h"
+#include "jsp/WrappedObject.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -17,24 +18,69 @@ using namespace chr;
 namespace jsp
 {
 #pragma mark ---------------------------------------- proxy NAMESPACE ----------------------------------------
-    
+
     namespace proxy
     {
-        map<int32_t, Proxy*> instances;
+        bool initialized = false;
+
         int32_t lastInstanceId = -1;
+        map<int32_t, Proxy*> instances;
         
-        int32_t instanceCreated(Proxy *instance, const PeerProperties &peerProperties);
-        void instanceDestroyed(int32_t instanceId);
+        Heap<WrappedObject> peers;
+        
+        int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
+        void removeInstance(int32_t instanceId);
         Proxy* getInstance(int32_t instanceId);
     }
     
-    int32_t proxy::instanceCreated(Proxy *instance, const PeerProperties &peerProperties)
+    int32_t proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
     {
         proxy::instances.emplace(++proxy::lastInstanceId, instance);
+        
+        // ---
+        
+        const char *name = peerProperties.name.data();
+        
+        /*
+         * TODO: SHOULD PROBABLY BE STORED AS Heap<WrappedObject> IN instance
+         */
+        RootedObject peer(cx, JS_NewObject(cx, nullptr, NullPtr(), NullPtr()));
+        
+        if (peerProperties.isSingleton)
+        {
+            JS_DefineProperty(cx, proxy::peers, name, peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        }
+        else
+        {
+            RootedObject peerArray(cx);
+            uint32_t peerCount = 0;
+            
+            RootedValue tmp(cx);
+            JS_GetProperty(cx, proxy::peers, name, &tmp);
+            
+            if (tmp.isUndefined())
+            {
+                peerArray = JS_NewArrayObject(cx, 0);
+                JS_DefineProperty(cx, proxy::peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            }
+            else
+            {
+                peerArray = tmp.toObjectOrNull();
+                JS_GetArrayLength(cx, peerArray, &peerCount);
+            }
+            
+            /*
+             * TODO: CHECK HOW IT IS POSSIBLE TO MAKE ELEMENT "READ-ONLY" AND "PERMANENT"
+             *
+             * HINT: JS_DefineElement(cx, peerArray, peerCount, peer, JS_PropertyStub, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
+             */
+            JS_SetElement(cx, peerArray, peerCount, peer);
+        }
+        
         return proxy::lastInstanceId;
     }
     
-    void proxy::instanceDestroyed(int32_t instanceId)
+    void proxy::removeInstance(int32_t instanceId)
     {
         proxy::instances.erase(instanceId);
     }
@@ -50,30 +96,63 @@ namespace jsp
         
         return nullptr;
     }
+
+#pragma mark ---------------------------------------- Proxy STATIC ----------------------------------------
     
-#pragma mark ---------------------------------------- Proxy NAMESPACE ----------------------------------------
+    bool Proxy::init()
+    {
+        if (!proxy::initialized)
+        {
+            proxy::peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+            JS_DefineProperty(cx, globalHandle(), "peers", proxy::peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            
+            // ---
+            
+            proxy::initialized = true;
+        }
+        
+        return proxy::initialized;
+    }
+    
+    void Proxy::uninit()
+    {
+        if (proxy::initialized)
+        {
+            proxy::lastInstanceId = -1;
+            proxy::instances.clear();
+            
+            proxy::peers = nullptr;
+            JS_DeleteProperty(cx, globalHandle(), "peers");
+            
+            // ---
+            
+            proxy::initialized = false;
+        }
+    }
+
+#pragma mark ---------------------------------------- Proxy INSTANCE ----------------------------------------
     
     Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
     {
         this->target = target;
-        instanceId = proxy::instanceCreated(this, peerProperties);
+        instanceId = proxy::addInstance(this, peerProperties);
     }
     
     Proxy::Proxy(Proto *target)
     {
         this->target = target ? target : defaultTarget();
-        instanceId = proxy::instanceCreated(this, defaultPeerProperties());
+        instanceId = proxy::addInstance(this, defaultPeerProperties());
     }
     
-    Proxy::Proxy(const PeerProperties &peerProperties)
+    Proxy::Proxy(const string &peerName, bool isSingleton)
     {
         target = defaultTarget();
-        instanceId = proxy::instanceCreated(this, peerProperties);
+        instanceId = proxy::addInstance(this, PeerProperties(peerName, isSingleton));
     }
 
     Proxy::~Proxy()
     {
-        proxy::instanceDestroyed(instanceId);
+        proxy::removeInstance(instanceId);
     }
     
     bool Proxy::setTarget(Proto *target)

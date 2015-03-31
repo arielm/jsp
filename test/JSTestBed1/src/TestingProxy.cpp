@@ -18,7 +18,27 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || true, testNativeCalls1);
+    JSP_TEST(force || true, testPeers1);
+    JSP_TEST(force || false, testNativeCalls1);
+}
+
+// ---
+
+void TestingProxy::testPeers1()
+{
+    Proxy p1;
+    Proxy singleton("Foo", true);
+    
+    try
+    {
+        executeScript("peers.foo = 123; peers.Proxy[0].bar = 'baz'; peers.Foo = 456");
+    }
+    catch (exception &e)
+    {
+        LOGI << e.what() << endl;
+    }
+    
+    LOGI << toSource(get<OBJECT>(globalHandle(), "peers")) << endl;
 }
 
 // ---

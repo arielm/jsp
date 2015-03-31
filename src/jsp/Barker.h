@@ -95,10 +95,8 @@ namespace jsp
         
         // ---
 
-        /*
-         * MANDATORY PRIOR TO BARKER CREATION ON THE JS-SIDE
-         */
         static bool init();
+        static void uninit();
         
         /*
          * C++ CONSTRUCTOR

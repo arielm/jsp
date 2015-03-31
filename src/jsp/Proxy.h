@@ -31,9 +31,14 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
+        static bool init();
+        static void uninit();
+        
+        // ---
+        
         Proxy(Proto *target, const PeerProperties &peerProperties);
         Proxy(Proto *target = nullptr);
-        Proxy(const PeerProperties &peerProperties);
+        Proxy(const std::string &peerName, bool isSingleton = false);
         
         ~Proxy();
 

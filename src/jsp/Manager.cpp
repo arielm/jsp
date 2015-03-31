@@ -13,7 +13,9 @@
  */
 
 #include "jsp/Manager.h"
+
 #include "jsp/Barker.h"
+#include "jsp/Proxy.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -185,6 +187,7 @@ namespace jsp
                 JS_DefineFunctions(cx, globalHandle(), global_functions);
                 
                 Barker::init();
+                Proxy::init();
                 
                 // ---
                 
@@ -199,6 +202,9 @@ namespace jsp
     {
         if (initialized)
         {
+            Barker::uninit();
+            Proxy::uninit();
+
             jsp:preShutdown();
             performShutdown();
             
