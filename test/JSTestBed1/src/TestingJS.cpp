@@ -69,12 +69,111 @@ void TestingJS::performRun(bool force)
         testJSID();
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testGetter1)
         JSP_TEST(force || true, testSetter1)
         JSP_TEST(force || true, testGetterSetter1)
     }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || true, testCustomObject1)
+        JSP_TEST(force || false, testCustomObject2)
+    }
+}
+
+#pragma mark ---------------------------------------- CUSTOM OBJECTS ----------------------------------------
+
+const JSClass TestingJS::CustomClass1 =
+{
+    "CustomObject1",
+    0,
+    JS_PropertyStub,       // add
+    JS_DeletePropertyStub, // delete
+    JS_PropertyStub,       // get
+    JS_StrictPropertyStub, // set
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+};
+
+bool TestingJS::CustomConstructor1(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    
+    JSObject &callee = args.callee();
+    LOGI << "CALLEE: " << JSP::writeDetailed(&callee) << endl;
+    
+    JSObject *obj = JS_NewObjectForConstructor(cx, &CustomClass1, args);
+    
+    if (obj)
+    {
+        LOGI << "ARGUMENT-COUNT: " << args.length() << endl;
+        
+        args.rval().setObject(*obj);
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingJS::testCustomObject1()
+{
+    RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor1, 0, nullptr, nullptr, nullptr, nullptr));
+    JSP::dumpObject(constructor1);
+    
+    executeScript("new CustomObject1(1, 'foo');");
+}
+
+// ---
+
+const JSClass TestingJS::CustomClass2 =
+{
+    "CustomObject2",
+    0,
+    JS_PropertyStub,        // add
+    JS_DeletePropertyStub,  // delete
+    JS_PropertyStub,        // get
+    JS_StrictPropertyStub,  // set
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    nullptr,
+    nullptr,
+    nullptr,
+    CustomConstructor2      // construct
+};
+
+bool TestingJS::CustomConstructor2(JSContext *cx, unsigned argc, Value *vp)
+{
+    auto args = CallArgsFromVp(argc, vp);
+    
+    JSObject &callee = args.callee();
+    LOGI << "CALLEE: " << JSP::writeDetailed(&callee) << endl;
+    
+    JSObject *obj = JS_NewObjectForConstructor(cx, &CustomClass2, args);
+    
+    if (obj)
+    {
+        LOGI << "ARGUMENT-COUNT: " << args.length() << endl;
+        
+        args.rval().setObject(*obj);
+        return true;
+    }
+    
+    return false;
+}
+
+void TestingJS::testCustomObject2()
+{
+    RootedObject constructor2(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
+    JSP::dumpObject(constructor2);
+    
+    AutoValueArray<1> args(cx);
+    args[0].setNumber(33.0);
+    
+    JS_New(cx, constructor2, args);
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------
