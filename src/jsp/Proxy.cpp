@@ -204,9 +204,9 @@ namespace jsp
 
     // ---
     
-    NativeCall* Proxy::getNativeCall(int32_t nativeCallId)
+    const NativeCall* Proxy::getNativeCall(int32_t nativeCallId) const
     {
-        auto found = nativeCalls.find(nativeCallId);
+        const auto found = nativeCalls.find(nativeCallId);
         
         if (found != nativeCalls.end())
         {
@@ -216,7 +216,7 @@ namespace jsp
         return nullptr;
     }
     
-    int32_t Proxy::getNativeCallId(const string &name)
+    int32_t Proxy::getNativeCallId(const string &name) const
     {
         for (auto &element : nativeCalls)
         {
@@ -299,7 +299,7 @@ namespace jsp
             
             if (nativeCall)
             {
-                return proxy->applyNativeCall(nativeCall->fn, args);
+                return proxy->apply(*nativeCall, args);
             }
         }
         

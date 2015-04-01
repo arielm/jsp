@@ -38,9 +38,9 @@ namespace jsp
          * NATIVE CALLS
          */
         
-        inline bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) override
+        inline bool apply(const NativeCall &nativeCall, CallArgs args) override
         {
-            return fn(args);
+            return nativeCall.fn(args);
         }
 
         /*

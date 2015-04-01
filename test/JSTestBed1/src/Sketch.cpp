@@ -41,9 +41,9 @@ void Sketch::setup()
         TestingBase::execute<TestingRooting2>(false);
 #endif
         
-        TestingBase::execute<TestingJS>(true);
+        TestingBase::execute<TestingJS>(false);
         TestingBase::execute<TestingCallbacks>(false);
-        TestingBase::execute<TestingProxy>(false);
+        TestingBase::execute<TestingProxy>(true);
         
         manager.shutdown();
     }

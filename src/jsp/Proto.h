@@ -123,12 +123,7 @@ namespace jsp
         
         // ---
         
-        /*
-         * TODO INSTEAD:
-         *
-         * bool apply(const NativeCall &nativeCall, CallArgs args)
-         */
-        virtual bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) = 0;
+        virtual bool apply(const NativeCall &nativeCall, CallArgs args) = 0;
 
         // ---
         

@@ -85,9 +85,9 @@ namespace jsp
         
         // ---
         
-        inline bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) final
+        inline bool apply(const NativeCall &nativeCall, CallArgs args) final
         {
-            return FORWARD(applyNativeCall, fn, args);
+            return FORWARD(apply, nativeCall, args);
         }
         
         // ---
@@ -210,8 +210,8 @@ namespace jsp
         int32_t lastNativeCallId = -1;
         std::map<int32_t, NativeCall> nativeCalls;
         
-        NativeCall* getNativeCall(int32_t nativeCallId);
-        int32_t getNativeCallId(const std::string &name);
+        const NativeCall* getNativeCall(int32_t nativeCallId) const;
+        int32_t getNativeCallId(const std::string &name) const;
         int32_t addNativeCall(const std::string &name, const NativeCallFnType &fn);
         void removeNativeCall(int32_t nativeCallId);
     };
