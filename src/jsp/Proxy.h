@@ -206,6 +206,22 @@ namespace jsp
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
+        struct StaticData
+        {
+            int32_t lastInstanceId = -1;
+            std::map<int32_t, Proxy*> instances;
+            
+            Heap<WrappedObject> peers;
+        };
+        
+        static StaticData *data;
+        
+        static int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
+        static void removeInstance(int32_t instanceId);
+        static Proxy* getInstance(int32_t instanceId);
+        
+        // ---
+        
         int32_t instanceId = -1;
         int32_t lastNativeCallId = -1;
         std::map<int32_t, NativeCall> nativeCalls;

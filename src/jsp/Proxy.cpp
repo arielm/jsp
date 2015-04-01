@@ -17,26 +17,37 @@ using namespace chr;
 
 namespace jsp
 {
-#pragma mark ---------------------------------------- proxy NAMESPACE ----------------------------------------
+    Proxy::StaticData *Proxy::data = nullptr;
 
-    namespace proxy
+    bool Proxy::init()
     {
-        struct StaticData
+        if (!data)
         {
-            int32_t lastInstanceId = -1;
-            map<int32_t, Proxy*> instances;
+            data = new StaticData;
             
-            Heap<WrappedObject> peers;
-        };
+            data->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+            JS_DefineProperty(cx, globalHandle(), "peers", data->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        }
         
-        StaticData *data = nullptr;
-        
-        int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
-        void removeInstance(int32_t instanceId);
-        Proxy* getInstance(int32_t instanceId);
+        return data;
     }
     
-    int32_t proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
+    void Proxy::uninit()
+    {
+        if (data)
+        {
+            data->lastInstanceId = -1;
+            data->instances.clear();
+            
+            data->peers = nullptr;
+            JS_DeleteProperty(cx, globalHandle(), "peers");
+            
+            delete data;
+            data = nullptr;
+        }
+    }
+    
+    int32_t Proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
     {
         data->instances.emplace(++data->lastInstanceId, instance);
         
@@ -76,12 +87,12 @@ namespace jsp
         return data->lastInstanceId;
     }
     
-    void proxy::removeInstance(int32_t instanceId)
+    void Proxy::removeInstance(int32_t instanceId)
     {
         data->instances.erase(instanceId);
     }
     
-    Proxy* proxy::getInstance(int32_t instanceId)
+    Proxy* Proxy::getInstance(int32_t instanceId)
     {
         auto found = data->instances.find(instanceId);
         
@@ -93,59 +104,29 @@ namespace jsp
         return nullptr;
     }
 
-#pragma mark ---------------------------------------- Proxy STATIC ----------------------------------------
-    
-    bool Proxy::init()
-    {
-        if (!proxy::data)
-        {
-            proxy::data = new proxy::StaticData;
-            
-            proxy::data->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-            JS_DefineProperty(cx, globalHandle(), "peers", proxy::data->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
-        }
-        
-        return proxy::data;
-    }
-    
-    void Proxy::uninit()
-    {
-        if (proxy::data)
-        {
-            proxy::data->lastInstanceId = -1;
-            proxy::data->instances.clear();
-            
-            proxy::data->peers = nullptr;
-            JS_DeleteProperty(cx, globalHandle(), "peers");
-            
-            delete proxy::data;
-            proxy::data = nullptr;
-        }
-    }
-
-#pragma mark ---------------------------------------- Proxy INSTANCE ----------------------------------------
+    // ---
     
     Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
     {
         this->target = target;
-        instanceId = proxy::addInstance(this, peerProperties);
+        instanceId = addInstance(this, peerProperties);
     }
     
     Proxy::Proxy(Proto *target)
     {
         this->target = target ? target : defaultTarget();
-        instanceId = proxy::addInstance(this, defaultPeerProperties());
+        instanceId = addInstance(this, defaultPeerProperties());
     }
     
     Proxy::Proxy(const string &peerName, bool isSingleton)
     {
         target = defaultTarget();
-        instanceId = proxy::addInstance(this, PeerProperties(peerName, isSingleton));
+        instanceId = addInstance(this, PeerProperties(peerName, isSingleton));
     }
 
     Proxy::~Proxy()
     {
-        proxy::removeInstance(instanceId);
+        removeInstance(instanceId);
     }
     
     bool Proxy::setTarget(Proto *target)
@@ -290,7 +271,7 @@ namespace jsp
         auto function = &args.callee().as<JSFunction>();
         
         auto proxyId = GetFunctionNativeReserved(function, 0).toInt32();
-        auto proxy = proxy::getInstance(proxyId);
+        auto proxy = getInstance(proxyId);
         
         if (proxy)
         {
