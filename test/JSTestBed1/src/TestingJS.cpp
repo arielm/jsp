@@ -18,7 +18,6 @@ using namespace jsp;
 
 void TestingJS::performRun(bool force)
 {
-
     if (force || false)
     {
         JSP::dumpObject(globalHandle());
@@ -78,7 +77,7 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testCustomConstruction1)
+        JSP_TEST(force || false, testCustomConstruction1)
         JSP_TEST(force || true, testCustomConstruction2)
     }
 }
@@ -125,12 +124,16 @@ bool TestingJS::CustomConstructor(JSContext *cx, unsigned argc, Value *vp)
         return false;
     }
     
+    /*
+     * CALLEE ANALYSIS: IS IT A FUNCTION OR AN OBJECT?
+     */
+    
     JSObject &callee = args.callee();
     const JSClass *classp;
     
     if (callee.is<JSFunction>())
     {
-        if (!(&callee.as<JSFunction>())->isNative())
+        if (!callee.as<JSFunction>().isNative())
         {
             JS_ReportError(cx, "CONSTRUCTION FAILED");
             return false;
@@ -170,7 +173,7 @@ bool TestingJS::CustomConstructor(JSContext *cx, unsigned argc, Value *vp)
 }
 
 /*
- * INSTANTIATION WITH ARGUMENTS, FROM THE JS-SIDE
+ * INSTANTIATION WITH ARGUMENTS, VIA JSNative CONSTRUCTOR
  */
 void TestingJS::testCustomConstruction1()
 {
@@ -178,13 +181,23 @@ void TestingJS::testCustomConstruction1()
     JSP::dumpObject(constructor1);
     
     /*
-     * REQUIRED: CustomConstructor PASSED AS JSNative CONSTRUCTOR-ARGUMENT TO JS_InitClass()
+     * REQUIRED FOR JS-SIDE INSTANTIATION:
+     * CustomConstructor PASSED AS JSNative CONSTRUCTOR-ARGUMENT TO JS_InitClass()
      */
-    executeScript("new CustomObject1(1, 'foo');");
+    executeScript("new CustomObject1(1, 'foo')");
+    
+    // ---
+    
+    AutoValueArray<3> args(cx);
+    args[0].setInt32(255);
+    args[1].setObjectOrNull(nullptr);
+    args[2].setString(toJSString("hello"));
+    
+    newNativeObject("CustomObject1", args);
 }
 
 /*
- * INSTANTIATION WITH ARGUMENTS, FROM THE C++ SIDE
+ * INSTANTIATION WITH ARGUMENTS, VIA construct HOOK
  */
 void TestingJS::testCustomConstruction2()
 {
@@ -195,9 +208,14 @@ void TestingJS::testCustomConstruction2()
     args[0].setNumber(33.0);
     
     /*
-     * REQUIRED: CustomConstructor DEFINED AS construct HOOK IN JSClass DECLARATION
+     * REQUIRED IF JS_InitClass() WAS NOT CALLED WITH JSNative CONSTRUCTOR-ARGUMENT:
+     * CustomConstructor DEFINED AS construct HOOK IN JSClass DECLARATION
      */
     JS_New(cx, constructor2, args);
+    
+    // ---
+    
+    newNativeObject("CustomObject2", args);
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------
@@ -532,7 +550,7 @@ void TestingJS::dumpIds(JSObject *object)
 
 JSObject* TestingJS::createObject1()
 {
-    RootedObject object(cx, newObject());
+    RootedObject object(cx, newPlainObject());
     
     RootedValue value1(cx, NumberValue(33.33));
     JS_SetProperty(cx, object, "property1", value1);

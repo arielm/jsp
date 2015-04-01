@@ -114,9 +114,7 @@ namespace jsp
         // ---
         
         /*
-         * TODO:
-         *
-         * - DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
+         * TODO: DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
          */
         
         virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) = 0;
@@ -125,11 +123,23 @@ namespace jsp
         
         // ---
         
+        /*
+         * TODO INSTEAD:
+         *
+         * bool apply(const NativeCall &nativeCall, CallArgs args)
+         */
         virtual bool applyNativeCall(const NativeCallFnType &fn, CallArgs args) = 0;
 
         // ---
         
-        virtual JSObject* newObject() = 0;
+        /*
+         * TODO:
+         *
+         * 1) bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs)
+         */
+        
+        virtual JSObject* newPlainObject() = 0;
+        virtual JSObject* newNativeObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) = 0;
         
         virtual bool hasProperty(HandleObject object, const char *name) = 0;
         virtual bool hasOwnProperty(HandleObject object, const char *name) = 0;
@@ -169,11 +179,13 @@ namespace jsp
         /*
          * TODO:
          *
-         * 1) C++11 ITERATORS
+         * 1) bool hasElement(HandleObject array, uint32_t index)
+         * 2) bool defineElement(HandleObject array, uint32_t index, HandleValue value, unsigned attrs)
+         * 3) template<typename T> bool push(HandleObject targetArray, T value)
          *
-         * 2) BULK READ/WRITE OPERATIONS (I.E. BYPASSING "GENERIC" ELEMENT-LOOKUP)
-         *
-         * 3) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
+         * 4) C++11 ITERATORS
+         * 5) BULK READ/WRITE OPERATIONS (I.E. BYPASSING "GENERIC" ELEMENT-LOOKUP)
+         * 6) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
          */
         
         virtual JSObject* newArray(size_t length = 0) = 0;

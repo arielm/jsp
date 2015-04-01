@@ -92,11 +92,16 @@ namespace jsp
         
         // ---
         
-        inline JSObject* newObject() final
+        inline JSObject* newPlainObject() final
         {
-            return FORWARD(newObject);
+            return FORWARD(newPlainObject);
         }
         
+        inline JSObject* newNativeObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) final
+        {
+            return FORWARD(newNativeObject, className, args);
+        }
+
         inline bool hasProperty(HandleObject object, const char *name) final
         {
             return FORWARD(hasProperty, object, name);

@@ -21,34 +21,13 @@
  *
  * TODO:
  *
- * 1) IT WOULD BE BETTER TO HAVE:
- *    - Barker.instances['some barker name']
- *    - INSTEAD OF AS CURRENTLY:
- *      - Barker.instances('some barker name']
- *    - NOT CLEAR HOW TO ACHIEVE THIS SO FAR...
+ * 1) IT WOULD BE BETTER TO HAVE: barkers['some barker name']
+ *    INSTEAD OF AS CURRENTLY: Barker.instances('some barker name')
+ *    HINT: jsapi-tests/testClassGetter.cpp
  *
  * 2) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
  *
  * 3) CONSIDER USING SOME KIND OF "BI-MAP" FOR barker::instances AND barker::names
- *
- * 4) FOR THE NEXT "CUSTOM NATIVE OBJECT" (E.G. Profiler):
- *    - THE JS construct() COULD USE JS_NewObjectForConstructor
- *      - STUDY constructHook IN testNewObject.cpp:
- *        - TO UNDERSTAND:
- *          - JS_New()
- *          - js::Jsvalify()
- *          - args.isConstructing()
- *        - REPORT JS ERRORS IF NECESSARY
- *    - WORTHWILE TOO:
- *      - CUSTOM NATIVE OBJECT EXTENDING JSObject:
- *        - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/builtin/TestingFunctions.cpp#L1262-1421
- *        - WITH CUSTOM PROPERTY WITH GETTER / SETTER
- *        - DEMONSTRATES USAGE OF THE "CallNonGenericMethod" TEMPLATE!
- *    - ALTERNATIVELY:
- *      - CHECK THE "Helper Macros for creating JSClasses that function as proxies" (EG. "PROXY_CLASS_WITH_EXT") IN jsfriendapi.h
- *        - EXAMPLE IN jsapi-tests/testBug604087.cpp
- *
- * 5) STUDY testProfileStrings.cpp AND THE Probes MECHANISM
  */
 
 #pragma once
