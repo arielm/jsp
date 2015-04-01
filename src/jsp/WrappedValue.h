@@ -89,6 +89,7 @@ namespace jsp
         Value* unsafeGet() { return &value; }
         
         void set(const Value &v);
+        void clear();
         
         /*
          * TODO: USE "AUTOMATIC CONVERSION" FOR THE FOLLOWING 2 (AS IMPLEMENTED IN WrappedObject)

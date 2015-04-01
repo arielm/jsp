@@ -170,6 +170,11 @@ namespace jsp
         dump(__PRETTY_FUNCTION__);
     }
     
+    void WrappedValue::clear()
+    {
+        set(UndefinedValue());
+    }
+    
     void WrappedValue::dump(const char *prefix)
     {
         LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;

@@ -55,6 +55,7 @@ namespace jsp
         JSObject* unsafeGet() { return value; }
         
         void set(JSObject *object);
+        void clear();
         
     protected:
         friend class Heap<const WrappedObject>;

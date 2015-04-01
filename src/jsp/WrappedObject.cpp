@@ -82,6 +82,11 @@ namespace jsp
         dump(__PRETTY_FUNCTION__);
     }
     
+    void WrappedObject::clear()
+    {
+        set(nullptr);
+    }
+    
     void WrappedObject::dump(const char *prefix)
     {
         LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
