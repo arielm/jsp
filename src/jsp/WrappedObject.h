@@ -64,7 +64,6 @@ namespace jsp
         friend struct js::GCMethods<WrappedObject>;
         
         JSObject *value;
-        bool traced = false;
         
         void dump(const char *prefix);
 
@@ -73,7 +72,6 @@ namespace jsp
         void postBarrier();
         void relocate();
         
-        void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
     };

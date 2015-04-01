@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,7 +44,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
@@ -54,10 +54,15 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testAutomaticComparison);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
+    }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || true, testAutoWrappedValueVector);
     }
 }
 
@@ -274,6 +279,25 @@ void TestingWrappedValue::testHeapComparison()
     Heap<WrappedValue> heapWrapped3A(barker);
     Heap<WrappedValue> heapWrapped3B(barker);
     JSP_CHECK(heapWrapped3A == heapWrapped3B, "EQUALITY");
+}
+
+// ---
+
+void TestingWrappedValue::testAutoWrappedValueVector()
+{
+    AutoWrappedValueVector args(cx);
+    
+    args.append(123);
+    args.append("foo");
+    args.append(Barker::create("AUTO-WRAPPED"));
+    args.append(33.33);
+    
+    /*
+     * STRING AND BARKER ARE ROOTED VIA THE AutoWrappedValueVector
+     */
+    JSP::forceGC();
+    
+    call(globalHandle(), "print", args);
 }
 
 /*

@@ -93,13 +93,13 @@ namespace jsp
     
     void addTracerCallback(void *tracer, const TracerCallbackFnType &fn)
     {
-        assert(intern::postInitialized);
+        JS_ASSERT(intern::postInitialized);
         intern::tracerCallbacks.emplace(tracer, fn);
     }
     
     void removeTracerCallback(void *tracer)
     {
-        assert(intern::postInitialized);
+        JS_ASSERT(intern::postInitialized);
         intern::tracerCallbacks.erase(tracer);
     }
     
@@ -115,13 +115,13 @@ namespace jsp
 
     void addGCCallback(void *data, const GCCallbackFnType &fn)
     {
-        assert(intern::postInitialized);
+        JS_ASSERT(intern::postInitialized);
         intern::gcCallbacks.emplace(data, fn);
     }
     
     void removeGCCallback(void *data)
     {
-        assert(intern::postInitialized);
+        JS_ASSERT(intern::postInitialized);
         intern::gcCallbacks.erase(data);
     }
     

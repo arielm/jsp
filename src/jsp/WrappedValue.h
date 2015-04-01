@@ -47,11 +47,7 @@ namespace jsp
         template<typename T>
         WrappedValue& operator=(const T &v)
         {
-            if (traced)
-            {
-                endTracing();
-            }
-            
+            endTracing();
             assignValue(value, v);
             dump(__PRETTY_FUNCTION__);
             
@@ -116,7 +112,6 @@ namespace jsp
         friend struct js::GCMethods<WrappedValue>;
         
         Value value;
-        bool traced = false;
 
         void dump(const char *prefix);
 
@@ -125,7 +120,6 @@ namespace jsp
         void postBarrier();
         void relocate();
         
-        void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
 
@@ -141,6 +135,11 @@ namespace jsp
         AutoVectorRooter<WrappedValue>(cx, VALVECTOR)
         {
             MOZ_GUARD_OBJECT_NOTIFIER_INIT;
+        }
+        
+        operator const HandleValueArray () const
+        {
+            return HandleValueArray::fromMarkedLocation(length(), reinterpret_cast<const Value*>(begin()));
         }
         
         MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER

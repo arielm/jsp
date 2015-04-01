@@ -26,8 +26,6 @@ namespace jsp
     
     WrappedValue::~WrappedValue()
     {
-        assert(!traced); // TODO: FOLLOW-UP
-        
         LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
     }
     
@@ -165,11 +163,7 @@ namespace jsp
     
     void WrappedValue::set(const Value &v)
     {
-        if (traced)
-        {
-            endTracing();
-        }
-        
+        endTracing();
         value = v;
     }
     
@@ -196,7 +190,7 @@ namespace jsp
     
     void WrappedValue::postBarrier()
     {
-        beginTracing();
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
         HeapValuePostBarrier(&value);
         
         dump(__PRETTY_FUNCTION__);
@@ -212,19 +206,8 @@ namespace jsp
     
     // ---
     
-    void WrappedValue::beginTracing()
-    {
-        assert(!traced && value.isMarkable()); // TODO: FOLLOW-UP
-        
-        traced = true;
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
-    }
-    
     void WrappedValue::endTracing()
     {
-        assert(traced); // TODO: FOLLOW-UP
-        
-        traced = false;
         removeTracerCallback(this);
     }
     

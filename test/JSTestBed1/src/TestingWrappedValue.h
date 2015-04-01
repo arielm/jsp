@@ -35,4 +35,6 @@ public:
     
     void testRootedComparison();
     void testHeapComparison();
+    
+    void testAutoWrappedValueVector();
 };

@@ -21,12 +21,15 @@ namespace jsp
 
     namespace proxy
     {
-        bool initialized = false;
-
-        int32_t lastInstanceId = -1;
-        map<int32_t, Proxy*> instances;
+        struct StaticData
+        {
+            int32_t lastInstanceId = -1;
+            map<int32_t, Proxy*> instances;
+            
+            Heap<WrappedObject> peers;
+        };
         
-        Heap<WrappedObject> peers;
+        StaticData *data = nullptr;
         
         int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
         void removeInstance(int32_t instanceId);
@@ -35,7 +38,7 @@ namespace jsp
     
     int32_t proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
     {
-        proxy::instances.emplace(++proxy::lastInstanceId, instance);
+        data->instances.emplace(++data->lastInstanceId, instance);
         
         // ---
         
@@ -45,7 +48,7 @@ namespace jsp
         
         if (peerProperties.isSingleton)
         {
-            JS_DefineProperty(cx, proxy::peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            JS_DefineProperty(cx, data->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         }
         else
         {
@@ -53,12 +56,12 @@ namespace jsp
             uint32_t peerCount = 0;
             
             RootedValue tmp1(cx);
-            JS_GetProperty(cx, proxy::peers, name, &tmp1);
+            JS_GetProperty(cx, data->peers, name, &tmp1);
             
             if (tmp1.isUndefined())
             {
                 peerArray = JS_NewArrayObject(cx, 0);
-                JS_DefineProperty(cx, proxy::peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                JS_DefineProperty(cx, data->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
             }
             else
             {
@@ -70,19 +73,19 @@ namespace jsp
             JS_DefineElement(cx, peerArray, peerCount, tmp2, nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
-        return proxy::lastInstanceId;
+        return data->lastInstanceId;
     }
     
     void proxy::removeInstance(int32_t instanceId)
     {
-        proxy::instances.erase(instanceId);
+        data->instances.erase(instanceId);
     }
     
     Proxy* proxy::getInstance(int32_t instanceId)
     {
-        auto found = instances.find(instanceId);
+        auto found = data->instances.find(instanceId);
         
-        if (found != instances.end())
+        if (found != data->instances.end())
         {
             return found->second;
         }
@@ -94,32 +97,29 @@ namespace jsp
     
     bool Proxy::init()
     {
-        if (!proxy::initialized)
+        if (!proxy::data)
         {
-            proxy::peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-            JS_DefineProperty(cx, globalHandle(), "peers", proxy::peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            proxy::data = new proxy::StaticData;
             
-            // ---
-            
-            proxy::initialized = true;
+            proxy::data->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+            JS_DefineProperty(cx, globalHandle(), "peers", proxy::data->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
-        return proxy::initialized;
+        return proxy::data;
     }
     
     void Proxy::uninit()
     {
-        if (proxy::initialized)
+        if (proxy::data)
         {
-            proxy::lastInstanceId = -1;
-            proxy::instances.clear();
+            proxy::data->lastInstanceId = -1;
+            proxy::data->instances.clear();
             
-            proxy::peers = nullptr;
+            proxy::data->peers = nullptr;
             JS_DeleteProperty(cx, globalHandle(), "peers");
             
-            // ---
-            
-            proxy::initialized = false;
+            delete proxy::data;
+            proxy::data = nullptr;
         }
     }
 

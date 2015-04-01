@@ -26,8 +26,6 @@ namespace jsp
     
     WrappedObject::~WrappedObject()
     {
-        assert(!traced); // TODO: FOLLOW-UP
-        
         LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
     }
     
@@ -76,11 +74,7 @@ namespace jsp
     
     void WrappedObject::set(JSObject *object)
     {
-        if (traced)
-        {
-            endTracing();
-        }
-        
+        endTracing();
         value = object;
     }
     
@@ -107,10 +101,10 @@ namespace jsp
     
     void WrappedObject::postBarrier()
     {
-        beginTracing();
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
         HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&value));
         
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::relocate()
@@ -118,24 +112,13 @@ namespace jsp
         HeapCellRelocate(reinterpret_cast<js::gc::Cell**>(&value));
         endTracing();
         
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     // ---
-    
-    void WrappedObject::beginTracing()
-    {
-        assert(!traced); // TODO: FOLLOW-UP
-        
-        traced = true;
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
-    }
-    
+
     void WrappedObject::endTracing()
     {
-        assert(traced); // TODO: FOLLOW-UP
-        
-        traced = false;
         removeTracerCallback(this);
     }
     
@@ -146,6 +129,6 @@ namespace jsp
         /*
          * MUST TAKE PLACE AFTER JS_CallObjectTracer
          */
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        dump(__PRETTY_FUNCTION__);
     }
 }
