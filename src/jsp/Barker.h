@@ -25,9 +25,12 @@
  *    INSTEAD OF AS CURRENTLY: Barker.instances('some barker name')
  *    HINT: jsapi-tests/testClassGetter.cpp
  *
- * 2) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
+ * 2) COMPLETE UN-INITIALIZATION
  *
- * 3) CONSIDER USING SOME KIND OF "BI-MAP" FOR barker::instances AND barker::names
+ * 3) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
+ *
+ * 4) CONSIDER USING SOME KIND OF "BI-MAP" FOR barker::instances AND barker::names
+ *    - CONSTRAIN: SOLUTION SHOULD BE PURE C++11 / STL
  */
 
 #pragma once
@@ -78,11 +81,11 @@ namespace jsp
         static void uninit();
         
         /*
-         * C++ CONSTRUCTOR
+         * C++ FACTORY
          *
          * REMINISCENT OF INCREMENTAL-GC DAYS: SOME EXTRA-CARE TO AVOID "STRAY INSTANCES" ON THE C-HEAP
          */
-        MOZ_NEVER_INLINE static const Barker& construct(const std::string &name = "");
+        MOZ_NEVER_INLINE static const Barker& create(const std::string &name = "");
         
     protected:
         static const JSClass clazz;

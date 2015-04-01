@@ -294,7 +294,7 @@ void TestingCallbacks::testDefinedFunctionRooting2()
     JSFunction *customMethodF2 = nullptr;
     
     {
-        RootedObject object(cx, Barker::construct("HOST-OBJECT"));
+        RootedObject object(cx, Barker::create("HOST-OBJECT"));
         customMethodF2 = JS_DefineFunction(cx, object, "customMethodF2", methodDispatch, 0, 0);
         
         JSP::forceGC(); // WILL NOT AFFECT (ROOTED) BARKER

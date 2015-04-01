@@ -48,6 +48,8 @@ namespace jsp
     
     void barker::setup(JSObject *instance, ptrdiff_t barkerId, const string &name)
     {
+        assert(barker::initialized || (barkerId == 0));
+        
         for (auto &element : instances)
         {
             if (instance == element.second)
@@ -365,7 +367,7 @@ namespace jsp
     
     // ---
     
-    const Barker& Barker::construct(const string &name)
+    const Barker& Barker::create(const string &name)
     {
         static Barker delegate;
 
@@ -378,14 +380,9 @@ namespace jsp
     bool Barker::construct(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
-        string name;
+        string name = (args.hasDefined(0) && args[0].isString()) ? toString(args[0]) : "";
         
-        if (args.hasDefined(0) && args[0].isString())
-        {
-            name = toString(args[0]);
-        }
-        
-        args.rval().set(construct(name));
+        args.rval().set(create(name));
         return true;
     }
     

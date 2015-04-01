@@ -73,7 +73,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
 
     // --
     
-    wrapped = ObjectOrNullValue(Barker::construct("ASSIGNED-TO-VALUE 1"));
+    wrapped = ObjectOrNullValue(Barker::create("ASSIGNED-TO-VALUE 1"));
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     JSP::forceGC();
@@ -107,7 +107,7 @@ void TestingWrappedValue::testAutomaticConversion()
     
     // --
     
-    wrapped = Barker::construct("ASSIGNED-TO-VALUE 2");
+    wrapped = Barker::create("ASSIGNED-TO-VALUE 2");
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     JSP::forceGC();
@@ -126,7 +126,7 @@ void TestingWrappedValue::testAutomaticConversion()
 
 void TestingWrappedValue::testObjectStackRooting1()
 {
-    RootedObject rootedObject(cx, Barker::construct("STACK-ROOTED STANDALONE"));
+    RootedObject rootedObject(cx, Barker::create("STACK-ROOTED STANDALONE"));
     
     JSP::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
@@ -134,7 +134,7 @@ void TestingWrappedValue::testObjectStackRooting1()
 
 void TestingWrappedValue::testObjectStackRooting2()
 {
-    Rooted<WrappedValue> rootedWrapped(cx, Barker::construct("STACK-ROOTED VIA-VALUE"));
+    Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-VALUE"));
     
     JSP::forceGC();
     JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
@@ -182,8 +182,8 @@ void TestingWrappedValue::testValueComparison()
 
 void TestingWrappedValue::testObjectComparison()
 {
-    JSObject *object1 = Barker::construct("BARKER 1");
-    JSObject *object2 = Barker::construct("BARKER 2");
+    JSObject *object1 = Barker::create("BARKER 1");
+    JSObject *object2 = Barker::create("BARKER 2");
 
     WrappedValue wrapped1(object1);
     WrappedValue wrapped2(object2);
@@ -254,7 +254,7 @@ void TestingWrappedValue::testRootedComparison()
     Rooted<WrappedValue> rootedWrapped2B(cx, "hello");
     JSP_CHECK(rootedWrapped2A == rootedWrapped2B, "EQUALITY");
     
-    JSObject *barker = Barker::construct("BARKER 3");
+    JSObject *barker = Barker::create("BARKER 3");
     Rooted<WrappedValue> rootedWrapped3A(cx, barker);
     Rooted<WrappedValue> rootedWrapped3B(cx, barker);
     JSP_CHECK(rootedWrapped3A == rootedWrapped3B, "EQUALITY");
@@ -270,7 +270,7 @@ void TestingWrappedValue::testHeapComparison()
     Heap<WrappedValue> heapWrapped2B("hello");
     JSP_CHECK(heapWrapped2A == heapWrapped2B, "EQUALITY");
     
-    JSObject *barker = Barker::construct("BARKER 4");
+    JSObject *barker = Barker::create("BARKER 4");
     Heap<WrappedValue> heapWrapped3A(barker);
     Heap<WrappedValue> heapWrapped3B(barker);
     JSP_CHECK(heapWrapped3A == heapWrapped3B, "EQUALITY");

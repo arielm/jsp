@@ -104,7 +104,7 @@ static bool nativeCallback(JSContext *cx, unsigned argc, Value *vp)
 
 void TestingRooting2::testAnalysis1()
 {
-    JSObject *object = Barker::construct("UNROOTED");
+    JSObject *object = Barker::create("UNROOTED");
     
     JSP_CHECK(JSP::isInsideNursery(object));
     JSP_CHECK(JSP::writeGCDescriptor(object) == 'n');
@@ -117,7 +117,7 @@ void TestingRooting2::testAnalysis1()
 
 void TestingRooting2::testAnalysis2()
 {
-    RootedObject object(cx, Barker::construct("ROOTED"));
+    RootedObject object(cx, Barker::create("ROOTED"));
     JSFunction *function = JS_DefineFunction(cx, object, "someFunction", nativeCallback, 0, 0);
     
     LOGI << JSP::writeDetailed(function) << endl;
@@ -185,7 +185,7 @@ void TestingRooting2::testBarkerMixedFunctionality()
      *   - OBSERVING FINALIZATION
      */
     
-    LOGI << Barker::getId(Barker::construct("CPP-CREATED UNROOTED 1")) << " " << Barker::getName(Barker::getInstance("CPP-CREATED UNROOTED 1")) << endl;
+    LOGI << Barker::getId(Barker::create("CPP-CREATED UNROOTED 1")) << " " << Barker::getName(Barker::getInstance("CPP-CREATED UNROOTED 1")) << endl;
     
     executeScript("\
                   Barker.bark('CPP-CREATED UNROOTED 1');\
@@ -198,11 +198,11 @@ void TestingRooting2::testBarkerMixedFunctionality()
 
 void TestingRooting2::testWrappedObjectAssignment1()
 {
-    JSObject *barkerA = Barker::construct("ASSIGNED 1A");
+    JSObject *barkerA = Barker::create("ASSIGNED 1A");
     
     {
         WrappedObject wrapped; // ASSIGNMENT 1 (NO-OP)
-        wrapped = Barker::construct("ASSIGNED 1B"); // ASSIGNMENT 2
+        wrapped = Barker::create("ASSIGNED 1B"); // ASSIGNMENT 2
         wrapped = barkerA; // ASSIGNMENT 3
         
         Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
@@ -217,7 +217,7 @@ void TestingRooting2::testWrappedObjectAssignment1()
 
 void TestingRooting2::testWrappedObjectAssignment2()
 {
-    JSObject *barker = Barker::construct("ASSIGNED 2");
+    JSObject *barker = Barker::create("ASSIGNED 2");
     
     Rooted<WrappedObject> rootedWrapped(cx, barker); // ASSIGNMENT 1
     
@@ -243,7 +243,7 @@ void TestingRooting2::testWrappedObjectAssignment2()
 
 void TestingRooting2::testWrappedObjectAssignment3()
 {
-    JSObject *barker = Barker::construct("ASSIGNED 3");
+    JSObject *barker = Barker::create("ASSIGNED 3");
     
     Heap<WrappedObject> heapWrapped(barker); // ASSIGNMENT 1
     
@@ -270,7 +270,7 @@ void TestingRooting2::testWrappedObjectAssignment3()
 void TestingRooting2::testBarkerFinalization1()
 {
     {
-        Barker::construct("FINALIZATION 1"); // CREATED IN THE NURSERY, AS INTENDED
+        Barker::create("FINALIZATION 1"); // CREATED IN THE NURSERY, AS INTENDED
         
         JSP::forceGC();
         
@@ -344,7 +344,7 @@ void TestingRooting2::testHeapWrappedObject1()
 
 void TestingRooting2::testWrappedBarker1()
 {
-    WrappedObject wrapped(Barker::construct("WRAPPED 1"));
+    WrappedObject wrapped(Barker::create("WRAPPED 1"));
     
     /*
      * BARKING VIA handleWrappedObject1() DOES NOT MAKE SENSE SINCE wrapped IS:
@@ -360,7 +360,7 @@ void TestingRooting2::testWrappedBarker1()
 
 void TestingRooting2::testRootedWrappedBarker1()
 {
-    JSObject *object = Barker::construct("ROOTED-WRAPPED 1"); // CREATED IN THE NURSERY, AS INTENDED
+    JSObject *object = Barker::create("ROOTED-WRAPPED 1"); // CREATED IN THE NURSERY, AS INTENDED
     
     {
         Rooted<WrappedObject> rootedWrapped(cx, object);
@@ -373,7 +373,7 @@ void TestingRooting2::testRootedWrappedBarker1()
 
 void TestingRooting2::testHeapWrappedBarker1()
 {
-    JSObject *object = Barker::construct("HEAP-WRAPPED 1"); // CREATED IN THE NURSERY, AS INTENDED
+    JSObject *object = Barker::create("HEAP-WRAPPED 1"); // CREATED IN THE NURSERY, AS INTENDED
     
     {
         Heap<WrappedObject> heapWrapped(object);
@@ -480,7 +480,7 @@ void TestingRooting2::testBarkerPassedToJS1()
     executeScript("function handleBarker1(barker) { barker.bark(); }");
 
     {
-        RootedValue arg(cx, Barker::construct("PASSED-TO-JS 1"));
+        RootedValue arg(cx, Barker::create("PASSED-TO-JS 1"));
         call(globalHandle(), "handleBarker1", arg);
     }
     
