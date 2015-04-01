@@ -78,7 +78,8 @@ void TestingJS::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || false, testCustomConstruction1)
-        JSP_TEST(force || true, testCustomConstruction2)
+        JSP_TEST(force || false, testCustomConstruction2)
+        JSP_TEST(force || true, testNativeConstruction)
     }
 }
 
@@ -188,10 +189,10 @@ void TestingJS::testCustomConstruction1()
     
     // ---
     
-    AutoValueArray<3> args(cx);
-    args[0].setInt32(255);
-    args[1].setObjectOrNull(nullptr);
-    args[2].setString(toJSString("hello"));
+    AutoValueVector args(cx);
+    args.append(toValue(255));
+    args.append(toValue((JSObject*)nullptr)); // TODO: CONSIDER HANDLING nullptr_t IN Types, ETC.
+    args.append(toValue("hello"));
     
     newNativeObject("CustomObject1", args);
 }
@@ -204,6 +205,13 @@ void TestingJS::testCustomConstruction2()
     RootedObject constructor2(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
     JSP::dumpObject(constructor2);
     
+    /*
+     * JUST TO ILLUSTRATE THE POSSIBILITY OF USING AutoValueArray...
+     *
+     * BETTER ALTERNATIVES:
+     * - FOR MULTIPLE ARGUMENTS: AutoValueVector
+     * - FOR SINGLE ARGUMENTS: RootedValue
+     */
     AutoValueArray<1> args(cx);
     args[0].setNumber(33.0);
     
@@ -216,6 +224,27 @@ void TestingJS::testCustomConstruction2()
     // ---
     
     newNativeObject("CustomObject2", args);
+}
+
+// ---
+
+void TestingJS::testNativeConstruction()
+{
+    /*
+     * PASSING A SINGLE RootedValue IS VALID:
+     * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::HandleValueArray
+     */
+    
+    RootedValue arg1(cx, toValue(16.67));
+    LOGI << toSource(newNativeObject("Number", arg1)) << endl;
+    
+    RootedValue arg2(cx, toValue("2014-09-27T21:14:32.695Z"));
+    LOGI << toSource(newNativeObject("Date", arg2)) << endl;
+
+    /*
+     * AS-WELL-AS NO ARGUMENTS AT ALL...
+     */
+    newNativeObject("Barker");
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------

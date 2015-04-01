@@ -55,4 +55,5 @@ public:
 
     void testCustomConstruction1();
     void testCustomConstruction2();
+    void testNativeConstruction();
 };

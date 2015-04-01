@@ -480,13 +480,8 @@ void TestingRooting2::testBarkerPassedToJS1()
     executeScript("function handleBarker1(barker) { barker.bark(); }");
 
     {
-        RootedValue value(cx, Barker::construct("PASSED-TO-JS 1"));
-        
-        /*
-         * IT'S OKAY TO PASS A RootedValue:
-         * https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/JS::HandleValueArray
-         */
-        call(globalHandle(), "handleBarker1", value);
+        RootedValue arg(cx, Barker::construct("PASSED-TO-JS 1"));
+        call(globalHandle(), "handleBarker1", arg);
     }
     
     JSP::forceGC();
