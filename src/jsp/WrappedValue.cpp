@@ -38,7 +38,8 @@ namespace jsp
     
     WrappedValue& WrappedValue::operator=(const Value &v)
     {
-        set(v);
+        endTracing();
+        value = v;
         dump(__PRETTY_FUNCTION__);
 
         return *this;
@@ -53,7 +54,8 @@ namespace jsp
     
     void WrappedValue::operator=(const WrappedValue &other)
     {
-        set(other.value);
+        endTracing();
+        value = other.value;
         dump(__PRETTY_FUNCTION__);
     }
     
@@ -165,6 +167,7 @@ namespace jsp
     {
         endTracing();
         value = v;
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedValue::dump(const char *prefix)

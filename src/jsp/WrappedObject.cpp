@@ -38,7 +38,8 @@ namespace jsp
     
     WrappedObject& WrappedObject::operator=(JSObject *object)
     {
-        set(object);
+        endTracing();
+        value = object;
         dump(__PRETTY_FUNCTION__);
         
         return *this;
@@ -53,7 +54,8 @@ namespace jsp
     
     WrappedObject& WrappedObject::operator=(const HandleObject &handle)
     {
-        set(handle.get());
+        endTracing();
+        value = handle.get();
         dump(__PRETTY_FUNCTION__);
         
         return *this;
@@ -68,7 +70,8 @@ namespace jsp
     
     void WrappedObject::operator=(const WrappedObject &other)
     {
-        set(other.value);
+        endTracing();
+        value = other.value;
         dump(__PRETTY_FUNCTION__);
     }
     
@@ -76,6 +79,7 @@ namespace jsp
     {
         endTracing();
         value = object;
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::dump(const char *prefix)

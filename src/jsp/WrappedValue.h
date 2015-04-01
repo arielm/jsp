@@ -130,19 +130,15 @@ namespace jsp
     class AutoWrappedValueVector : public AutoVectorRooter<WrappedValue>
     {
     public:
-        explicit AutoWrappedValueVector(JSContext *cx MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+        explicit AutoWrappedValueVector()
         :
         AutoVectorRooter<WrappedValue>(cx, VALVECTOR)
-        {
-            MOZ_GUARD_OBJECT_NOTIFIER_INIT;
-        }
+        {}
         
         operator const HandleValueArray () const
         {
             return HandleValueArray::fromMarkedLocation(length(), reinterpret_cast<const Value*>(begin()));
         }
-        
-        MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
     };
 }
 
@@ -153,7 +149,7 @@ namespace js
     {
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
-        static bool poisoned(const WrappedValue &v) { return v.poisoned(); }
+        static bool poisoned(const WrappedValue &v) { return false; }
     };
     
     template <>
@@ -161,7 +157,7 @@ namespace js
     {
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
-        static bool poisoned(const WrappedValue &v) { return v.poisoned(); }
+        static bool poisoned(const WrappedValue &v) { return false; }
         static bool needsPostBarrier(const WrappedValue &v) { return v.needsPostBarrier(); }
 #ifdef JSGC_GENERATIONAL
         static void postBarrier(WrappedValue *vp) { vp->postBarrier(); }

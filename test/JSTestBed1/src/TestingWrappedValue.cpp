@@ -285,7 +285,7 @@ void TestingWrappedValue::testHeapComparison()
 
 void TestingWrappedValue::testAutoWrappedValueVector()
 {
-    AutoWrappedValueVector args(cx);
+    AutoWrappedValueVector args;
     
     args.append(123);
     args.append("foo");
