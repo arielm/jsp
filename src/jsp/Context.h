@@ -330,16 +330,16 @@ namespace js
     class HeapBase<WrappedObject>
     {
     public:
+        explicit operator const bool () const;
+
         operator JS::Handle<JSObject*> () const;
         operator JS::Handle<WrappedObject> () const;
         
         operator JS::MutableHandle<JSObject*> ();
         operator JS::MutableHandle<WrappedObject> ();
         
-//      operator JS::Handle<JS::Value> () const;
-//      operator JS::MutableHandle<JS::Value> ();
-        
-        explicit operator const bool () const;
+        template <class U>
+        JS::Handle<U*> as() const;
     };
 }
 

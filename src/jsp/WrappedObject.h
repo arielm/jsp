@@ -46,6 +46,8 @@ namespace jsp
         void operator=(const WrappedObject &other);
         
         operator JSObject* () const { return value; }
+        JSObject* operator->() const { return value; }
+        
         operator const Value () const { return ObjectOrNullValue(value); }
         
         const JSObject& get() const { return *value; }
@@ -99,4 +101,49 @@ namespace js
         static void relocate(WrappedObject *vp) { vp->relocate(); }
 #endif
     };
+    
+    /*
+     * REFERENCES:
+     *
+     * - https://github.com/mozilla/gecko-dev/blob/esr31/js/public/RootingAPI.h#L865-881
+     * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsobj.h#L1164-1171
+     */
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator const bool () const
+    {
+        const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
+        return self.get();
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::Handle<JSObject*> () const
+    {
+        const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
+        return JS::Handle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject* const*>(self.address()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::Handle<WrappedObject> () const
+    {
+        const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
+        return JS::Handle<WrappedObject>::fromMarkedLocation(reinterpret_cast<WrappedObject const*>(self.address()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::MutableHandle<JSObject*> ()
+    {
+        JS::Heap<WrappedObject> &self = *static_cast<JS::Heap<WrappedObject>*>(this);
+        return JS::MutableHandle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject**>(self.unsafeGet()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::MutableHandle<WrappedObject> ()
+    {
+        JS::Heap<WrappedObject> &self = *static_cast<JS::Heap<WrappedObject>*>(this);
+        return JS::MutableHandle<WrappedObject>::fromMarkedLocation(reinterpret_cast<WrappedObject*>(self.unsafeGet()));
+    }
+    
+    template <class U>
+    MOZ_ALWAYS_INLINE Handle<U*> HeapBase<WrappedObject>::as() const
+    {
+        const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
+        JS_ASSERT(self.get()->is<U>());
+        return JS::Handle<U*>::fromMarkedLocation(reinterpret_cast<U* const*>(self.address()));
+    }
 }
