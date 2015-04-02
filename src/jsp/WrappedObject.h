@@ -65,9 +65,6 @@ namespace jsp
         void clear();
         
     protected:
-        friend class Heap<const WrappedObject>;
-        friend struct js::GCMethods<const WrappedObject>;
-        
         friend class Heap<WrappedObject>;
         friend struct js::GCMethods<WrappedObject>;
         
@@ -86,14 +83,6 @@ namespace jsp
 
 namespace js
 {
-    template <>
-    struct GCMethods<const WrappedObject>
-    {
-        static WrappedObject initial() { return nullptr; }
-        static ThingRootKind kind() { return THING_ROOT_OBJECT; }
-        static bool poisoned(const WrappedObject &wrapped) { return false; }
-    };
-    
     template <>
     struct GCMethods<WrappedObject>
     {

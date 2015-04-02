@@ -145,8 +145,6 @@ namespace jsp
     protected:
         friend class ValueOperations<WrappedValue>;
         friend class MutableValueOperations<WrappedValue>;
-        
-        friend struct js::GCMethods<const WrappedValue>;
         friend struct js::GCMethods<WrappedValue>;
         
         Value value;
@@ -181,14 +179,6 @@ namespace jsp
 
 namespace js
 {
-    template <>
-    struct GCMethods<const WrappedValue>
-    {
-        static WrappedValue initial() { return JS::UndefinedValue(); }
-        static ThingRootKind kind() { return THING_ROOT_VALUE; }
-        static bool poisoned(const WrappedValue &wrapped) { return false; }
-    };
-    
     template <>
     struct GCMethods<WrappedValue>
     {
