@@ -163,10 +163,10 @@ namespace jsp
         T get(HandleObject targetObject, const char *propertyName, typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
         template<typename T>
-        inline bool set(HandleObject targetObject, const char *propertyName, T value)
+        inline bool set(HandleObject &&targetObject, const char *propertyName, T &&value)
         {
-            RootedValue rooted(cx, toValue<T>(value));
-            return setProperty(targetObject, propertyName, rooted);
+            RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+            return setProperty(std::forward<HandleObject>(targetObject), propertyName, rooted);
         }
         
         // ---
@@ -199,10 +199,10 @@ namespace jsp
         T get(HandleObject targetArray, uint32_t elementIndex);
         
         template<typename T>
-        inline bool set(HandleObject targetArray, uint32_t elementIndex, T value)
+        inline bool set(HandleObject &&targetArray, uint32_t elementIndex, T &&value)
         {
-            RootedValue rooted(cx, toValue<T>(value));
-            return setElement(targetArray, elementIndex, rooted);
+            RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+            return setElement(std::forward<HandleObject>(targetArray), elementIndex, rooted);
         }
         
         template<typename T>

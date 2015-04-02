@@ -78,10 +78,10 @@ namespace jsp
         return UnicodeString(reinterpret_cast<const UChar*>(s)).toUTF8String(tmp);
     }
     
-    inline std::string toString(HandleString s)
+    inline std::string toString(HandleString &&s)
     {
         JSAutoByteString tmp;
-        return tmp.encodeUtf8(cx, s) ? tmp.ptr() : "";
+        return tmp.encodeUtf8(cx, std::forward<HandleString>(s)) ? tmp.ptr() : "";
     }
     
     inline JSString* toJSString(const char *s)
@@ -195,14 +195,14 @@ namespace jsp
         return false;
     }
     
-    inline bool compare(HandleValue value, bool other) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue &&value, bool other) // INFAILIBLE, POSSIBLY SLOW
     {
-        return ToBoolean(value) == other;
+        return ToBoolean(std::forward<HandleValue>(value)) == other;
     }
     
-    inline bool compare(HandleValue value, const char *other) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue &&value, const char *other) // INFAILIBLE, POSSIBLY SLOW
     {
-        RootedString s1(cx, ToString(cx, value));
+        RootedString s1(cx, ToString(cx, std::forward<HandleValue>(value)));
         RootedString s2(cx, toJSString(other));
         
         int32_t result;
@@ -224,52 +224,52 @@ namespace jsp
      */
     
     template<typename T>
-    inline Value toValue(T);
+    inline const Value toValue(T);
     
     template <>
-    inline Value toValue(std::nullptr_t)
+    inline const Value toValue(std::nullptr_t)
     {
         return NullValue();
     }
     
     template <>
-    inline Value toValue(JSObject *object)
+    inline const Value toValue(JSObject *object)
     {
         return ObjectOrNullValue(object);
     }
     
     template <>
-    inline Value toValue(float f)
+    inline const Value toValue(float f)
     {
         return DoubleValue(f);
     }
     
     template <>
-    inline Value toValue(double d)
+    inline const Value toValue(double d)
     {
         return DoubleValue(d);
     }
     
     template <>
-    inline Value toValue(int32_t i)
+    inline const Value toValue(int32_t i)
     {
         return Int32Value(i);
     }
 
     template <>
-    inline Value toValue(uint32_t ui)
+    inline const Value toValue(uint32_t ui)
     {
         return NumberValue(ui);
     }
     
     template <>
-    inline Value toValue(bool b)
+    inline const Value toValue(bool b)
     {
         return BooleanValue(b);
     }
     
     template <>
-    inline Value toValue(const char *s)
+    inline const Value toValue(const char *s)
     {
         return StringValue(toJSString(s));
     }
