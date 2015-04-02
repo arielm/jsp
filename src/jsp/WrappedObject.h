@@ -24,6 +24,8 @@
 
 #include <set>
 
+#define DUMP_WRAPPED_OBJECT if (LOG_VERBOSE) { dump(__PRETTY_FUNCTION__); }
+
 namespace jsp
 {
     class WrappedObject
@@ -71,14 +73,14 @@ namespace jsp
         
         JSObject *object;
         
-        void dump(const char *prefix);
-
         void postBarrier();
         void relocate();
         
         void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
+        
+        void dump(const char *prefix);
     };
 }
 

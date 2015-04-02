@@ -19,6 +19,8 @@
 
 #include <set>
 
+#define DUMP_WRAPPED_VALUE if (LOG_VERBOSE) { dump(__PRETTY_FUNCTION__); }
+
 namespace jsp
 {
     class WrappedValue : public js::MutableValueOperations<WrappedValue>
@@ -46,7 +48,7 @@ namespace jsp
         WrappedValue(const T &newValue)
         {
             assignValue(value, newValue);
-            dump(__PRETTY_FUNCTION__);
+            DUMP_WRAPPED_VALUE
         }
     
         template<typename T>
@@ -75,7 +77,7 @@ namespace jsp
                 assignValue(value, newValue);
             }
             
-            dump(__PRETTY_FUNCTION__);
+            DUMP_WRAPPED_VALUE
             return *this;
         }
         
@@ -152,14 +154,14 @@ namespace jsp
         const Value* extract() const { return &value; }
         Value* extractMutable() { return &value; }
 
-        void dump(const char *prefix);
-
         void postBarrier();
         void relocate();
         
         void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
+        
+        void dump(const char *prefix);
     };
     
     class AutoWrappedValueVector : public AutoVectorRooter<WrappedValue>

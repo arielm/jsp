@@ -24,26 +24,26 @@ namespace jsp
     :
     value(UndefinedValue())
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     WrappedValue::~WrappedValue()
     {
         heapTraced.erase(this);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     WrappedValue::WrappedValue(const Value &v)
     :
     value(v)
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     WrappedValue& WrappedValue::operator=(const Value &v)
     {
         set(v);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
 
         return *this;
     }
@@ -52,13 +52,13 @@ namespace jsp
     :
     value(other.value)
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     void WrappedValue::operator=(const WrappedValue &other)
     {
         set(other.value);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     WrappedValue::operator const bool () const
@@ -204,12 +204,7 @@ namespace jsp
     void WrappedValue::clear()
     {
         set(UndefinedValue());
-        dump(__PRETTY_FUNCTION__);
-    }
-    
-    void WrappedValue::dump(const char *prefix)
-    {
-        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        DUMP_WRAPPED_VALUE
     }
     
     // ---
@@ -219,7 +214,7 @@ namespace jsp
         heapTraced.insert(this);
         beginTracing();
         
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     void WrappedValue::relocate()
@@ -227,7 +222,7 @@ namespace jsp
         heapTraced.erase(this);
         endTracing();
         
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
     }
     
     void WrappedValue::beginTracing()
@@ -249,6 +244,13 @@ namespace jsp
         /*
          * MUST TAKE PLACE AFTER JS_CallValueTracer
          */
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_VALUE
+    }
+    
+    // ---
+    
+    void WrappedValue::dump(const char *prefix)
+    {
+        LOGD << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
     }
 }

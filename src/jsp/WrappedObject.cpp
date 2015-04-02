@@ -24,26 +24,26 @@ namespace jsp
     :
     object(nullptr)
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     WrappedObject::~WrappedObject()
     {
         heapTraced.erase(this);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     WrappedObject::WrappedObject(JSObject *o)
     :
     object(o)
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     WrappedObject& WrappedObject::operator=(JSObject *newObject)
     {
         set(newObject);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
         
         return *this;
     }
@@ -52,13 +52,13 @@ namespace jsp
     :
     object(handle.get())
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     WrappedObject& WrappedObject::operator=(const HandleObject &handle)
     {
         set(handle.get());
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
         
         return *this;
     }
@@ -67,13 +67,13 @@ namespace jsp
     :
     object(other.object)
     {
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::operator=(const WrappedObject &other)
     {
         set(other.object);
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::set(JSObject *newObject)
@@ -105,12 +105,7 @@ namespace jsp
     void WrappedObject::clear()
     {
         set(nullptr);
-        dump(__PRETTY_FUNCTION__);
-    }
-    
-    void WrappedObject::dump(const char *prefix)
-    {
-        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | object: " << JSP::writeDetailed(object) << endl;
+        DUMP_WRAPPED_OBJECT
     }
     
     // ---
@@ -120,7 +115,7 @@ namespace jsp
         heapTraced.insert(this);
         beginTracing();
         
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::relocate()
@@ -128,7 +123,7 @@ namespace jsp
         heapTraced.erase(this);
         endTracing();
         
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::beginTracing()
@@ -150,6 +145,13 @@ namespace jsp
         /*
          * MUST TAKE PLACE AFTER JS_CallObjectTracer
          */
-        dump(__PRETTY_FUNCTION__);
+        DUMP_WRAPPED_OBJECT
+    }
+    
+    // ---
+    
+    void WrappedObject::dump(const char *prefix)
+    {
+        LOGD << prefix << " " << this << " | object: " << JSP::writeDetailed(object) << endl;
     }
 }
