@@ -52,31 +52,42 @@ namespace jsp
         template<typename T>
         WrappedValue& operator=(const T &newValue)
         {
-            if (heapTraced.count(this))
+            if (TypeTraits<T>::isMarkable)
             {
-                if (TypeTraits<T>::isMarkable)
-                {
-                    assignValue(value, newValue);
-                    beginTracing();
-                    
-                    dump(__PRETTY_FUNCTION__);
-                    return *this;
-                }
+                assignValue(value, newValue);
                 
-                if (value.isMarkable())
+                if (heapTraced.count(this))
+                {
+                    beginTracing();
+                }
+            }
+            else if (value.isMarkable())
+            {
+                if (heapTraced.count(this))
                 {
                     endTracing();
                 }
+                
+                assignValue(value, newValue);
             }
-            
-            assignValue(value, newValue);
+            else
+            {
+                assignValue(value, newValue);
+            }
             
             dump(__PRETTY_FUNCTION__);
             return *this;
         }
         
         operator const Value& () const { return value; }
-        explicit operator const bool () const; // TODO: DOUBLE-CHECK WHY IT'S NECESSARY AND IF IT'S PROPERLY IMPLEMENTED
+        
+        /*
+         * TODO: DECIDE WHAT SHOULD BE THE INTENT OF THIS OPERATOR
+         *
+         * - CHECKING HOW THE WRAPPED VALUE CONVERTS TO BOOLEAN (AS FOR NOW)?
+         * - OR CHECKING IF THE WRAPPED VALUE IS DEFINED (AS IN Heap<WrappedObject>)?
+         */
+        explicit operator const bool () const;
 
         bool operator==(const WrappedValue &other) const;
         bool operator!=(const WrappedValue &other) const;

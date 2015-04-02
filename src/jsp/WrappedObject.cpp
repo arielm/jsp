@@ -30,8 +30,7 @@ namespace jsp
     WrappedObject::~WrappedObject()
     {
         heapTraced.erase(this);
-
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     WrappedObject::WrappedObject(JSObject *o)
@@ -79,23 +78,28 @@ namespace jsp
     
     void WrappedObject::set(JSObject *newObject)
     {
-        if (heapTraced.count(this))
+        if (newObject)
         {
-            if (newObject)
-            {
-                object = newObject;
-                beginTracing();
-                
-                return;
-            }
+            object = newObject;
             
-            if (object)
+            if (heapTraced.count(this))
+            {
+                beginTracing();
+            }
+        }
+        else if (object)
+        {
+            if (heapTraced.count(this))
             {
                 endTracing();
             }
+            
+            object = newObject;
         }
-        
-        object = newObject;
+        else
+        {
+            object = newObject;
+        }
     }
     
     void WrappedObject::clear()
@@ -106,7 +110,7 @@ namespace jsp
     
     void WrappedObject::dump(const char *prefix)
     {
-        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(object) << endl;
+        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | object: " << JSP::writeDetailed(object) << endl;
     }
     
     // ---

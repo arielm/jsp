@@ -30,8 +30,7 @@ namespace jsp
     WrappedValue::~WrappedValue()
     {
         heapTraced.erase(this);
-        
-        LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
+        dump(__PRETTY_FUNCTION__);
     }
     
     WrappedValue::WrappedValue(const Value &v)
@@ -178,23 +177,28 @@ namespace jsp
     
     void WrappedValue::set(const Value &newValue)
     {
-        if (heapTraced.count(this))
+        if (newValue.isMarkable())
         {
-            if (newValue.isMarkable())
-            {
-                value = newValue;
-                beginTracing();
-                
-                return;
-            }
+            value = newValue;
             
-            if (value.isMarkable())
+            if (heapTraced.count(this))
+            {
+                beginTracing();
+            }
+        }
+        else if (value.isMarkable())
+        {
+            if (heapTraced.count(this))
             {
                 endTracing();
             }
+            
+            value = newValue;
         }
-        
-        value = newValue;
+        else
+        {
+            value = newValue;
+        }
     }
     
     void WrappedValue::clear()
