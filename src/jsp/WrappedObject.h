@@ -22,18 +22,23 @@
 
 #include "jsp/Context.h"
 
+#include <set>
+
 namespace jsp
 {
     class WrappedObject
     {
     public:
         static bool LOG_VERBOSE;
+        static std::set<void*> heapTraced;
+        
+        // ---
         
         WrappedObject();
         ~WrappedObject();
         
-        WrappedObject(JSObject *object);
-        WrappedObject& operator=(JSObject *object);
+        WrappedObject(JSObject *o);
+        WrappedObject& operator=(JSObject *newObject);
         
         WrappedObject(const HandleObject &handle);
         WrappedObject& operator=(const HandleObject &handle);
@@ -45,16 +50,16 @@ namespace jsp
         WrappedObject(const WrappedObject &other);
         void operator=(const WrappedObject &other);
         
-        operator JSObject* () const { return value; }
-        JSObject* operator->() const { return value; }
+        operator JSObject* () const { return object; }
+        JSObject* operator->() const { return object; }
         
-        operator const Value () const { return ObjectOrNullValue(value); }
+        operator const Value () const { return ObjectOrNullValue(object); }
         
-        const JSObject& get() const { return *value; }
-        const JSObject* address() const { return value; }
-        JSObject* unsafeGet() { return value; }
+        const JSObject& get() const { return *object; }
+        const JSObject* address() const { return object; }
+        JSObject* unsafeGet() { return object; }
         
-        void set(JSObject *object);
+        void set(JSObject *newObject);
         void clear();
         
     protected:
@@ -64,15 +69,14 @@ namespace jsp
         friend class Heap<WrappedObject>;
         friend struct js::GCMethods<WrappedObject>;
         
-        JSObject *value;
+        JSObject *object;
         
         void dump(const char *prefix);
 
-        bool poisoned() const;
-        bool needsPostBarrier() const;
         void postBarrier();
         void relocate();
         
+        void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
     };
@@ -84,20 +88,20 @@ namespace js
     struct GCMethods<const WrappedObject>
     {
         static WrappedObject initial() { return nullptr; }
-        static ThingRootKind kind() { return RootKind<JSObject*>::rootKind(); }
-        static bool poisoned(const WrappedObject &v) { return v.poisoned(); }
+        static ThingRootKind kind() { return THING_ROOT_OBJECT; }
+        static bool poisoned(const WrappedObject &wrapped) { return false; }
     };
     
     template <>
     struct GCMethods<WrappedObject>
     {
         static WrappedObject initial() { return nullptr; }
-        static ThingRootKind kind() { return RootKind<JSObject*>::rootKind(); }
-        static bool poisoned(const WrappedObject &v) { return v.poisoned(); }
-        static bool needsPostBarrier(const WrappedObject &v) { return v.needsPostBarrier(); }
+        static ThingRootKind kind() { return THING_ROOT_OBJECT; }
+        static bool poisoned(const WrappedObject &wrapped) { return false; }
+        static bool needsPostBarrier(const WrappedObject &wrapped) { return wrapped.object; }
 #ifdef JSGC_GENERATIONAL
-        static void postBarrier(WrappedObject *vp) { vp->postBarrier(); }
-        static void relocate(WrappedObject *vp) { vp->relocate(); }
+        static void postBarrier(WrappedObject *wrapped) { wrapped->postBarrier(); }
+        static void relocate(WrappedObject *wrapped) { wrapped->relocate(); }
 #endif
     };
     

@@ -16,7 +16,10 @@ using namespace chr;
 namespace jsp
 {
     bool WrappedValue::LOG_VERBOSE = false;
+    set<void*> WrappedValue::heapTraced;
 
+    // ---
+    
     WrappedValue::WrappedValue()
     :
     value(UndefinedValue())
@@ -26,6 +29,8 @@ namespace jsp
     
     WrappedValue::~WrappedValue()
     {
+        heapTraced.erase(this);
+        
         LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
     }
     
@@ -38,8 +43,7 @@ namespace jsp
     
     WrappedValue& WrappedValue::operator=(const Value &v)
     {
-        endTracing();
-        value = v;
+        set(v);
         dump(__PRETTY_FUNCTION__);
 
         return *this;
@@ -54,8 +58,7 @@ namespace jsp
     
     void WrappedValue::operator=(const WrappedValue &other)
     {
-        endTracing();
-        value = other.value;
+        set(other.value);
         dump(__PRETTY_FUNCTION__);
     }
     
@@ -85,6 +88,16 @@ namespace jsp
     bool WrappedValue::operator!=(const Value &other) const
     {
         return !compare(value, other);
+    }
+    
+    bool WrappedValue::operator==(const nullptr_t) const
+    {
+        return compare(value, nullptr);
+    }
+    
+    bool WrappedValue::operator!=(const nullptr_t) const
+    {
+        return !compare(value, nullptr);
     }
     
     bool WrappedValue::operator==(const JSObject *other) const
@@ -163,16 +176,31 @@ namespace jsp
     
     // ---
     
-    void WrappedValue::set(const Value &v)
+    void WrappedValue::set(const Value &newValue)
     {
-        endTracing();
-        value = v;
-        dump(__PRETTY_FUNCTION__);
+        if (heapTraced.count(this))
+        {
+            if (newValue.isMarkable())
+            {
+                value = newValue;
+                beginTracing();
+                
+                return;
+            }
+            
+            if (value.isMarkable())
+            {
+                endTracing();
+            }
+        }
+        
+        value = newValue;
     }
     
     void WrappedValue::clear()
     {
         set(UndefinedValue());
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedValue::dump(const char *prefix)
@@ -182,40 +210,31 @@ namespace jsp
     
     // ---
     
-    bool WrappedValue::poisoned() const
-    {
-        /*
-         * THE JS::IsPoisonedValue() USUALLY INVOKED IN SPIDERMONKEY CODE IS DUMMY (ALWAYS RETURNS FALSE),
-         * SO USING THE "REAL" JSP::isPoisoned() WOULD BE A WASTE OF CYCLES
-         */
-        return false;
-    }
-    
-    bool WrappedValue::needsPostBarrier() const
-    {
-        return value.isMarkable();
-    }
-    
     void WrappedValue::postBarrier()
     {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
-        HeapValuePostBarrier(&value);
+        heapTraced.insert(this);
+        beginTracing();
         
         dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedValue::relocate()
     {
-        HeapValueRelocate(&value);
+        heapTraced.erase(this);
         endTracing();
         
         dump(__PRETTY_FUNCTION__);
     }
     
-    // ---
+    void WrappedValue::beginTracing()
+    {
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
+        HeapValuePostBarrier(&value);
+    }
     
     void WrappedValue::endTracing()
     {
+        HeapValueRelocate(&value);
         removeTracerCallback(this);
     }
     

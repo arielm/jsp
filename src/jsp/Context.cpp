@@ -22,13 +22,13 @@ namespace jsp
 {
     namespace intern
     {
-        map<void*, TracerCallbackFnType> tracerCallbacks;
-        void tracerCallback(JSTracer *trc, void *data);
-        
-        map<void*, GCCallbackFnType> gcCallbacks;
-        void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
-        
         struct Stringifier;
+
+        map<void*, TracerCallbackFnType> tracerCallbacks;
+        map<void*, GCCallbackFnType> gcCallbacks;
+        
+        void tracerCallback(JSTracer *trc, void *data);
+        void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
         
         // ---
         
@@ -91,16 +91,16 @@ namespace jsp
     
 #pragma mark ---------------------------------------- CENTRALIZED EXTRA-ROOT-TRACING ----------------------------------------
     
-    void addTracerCallback(void *tracer, const TracerCallbackFnType &fn)
+    void addTracerCallback(void *instance, const TracerCallbackFnType &fn)
     {
         JS_ASSERT(intern::postInitialized);
-        intern::tracerCallbacks.emplace(tracer, fn);
+        intern::tracerCallbacks.emplace(instance, fn);
     }
     
-    void removeTracerCallback(void *tracer)
+    void removeTracerCallback(void *instance)
     {
         JS_ASSERT(intern::postInitialized);
-        intern::tracerCallbacks.erase(tracer);
+        intern::tracerCallbacks.erase(instance);
     }
     
     void intern::tracerCallback(JSTracer *trc, void *data)
@@ -113,23 +113,23 @@ namespace jsp
     
 #pragma mark ---------------------------------------- CENTRALIZED GC-CALLBACKS ----------------------------------------
 
-    void addGCCallback(void *data, const GCCallbackFnType &fn)
+    void addGCCallback(void *instance, const GCCallbackFnType &fn)
     {
         JS_ASSERT(intern::postInitialized);
-        intern::gcCallbacks.emplace(data, fn);
+        intern::gcCallbacks.emplace(instance, fn);
     }
     
-    void removeGCCallback(void *data)
+    void removeGCCallback(void *instance)
     {
         JS_ASSERT(intern::postInitialized);
-        intern::gcCallbacks.erase(data);
+        intern::gcCallbacks.erase(instance);
     }
     
     void intern::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
     {
         for (auto &element : gcCallbacks)
         {
-            element.second(rt, status, data);
+            element.second(rt, status);
         }
     }
 

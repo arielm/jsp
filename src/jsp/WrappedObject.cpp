@@ -16,30 +16,34 @@ using namespace chr;
 namespace jsp
 {
     bool WrappedObject::LOG_VERBOSE = false;
+    set<void*> WrappedObject::heapTraced;
+    
+    // ---
 
     WrappedObject::WrappedObject()
     :
-    value(nullptr)
+    object(nullptr)
     {
         dump(__PRETTY_FUNCTION__);
     }
     
     WrappedObject::~WrappedObject()
     {
+        heapTraced.erase(this);
+
         LOGD_IF(LOG_VERBOSE) << __PRETTY_FUNCTION__ << " " << this << endl;
     }
     
-    WrappedObject::WrappedObject(JSObject *object)
+    WrappedObject::WrappedObject(JSObject *o)
     :
-    value(object)
+    object(o)
     {
         dump(__PRETTY_FUNCTION__);
     }
     
-    WrappedObject& WrappedObject::operator=(JSObject *object)
+    WrappedObject& WrappedObject::operator=(JSObject *newObject)
     {
-        endTracing();
-        value = object;
+        set(newObject);
         dump(__PRETTY_FUNCTION__);
         
         return *this;
@@ -47,15 +51,14 @@ namespace jsp
     
     WrappedObject::WrappedObject(const HandleObject &handle)
     :
-    value(handle.get())
+    object(handle.get())
     {
         dump(__PRETTY_FUNCTION__);
     }
     
     WrappedObject& WrappedObject::operator=(const HandleObject &handle)
     {
-        endTracing();
-        value = handle.get();
+        set(handle.get());
         dump(__PRETTY_FUNCTION__);
         
         return *this;
@@ -63,77 +66,82 @@ namespace jsp
     
     WrappedObject::WrappedObject(const WrappedObject &other)
     :
-    value(other.value)
+    object(other.object)
     {
         dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::operator=(const WrappedObject &other)
     {
-        endTracing();
-        value = other.value;
+        set(other.object);
         dump(__PRETTY_FUNCTION__);
     }
     
-    void WrappedObject::set(JSObject *object)
+    void WrappedObject::set(JSObject *newObject)
     {
-        endTracing();
-        value = object;
-        dump(__PRETTY_FUNCTION__);
+        if (heapTraced.count(this))
+        {
+            if (newObject)
+            {
+                object = newObject;
+                beginTracing();
+                
+                return;
+            }
+            
+            if (object)
+            {
+                endTracing();
+            }
+        }
+        
+        object = newObject;
     }
     
     void WrappedObject::clear()
     {
         set(nullptr);
+        dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::dump(const char *prefix)
     {
-        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(value) << endl;
+        LOGD_IF(LOG_VERBOSE) << prefix << " " << this << " | value: " << JSP::writeDetailed(object) << endl;
     }
     
     // ---
     
-    bool WrappedObject::poisoned() const
-    {
-        /*
-         * THE JS::IsPoisonedPtr() USUALLY INVOKED IN SPIDERMONKEY CODE IS DUMMY (ALWAYS RETURNS FALSE),
-         * SO USING THE "REAL" JSP::isPoisoned() WOULD BE A WASTE OF CYCLES
-         */
-        return false;
-    }
-    
-    bool WrappedObject::needsPostBarrier() const
-    {
-        return value;
-    }
-    
     void WrappedObject::postBarrier()
     {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
-        HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&value));
+        heapTraced.insert(this);
+        beginTracing();
         
         dump(__PRETTY_FUNCTION__);
     }
     
     void WrappedObject::relocate()
     {
-        HeapCellRelocate(reinterpret_cast<js::gc::Cell**>(&value));
+        heapTraced.erase(this);
         endTracing();
         
         dump(__PRETTY_FUNCTION__);
     }
     
-    // ---
-
+    void WrappedObject::beginTracing()
+    {
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
+        HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&object));
+    }
+    
     void WrappedObject::endTracing()
     {
+        HeapCellRelocate(reinterpret_cast<js::gc::Cell**>(&object));
         removeTracerCallback(this);
     }
     
     void WrappedObject::trace(JSTracer *trc)
     {
-        JS_CallObjectTracer(trc, const_cast<JSObject**>(&value), "WrappedObject");
+        JS_CallObjectTracer(trc, const_cast<JSObject**>(&object), "WrappedObject");
         
         /*
          * MUST TAKE PLACE AFTER JS_CallObjectTracer

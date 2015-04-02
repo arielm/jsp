@@ -21,7 +21,6 @@ namespace jsp
     typedef double FLOAT64;
     typedef bool BOOLEAN;
     typedef std::string STRING;
-    typedef const char* CHARS;
     
     template <class T>
     class TypeTraits
@@ -33,6 +32,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
         
         typedef T defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return defaultType(); }
@@ -50,6 +50,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = true;
+        static constexpr bool isMarkable = true;
         
         typedef JSObject* defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return nullptr; }
@@ -65,6 +66,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
         
         typedef int32_t defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return 0; }
@@ -80,6 +82,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
         
         typedef uint32_t defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return 0; }
@@ -95,6 +98,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
         
         typedef float defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return 0; }
@@ -110,6 +114,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
         
         typedef double defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return 0; }
@@ -125,6 +130,7 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = false;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
 
         typedef bool defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return false; }
@@ -140,11 +146,13 @@ namespace jsp
         static constexpr bool isStatic = false;
         static constexpr bool isText = true;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = true;
         
         typedef const char* defaultType; // XXX: std::string CAN'T BE USED IN constexpr
         inline static constexpr defaultType defaultValue() noexcept { return ""; }
     };
-    
+
+    /*
     template <>
     class TypeTraits<const char*>
     {
@@ -155,8 +163,42 @@ namespace jsp
         static constexpr bool isStatic = true;
         static constexpr bool isText = true;
         static constexpr bool isObject = false;
+        static constexpr bool isMarkable = true;
         
         typedef const char* defaultType;
         inline static constexpr defaultType defaultValue() noexcept { return ""; }
+    };
+    */
+    
+    template <size_t N>
+    class TypeTraits<char[N]>
+    {
+    public:
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = true;
+        static constexpr bool isText = true;
+        static constexpr bool isObject = false;
+        static constexpr bool isMarkable = true;
+        
+        typedef const char* defaultType;
+        inline static constexpr defaultType defaultValue() noexcept { return ""; }
+    };
+    
+    template <>
+    class TypeTraits<std::nullptr_t>
+    {
+    public:
+        static constexpr bool isNumber = false;
+        static constexpr bool isInteger = false;
+        static constexpr bool isSigned = false;
+        static constexpr bool isStatic = false;
+        static constexpr bool isText = false;
+        static constexpr bool isObject = false;
+        static constexpr bool isMarkable = false;
+        
+        typedef std::nullptr_t defaultType;
+        inline static constexpr defaultType defaultValue() noexcept { return nullptr; }
     };
 }

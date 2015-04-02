@@ -94,7 +94,7 @@ namespace jsp
         
         JSObject* object = nullptr;
         
-        static void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
+        static void gcCallback(JSRuntime *rt, JSGCStatus status);
         static void finalize(JSFreeOp *fop, JSObject *obj);
         static void trace(JSTracer *trc, JSObject *obj);
         

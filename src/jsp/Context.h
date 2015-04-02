@@ -47,7 +47,7 @@ namespace jsp
     class WrappedValue;
 
     typedef std::function<void(JSTracer*)> TracerCallbackFnType;
-    typedef std::function<void(JSRuntime*, JSGCStatus, void*)> GCCallbackFnType;
+    typedef std::function<void(JSRuntime*, JSGCStatus)> GCCallbackFnType;
 
     // ---
     
@@ -64,11 +64,11 @@ namespace jsp
     
     // ---
     
-    void addTracerCallback(void *tracer, const TracerCallbackFnType &fn);
-    void removeTracerCallback(void *tracer);
+    void addTracerCallback(void *instance, const TracerCallbackFnType &fn);
+    void removeTracerCallback(void *instance);
     
-    void addGCCallback(void *data, const GCCallbackFnType &fn);
-    void removeGCCallback(void *data);
+    void addGCCallback(void *instance, const GCCallbackFnType &fn);
+    void removeGCCallback(void *instance);
     
     // ---
     
@@ -133,6 +133,11 @@ namespace jsp
         }
         
         return value == other;
+    }
+
+    inline bool compare(const Value &value, const std::nullptr_t)
+    {
+        return value.isNull();
     }
     
     inline bool compare(const Value &value, const JSObject *other)
@@ -222,6 +227,12 @@ namespace jsp
     inline Value toValue(T);
     
     template <>
+    inline Value toValue(std::nullptr_t)
+    {
+        return NullValue();
+    }
+    
+    template <>
     inline Value toValue(JSObject *object)
     {
         return ObjectOrNullValue(object);
@@ -264,6 +275,11 @@ namespace jsp
     }
     
     // ---
+
+    inline void assignValue(Value &target, std::nullptr_t)
+    {
+        target.setNull();
+    }
     
     inline void assignValue(Value &target, JSObject *object)
     {

@@ -178,7 +178,7 @@ namespace jsp
     
     // ---
     
-    void Barker::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
+    void Barker::gcCallback(JSRuntime *rt, JSGCStatus status)
     {
         switch (status)
         {
@@ -347,7 +347,7 @@ namespace jsp
             barker::setup(classInstance, 0, "CLASS-INSTANCE");
             
             static bool unique;
-            addGCCallback(&unique, BIND_STATIC3(Barker::gcCallback));
+            addGCCallback(&unique, BIND_STATIC2(Barker::gcCallback));
             
             // ---
             

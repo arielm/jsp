@@ -18,7 +18,7 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || false, testPeers1);
+    JSP_TEST(force || true, testPeers1);
     JSP_TEST(force || true, testNativeCalls1);
 }
 
@@ -26,8 +26,8 @@ void TestingProxy::performRun(bool force)
 
 void TestingProxy::testPeers1()
 {
-    Proxy vanilla1;
-    Proxy singleton("ScriptManager", true);
+    Proxy vanilla1; // peers.Proxy[1]
+    Proxy singleton("ScriptManager", true); // peers.ScriptManager
     
     try
     {
@@ -47,7 +47,6 @@ void TestingProxy::testPeers1()
          * TODO: FIND OUT HOW (SPOILER: NON-TRIVIAL)
          */
         executeScript("peers.foo = 123");
-
     }
     catch (exception &e)
     {

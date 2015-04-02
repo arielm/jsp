@@ -17,12 +17,17 @@
 
 #include "jsp/Context.h"
 
+#include <set>
+
 namespace jsp
 {
     class WrappedValue : public js::MutableValueOperations<WrappedValue>
     {
     public:
         static bool LOG_VERBOSE;
+        static std::set<void*> heapTraced;
+        
+        // ---
         
         WrappedValue();
         ~WrappedValue();
@@ -38,24 +43,40 @@ namespace jsp
         void operator=(const WrappedValue &other);
         
         template<typename T>
-        WrappedValue(const T &v)
+        WrappedValue(const T &newValue)
         {
-            assignValue(value, v);
+            assignValue(value, newValue);
             dump(__PRETTY_FUNCTION__);
         }
     
         template<typename T>
-        WrappedValue& operator=(const T &v)
+        WrappedValue& operator=(const T &newValue)
         {
-            endTracing();
-            assignValue(value, v);
-            dump(__PRETTY_FUNCTION__);
+            if (heapTraced.count(this))
+            {
+                if (TypeTraits<T>::isMarkable)
+                {
+                    assignValue(value, newValue);
+                    beginTracing();
+                    
+                    dump(__PRETTY_FUNCTION__);
+                    return *this;
+                }
+                
+                if (value.isMarkable())
+                {
+                    endTracing();
+                }
+            }
             
+            assignValue(value, newValue);
+            
+            dump(__PRETTY_FUNCTION__);
             return *this;
         }
         
         operator const Value& () const { return value; }
-        explicit operator const bool () const;
+        explicit operator const bool () const; // TODO: DOUBLE-CHECK WHY IT'S NECESSARY AND IF IT'S PROPERLY IMPLEMENTED
 
         bool operator==(const WrappedValue &other) const;
         bool operator!=(const WrappedValue &other) const;
@@ -63,6 +84,9 @@ namespace jsp
         bool operator==(const Value &other) const;
         bool operator!=(const Value &other) const;
 
+        bool operator==(const std::nullptr_t) const;
+        bool operator!=(const std::nullptr_t) const;
+        
         bool operator==(const JSObject *other) const;
         bool operator!=(const JSObject *other) const;
 
@@ -88,7 +112,7 @@ namespace jsp
         const Value* address() const { return &value; }
         Value* unsafeGet() { return &value; }
         
-        void set(const Value &v);
+        void set(const Value &newValue);
         void clear();
         
         /*
@@ -113,19 +137,18 @@ namespace jsp
         friend struct js::GCMethods<WrappedValue>;
         
         Value value;
+        
+        const Value* extract() const { return &value; }
+        Value* extractMutable() { return &value; }
 
         void dump(const char *prefix);
 
-        bool poisoned() const;
-        bool needsPostBarrier() const;
         void postBarrier();
         void relocate();
         
+        void beginTracing();
         void endTracing();
         void trace(JSTracer *trc);
-
-        const Value* extract() const { return &value; }
-        Value* extractMutable() { return &value; }
     };
     
     class AutoWrappedValueVector : public AutoVectorRooter<WrappedValue>
@@ -150,7 +173,7 @@ namespace js
     {
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
-        static bool poisoned(const WrappedValue &v) { return false; }
+        static bool poisoned(const WrappedValue &wrapped) { return false; }
     };
     
     template <>
@@ -158,11 +181,11 @@ namespace js
     {
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
-        static bool poisoned(const WrappedValue &v) { return false; }
-        static bool needsPostBarrier(const WrappedValue &v) { return v.needsPostBarrier(); }
+        static bool poisoned(const WrappedValue &wrapped) { return false; }
+        static bool needsPostBarrier(const WrappedValue &wrapped) { return wrapped.value.isMarkable(); }
 #ifdef JSGC_GENERATIONAL
-        static void postBarrier(WrappedValue *vp) { vp->postBarrier(); }
-        static void relocate(WrappedValue *vp) { vp->relocate(); }
+        static void postBarrier(WrappedValue *wrapped) { wrapped->postBarrier(); }
+        static void relocate(WrappedValue *wrapped) { wrapped->relocate(); }
 #endif
     };
 }

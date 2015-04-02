@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,7 +44,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
@@ -54,7 +54,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testAutomaticComparison);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
@@ -107,7 +107,7 @@ void TestingWrappedValue::testAutomaticConversion()
     wrapped = false;
     JSP_CHECK(JSP::write(wrapped) == "false");
     
-    wrapped = (JSObject*)nullptr; // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
+    wrapped = nullptr; // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
     JSP_CHECK(JSP::write(wrapped) == "null");
     
     // --
@@ -235,7 +235,7 @@ void TestingWrappedValue::testAutomaticComparison()
     JSP_CHECK(wrapped != 127, "INEQUALITY");
     
     JSP_CHECK(wrapped != "foo", "FALSE");
-    JSP_CHECK(wrapped != (JSObject*)nullptr, "FALSE"); // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
+    JSP_CHECK(wrapped != nullptr, "FALSE");
     
     wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED (TODO: TEST ON 32-BIT SYSTEMS)
     JSP_CHECK(wrapped == 0xff123456, "EQUALITY");

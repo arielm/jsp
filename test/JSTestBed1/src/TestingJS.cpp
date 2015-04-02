@@ -191,7 +191,7 @@ void TestingJS::testCustomConstruction1()
     
     AutoValueVector args(cx);
     args.append(toValue(255));
-    args.append(toValue((JSObject*)nullptr)); // TODO: CONSIDER HANDLING nullptr_t IN Types, ETC.
+    args.append(toValue(nullptr));
     args.append(toValue("hello"));
     
     newNativeObject("CustomObject1", args);
