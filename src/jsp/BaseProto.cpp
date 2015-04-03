@@ -221,7 +221,12 @@ namespace jsp
     {
         if (object)
         {
-            return JS_DeleteProperty(cx, object, name);
+            bool success;
+            
+            if (JS_DeleteProperty2(cx, object, name, &success))
+            {
+                return success;
+            }
         }
         
         return false;
