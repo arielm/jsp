@@ -84,52 +84,114 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
+        JSP_TEST(force || true, testReadOnlyProperty1)
+        JSP_TEST(force || true, testReadOnlyProperty2)
         JSP_TEST(force || true, testPermanentProperty1)
         JSP_TEST(force || true, testPermanentProperty2)
     }
 }
 
-#pragma mark ---------------------------------------- PERMANENT PROPERTIES ----------------------------------------
+#pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------
 
 /*
- * FINDING: PERMANENT PROPERTIES CAN'T BE DELETED, EVEN VIA C++
+ * UNSOLVED AT THIS STAGE: HOW TO DEFINE A PROPERTY WHICH WOULD BE READ-ONLY AND PERMANENT ONLY FROM THE JS SIDE
  *
- * IT'S CRITICAL TO USE JS_DeleteProperty2 AND NOT JS_DeleteProperty,
- * OTHERWISE: IT'S NOT POSSIBLE TO DETECT THAT DELETION FAILED
+ * PROBABLY: VIA NATIVE SETTERS / GETTERS (TODO: INVESTIGATE FURTHER)
+ */
+
+/*
+ * FINDINGS:
+ * 
+ * 1) ONCE-DEFINED: READ-ONLY PROPERTIES CAN'T BE SET, EVEN VIA C++
+ *
+ * 2) FAILURE IS NOT DETECTED:
+ *    - PROBABLY BECAUSE IT IS ONLY A "WARNING" (I.E. UNLESS IN "STRICT" MODE)
+ *    - UNLIKE WITH PROPERTY DELETION: THERE IS NO JS_DefineProperty2
+ */
+void TestingJS::testReadOnlyProperty1()
+{
+    RootedValue value1(cx, NumberValue(55));
+    JS_DefineProperty(cx, globalHandle(), "readonly1", value1, JSPROP_ENUMERATE | JSPROP_READONLY);
+    
+    RootedValue value2(cx, toValue("foo"));
+    
+    if (JS_SetProperty(cx, globalHandle(), "readonly1", value2))
+    {
+        RootedValue value3(cx);
+        
+        if (JS_GetProperty(cx, globalHandle(), "readonly1", &value3) && value3.isNumber())
+        {
+            JSP_CHECK(true, "FAILURE TO SET PROPERTY readonly1 IS NOT DETECTED");
+        }
+    }
+    
+    LOGI << "UNABLE TO SET (READ-ONLY) PROPERTY NOR TO DETECT FAILURE VIA C++" << endl;
+}
+
+/*
+ * FINDINGS:
+ *
+ * 1) READ-ONLY PROPERTIES CAN BE DELETED VIA JS
+ *    - UNLESS DEFINED AS PERMANENT
+ */
+void TestingJS::testReadOnlyProperty2()
+{
+    RootedValue value(cx, NumberValue(999));
+    JS_DefineProperty(cx, globalHandle(), "readonly2", value, JSPROP_ENUMERATE | JSPROP_READONLY);
+    
+    executeScript("delete this.readonly2");
+    
+    if (hasOwnProperty(globalHandle(), "readonly2"))
+    {
+        JSP_CHECK(true, "PROPERTY readonly2 IS DELETABLE");
+    }
+    
+    LOGI << "ABLE TO DELETE (READ-ONLY | NON-PERMANENT) PROPERTY VIA JS" << endl;
+}
+
+/*
+ * FINDINGS:
+ *
+ * 1) PERMANENT PROPERTIES CAN'T BE DELETED, EVEN VIA C++
+ *
+ * 2) JS_DeleteProperty2 (I.E. JS_DeleteProperty) MUST BE USED
+ *    - OTHERWISE: IT'S NOT POSSIBLE TO DETECT FAILURE
  */
 void TestingJS::testPermanentProperty1()
 {
     RootedValue value(cx, NumberValue(123));
-    JS_DefineProperty(cx, globalHandle(), "test1", value, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+    JS_DefineProperty(cx, globalHandle(), "permanent1", value, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
     
     bool success = false;
     
-    if (!JS_DeleteProperty2(cx, globalHandle(), "test1", &success) && success)
+    if (!JS_DeleteProperty2(cx, globalHandle(), "permanent1", &success) && success)
     {
-        JSP_CHECK(false, "PROPERTY test1 SHOULD NOT BE DELETABLE VIA C++");
+        JSP_CHECK(true, "PROPERTY permanent1 IS NOT DELETABLE");
     }
     
     LOGI << "UNABLE TO DELETE (PERMANENT) PROPERTY VIA C++" << endl;
 }
 
 /*
- * FINDING: READ-ONLY PROPERTIES CAN BE DELETED VIA JS
+ * FINDINGS:
  *
- * TODO: FIND OUT HOW TO DEFINE A NON-DELETABLE-VIA-JS BUT STILL-DELETABLE-VIA-C++ PROPERTY?
+ * 1) PERMANENT PROPERTIES CAN'T BE REDEFINED, EVEN VIA C++
  */
 void TestingJS::testPermanentProperty2()
 {
-    RootedValue value(cx, NumberValue(999));
-    JS_DefineProperty(cx, globalHandle(), "test2", value, JSPROP_ENUMERATE | JSPROP_READONLY);
+    RootedValue value(cx, NumberValue(123));
+    JS_DefineProperty(cx, globalHandle(), "permanent2", value, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
     
-    executeScript("delete this.test2");
+    JS_DefineProperty(cx, globalHandle(), "permanent2", UndefinedHandleValue, JSPROP_ENUMERATE);
     
-    if (hasOwnProperty(globalHandle(), "test2"))
+    bool success = false;
+    
+    if (!JS_DeleteProperty2(cx, globalHandle(), "permanent2", &success) && success)
     {
-        JSP_CHECK(false, "PROPERTY test2 SHOULD BE DELETABLE VIA JS");
+        JSP_CHECK(true, "PROPERTY permanent2 IS NOT DELETABLE");
     }
     
-    LOGI << "ABLE TO DELETE (READ-ONLY) PROPERTY VIA JS" << endl;
+    LOGI << "UNABLE TO SET REDEFINE (PERMANENT) PROPERTY VIA C++" << endl;
 }
 
 #pragma mark ---------------------------------------- CUSTOM CONSTRUCTION ----------------------------------------

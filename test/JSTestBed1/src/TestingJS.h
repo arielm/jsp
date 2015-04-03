@@ -58,7 +58,10 @@ public:
     void testNativeConstruction();
     
     // ---
-    
+
+    void testReadOnlyProperty1();
+    void testReadOnlyProperty2();
+
     void testPermanentProperty1();
     void testPermanentProperty2();
 };
