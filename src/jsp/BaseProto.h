@@ -48,7 +48,7 @@ namespace jsp
          */
         
         JSObject* newPlainObject() override;
-        JSObject* newNativeObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) override;
+        JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) override;
         
         bool hasProperty(HandleObject object, const char *name) override;
         bool hasOwnProperty(HandleObject object, const char *name) override;

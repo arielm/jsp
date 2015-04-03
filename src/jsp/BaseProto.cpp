@@ -120,47 +120,17 @@ namespace jsp
         return JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
     }
     
-    /*
-     * REFERENCES:
-     *
-     * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/vm/Stack.h#L1100-1113
-     * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/vm/Interpreter.cpp#L504-510
-     * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/vm/Interpreter.cpp#L543-572
-     */
-    JSObject* BaseProto::newNativeObject(const std::string &className, const HandleValueArray& args)
+    JSObject* BaseProto::newObject(const std::string &className, const HandleValueArray& args)
     {
         RootedValue value(cx);
         
         if (JS_GetProperty(cx, globalHandle(), className.data(), &value))
         {
-            if (!value.isUndefined() && value.isObject())
+            if (value.isObject())
             {
-                JSObject &object = value.toObject();
+                RootedObject constructor(cx, &value.toObject());
                 
-                Value values[args.length() + 2];
-                CallArgs callArgs = CallArgsFromVp(args.length(), values);
-                mozilla::PodCopy(callArgs.array(), args.begin(), args.length());
-
-                callArgs.setCallee(value);
-                callArgs.setThis(MagicValue(JS_IS_CONSTRUCTING));
-                
-                if (object.is<JSFunction>())
-                {
-                    RootedFunction function(cx, &object.as<JSFunction>());
-                    
-                    if (function->isNativeConstructor())
-                    {
-                        if (js::CallJSNative(cx, function->native(), callArgs))
-                        {
-                            return callArgs.rval().toObjectOrNull();
-                        }
-                    }
-                }
-                else
-                {
-                    RootedObject constructor(cx, &object);
-                    return JS_New(cx, constructor, callArgs);
-                }
+                return JS_New(cx, constructor, args);
             }
         }
 

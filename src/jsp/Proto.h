@@ -134,7 +134,7 @@ namespace jsp
          */
         
         virtual JSObject* newPlainObject() = 0;
-        virtual JSObject* newNativeObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) = 0;
         
         virtual bool hasProperty(HandleObject object, const char *name) = 0;
         virtual bool hasOwnProperty(HandleObject object, const char *name) = 0;

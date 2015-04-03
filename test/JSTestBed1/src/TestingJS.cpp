@@ -77,9 +77,9 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || false, testCustomConstruction1)
-        JSP_TEST(force || false, testCustomConstruction2)
-        JSP_TEST(force || true, testNativeConstruction)
+        JSP_TEST(force || true, testCustomConstruction1)
+        JSP_TEST(force || true, testCustomConstruction2)
+        JSP_TEST(force || true, testNewObject)
     }
     
     if (force || false)
@@ -292,12 +292,19 @@ void TestingJS::testCustomConstruction1()
     RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor, 0, nullptr, nullptr, nullptr, nullptr));
     JSP::dumpObject(constructor1);
     
-    /*
-     * REQUIRED FOR JS-SIDE INSTANTIATION:
-     * CustomConstructor PASSED AS JSNative CONSTRUCTOR-ARGUMENT TO JS_InitClass()
-     */
-    executeScript("new CustomObject1(1, 'foo')");
-    
+    try
+    {
+        /*
+         * REQUIRED FOR JS-SIDE INSTANTIATION:
+         * CustomConstructor PASSED AS JSNative CONSTRUCTOR-ARGUMENT TO JS_InitClass()
+         */
+        evaluateObject("new CustomObject1(1, 'foo')");
+    }
+    catch (exception &e)
+    {
+        JSP_CHECK(false);
+    }
+   
     // ---
     
     AutoValueVector args(cx);
@@ -305,7 +312,16 @@ void TestingJS::testCustomConstruction1()
     args.append(toValue(nullptr));
     args.append(toValue("hello"));
     
-    newNativeObject("CustomObject1", args);
+    RootedValue value(cx);
+    
+    if (JS_GetProperty(cx, globalHandle(), "CustomObject1", &value))
+    {
+        if (value.isObject())
+        {
+            RootedObject constructor(cx, &value.toObject());
+            JSP_CHECK(JS_New(cx, constructor, args));
+        }
+    }
 }
 
 /*
@@ -320,7 +336,7 @@ void TestingJS::testCustomConstruction2()
      * JUST TO ILLUSTRATE THE POSSIBILITY OF USING AutoValueArray...
      *
      * BETTER ALTERNATIVES:
-     * - FOR MULTIPLE ARGUMENTS: AutoValueVector
+     * - FOR MULTIPLE ARGUMENTS: AutoValueVector OR AutoWrappedValueVector
      * - FOR SINGLE ARGUMENTS: RootedValue
      */
     AutoValueArray<1> args(cx);
@@ -330,16 +346,25 @@ void TestingJS::testCustomConstruction2()
      * REQUIRED IF JS_InitClass() WAS NOT CALLED WITH JSNative CONSTRUCTOR-ARGUMENT:
      * CustomConstructor DEFINED AS construct HOOK IN JSClass DECLARATION
      */
-    JS_New(cx, constructor2, args);
+    JSP_CHECK(JS_New(cx, constructor2, args));
     
     // ---
     
-    newNativeObject("CustomObject2", args);
+    RootedValue value(cx);
+    
+    if (JS_GetProperty(cx, globalHandle(), "CustomObject2", &value))
+    {
+        if (value.isObject())
+        {
+            RootedObject constructor(cx, &value.toObject());
+            JSP_CHECK(JS_New(cx, constructor, args));
+        }
+    }
 }
 
 // ---
 
-void TestingJS::testNativeConstruction()
+void TestingJS::testNewObject()
 {
     /*
      * PASSING A SINGLE RootedValue IS VALID:
@@ -347,17 +372,35 @@ void TestingJS::testNativeConstruction()
      */
     
     RootedValue arg1(cx, toValue(16.67));
-    JSP_CHECK(toSource(newNativeObject("Number", arg1)) == "(new Number(16.67))");
+    JSP_CHECK(toSource(newObject("Number", arg1)) == "(new Number(16.67))");
     
     RootedValue arg2(cx, toValue("2014-09-27T21:14:32.695Z"));
-    JSP_CHECK(toSource(newNativeObject("Date", arg2)) == "(new Date(1411852472695))");
+    JSP_CHECK(toSource(newObject("Date", arg2)) == "(new Date(1411852472695))");
 
+    // ---
+    
     /*
      * PASSING NO ARGUMENTS IS OKAY TOO
      */
     
-    newNativeObject("Barker");
-    JSP_CHECK(Barker::bark("ANONYMOUS-1"));
+    JSObject *barker = newObject("Barker");
+    JSP_CHECK(Barker::bark(barker));
+    
+    // ---
+
+    /*
+     * SILENTLY FAILS
+     */
+    JSP_CHECK(!newObject("xxx"));
+
+    /*
+     * JS SHOULD COMPLAIN THAT "function print() ... is not a contructor"
+     */
+    JSP_CHECK(!newObject("print"));
+    
+    /*
+     * TODO: TEST newObject() WITH NON-NATIVE CUSTOM JS-OBJECT
+     */
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------

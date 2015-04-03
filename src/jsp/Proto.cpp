@@ -73,6 +73,10 @@ namespace jsp
     
 #pragma mark ---------------------------------------- PROPERTY GETTERS (SAFE) ----------------------------------------
     
+    /*
+     * TODO: RECONSIDER NOT CALLING value.isUndefined() AFTER getProperty()
+     */
+    
     template <>
     JSObject* Proto::get(HandleObject targetObject, const char *propertyName, JSObject *defaultValue)
     {
@@ -188,7 +192,7 @@ namespace jsp
 #pragma mark ---------------------------------------- ELEMENT GETTERS (CAN THROW) ----------------------------------------
     
     /*
-     * TODO: CHECK IF IT'S NECESSARY TO CALL value.isUndefined() AFTER getElement()
+     * TODO: RECONSIDER CALLING value.isUndefined() AFTER getElement()
      */
     
     template <>

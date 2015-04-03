@@ -97,9 +97,9 @@ namespace jsp
             return FORWARD(newPlainObject);
         }
         
-        inline JSObject* newNativeObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) final
+        inline JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) final
         {
-            return FORWARD(newNativeObject, className, args);
+            return FORWARD(newObject, className, args);
         }
 
         inline bool hasProperty(HandleObject object, const char *name) final
