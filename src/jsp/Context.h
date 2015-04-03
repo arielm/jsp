@@ -330,8 +330,8 @@ namespace jsp
     
     // ---
     
-    std::string toSource(JSObject *object);
-    std::string toSource(HandleValue value);
+    const std::string toSource(JSObject *object);
+    const std::string toSource(HandleValue value);
     
     std::string stringify(JSObject *object, int indent = 2);
     std::string stringify(MutableHandleValue value, int indent = 2);

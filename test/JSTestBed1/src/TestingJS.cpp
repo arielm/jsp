@@ -75,14 +75,14 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testGetterSetter1)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || false, testCustomConstruction1)
         JSP_TEST(force || false, testCustomConstruction2)
         JSP_TEST(force || true, testNativeConstruction)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testReadOnlyProperty1)
         JSP_TEST(force || true, testReadOnlyProperty2)
@@ -347,15 +347,17 @@ void TestingJS::testNativeConstruction()
      */
     
     RootedValue arg1(cx, toValue(16.67));
-    LOGI << toSource(newNativeObject("Number", arg1)) << endl;
+    JSP_CHECK(toSource(newNativeObject("Number", arg1)) == "(new Number(16.67))");
     
     RootedValue arg2(cx, toValue("2014-09-27T21:14:32.695Z"));
-    LOGI << toSource(newNativeObject("Date", arg2)) << endl;
+    JSP_CHECK(toSource(newNativeObject("Date", arg2)) == "(new Date(1411852472695))");
 
     /*
-     * AS-WELL-AS NO ARGUMENTS AT ALL...
+     * PASSING NO ARGUMENTS IS OKAY TOO
      */
+    
     newNativeObject("Barker");
+    JSP_CHECK(Barker::bark("ANONYMOUS-1"));
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------

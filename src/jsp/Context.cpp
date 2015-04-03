@@ -365,13 +365,13 @@ namespace jsp
     
 #pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
     
-    string toSource(JSObject *object)
+    const string toSource(JSObject *object)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
         return toSource(value);
     }
     
-    string toSource(HandleValue value)
+    const string toSource(HandleValue value)
     {
         RootedString source(cx);
         source.set(JS_ValueToSource(cx, value));
