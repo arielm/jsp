@@ -56,4 +56,9 @@ public:
     void testCustomConstruction1();
     void testCustomConstruction2();
     void testNativeConstruction();
+    
+    // ---
+    
+    void testPermanentProperty1();
+    void testPermanentProperty2();
 };

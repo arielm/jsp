@@ -189,20 +189,18 @@ namespace jsp
          *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
          *    - proxy.registerNativeCall("method1", BIND_STATIC1(staticMethod1);
          *      proxy.unregisterNativeCall("method1");
-         *    - CONSIDER ADOPTING A "SIGNALS/SLOTS" SYNTAX, E.G.
-         *      - proxy.registerSignal("signal1", BIND_STATIC1(staticMethod1);
-         *      - proxy.unregisterSignal("signal1");
          * 3) THEN IT SHOULD BE POSSIBLE TO "CONNECT/DISCONNECT":
          *    - FROM THE C++ SIDE, E.G.
-         *      - proxy.connect(globalHandle, "method1");
-         *        proxy.disconnect(globalHandle, "method1");
+         *      - proxy.bindNativeCall(globalHandle, "method1");
+         *        proxy.unbindNativeCall(globalHandle, "method1");
          *    - OR FROM THE JS-SIDE, E.G.
          *      - var foo = {}; foo.method1 = peers.SomeProxy[0].method1; foo.method1(123);
          *        - peers.SomeProxy[0].method1 SHOULD BE A READ-ONLY PROPERTY
          */
 
-        bool registerNativeCall(HandleObject object, const std::string &name, const NativeCallFnType &fn);
-        void unregisterNativeCall(HandleObject object, const std::string &name);
+        int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
+        bool unregisterNativeCall(const std::string &name);
+        
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
@@ -217,7 +215,7 @@ namespace jsp
         static Statics *statics;
         
         static int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
-        static void removeInstance(int32_t instanceId);
+        static bool removeInstance(int32_t instanceId);
         static Proxy* getInstance(int32_t instanceId);
         
         // ---

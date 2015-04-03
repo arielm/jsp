@@ -18,8 +18,8 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || true, testPeers1);
-    JSP_TEST(force || false, testNativeCalls1);
+    JSP_TEST(force || false, testPeers1);
+    JSP_TEST(force || true, testNativeCalls1);
 }
 
 // ---
@@ -82,10 +82,10 @@ bool TestingProxy::instanceMethod1(CallArgs args)
 
 void TestingProxy::testNativeCalls1()
 {
-    registerNativeCall(globalHandle(), "staticMethod1", BIND_STATIC1(staticMethod1));
-    registerNativeCall(globalHandle(), "instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
+    registerNativeCall("staticMethod1", BIND_STATIC1(staticMethod1));
+    registerNativeCall("instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
     
-    registerNativeCall(globalHandle(), "lambda1", [=](CallArgs args)->bool
+    registerNativeCall("lambda1", [=](CallArgs args)->bool
     {
         if (args.hasDefined(0) && args[0].isNumber())
         {
@@ -96,5 +96,15 @@ void TestingProxy::testNativeCalls1()
         return false;
     });
     
-    executeScript("print(staticMethod1(77), instanceMethod1(11), lambda1(33))");
+    executeScript("var target = peers.Proxy[0]; print(target.staticMethod1(77), target.instanceMethod1(11), target.lambda1(33))");
+    
+    // ---
+
+    /*
+     * FIXME: CATCH 22!
+     */
+    executeScript("delete target.staticMethod1"); // THIS SHOULD NOT BE ALLOWED (I.E. PROPERTY SHOULD BE DEFINED WITH "PROP_PERMANENT")
+    unregisterNativeCall("staticMethod1"); // THIS IS NOT DELETING IF PROPERTY IS DEFINED WITH "PROP_PERMANENT"
+    
+    executeScript("try { print(target.staticMethod1(33)); } catch(e) { print(e);}");
 }

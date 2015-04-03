@@ -26,7 +26,7 @@ namespace jsp
             statics = new Statics;
             
             statics->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-            JS_DefineProperty(cx, globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            JS_DefineProperty(cx, globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
         }
         
         return statics;
@@ -40,7 +40,7 @@ namespace jsp
             statics->instances.clear();
             
             statics->peers = nullptr;
-            JS_DeleteProperty(cx, globalHandle(), "peers");
+            JS_DeleteProperty(cx, globalHandle(), "peers"); // XXX
             
             delete statics;
             statics = nullptr;
@@ -68,7 +68,7 @@ namespace jsp
                 
                 if (peerProperties.isSingleton)
                 {
-                    JS_DefineProperty(cx, statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                    JS_DefineProperty(cx, statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
                 }
                 else
                 {
@@ -83,11 +83,11 @@ namespace jsp
                     else
                     {
                         peerArray = JS_NewArrayObject(cx, 0);
-                        JS_DefineProperty(cx, statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                        JS_DefineProperty(cx, statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
                     }
                     
                     instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-                    JS_DefineElement(cx, peerArray, peerCount, instance->peer.get(), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
+                    JS_DefineElement(cx, peerArray, peerCount, instance->peer.get(), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT); // XXX
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);
@@ -99,9 +99,14 @@ namespace jsp
         return -1;
     }
     
-    void Proxy::removeInstance(int32_t instanceId)
+    bool Proxy::removeInstance(int32_t instanceId)
     {
+        /*
+         * TODO: DELETE PEER
+         */
+        
         statics->instances.erase(instanceId);
+        return true;
     }
     
     Proxy* Proxy::getInstance(int32_t instanceId)
@@ -244,13 +249,13 @@ namespace jsp
 
     // ---
     
-    bool Proxy::registerNativeCall(HandleObject object, const string &name, const NativeCallFnType &fn)
+    int32_t Proxy::registerNativeCall(const string &name, const NativeCallFnType &fn)
     {
         auto nativeCallId = getNativeCallId(name);
         
         if (nativeCallId == -1)
         {
-            auto function = DefineFunctionWithReserved(cx, object, name.data(), forwardNativeCall, 0, 0);
+            auto function = DefineFunctionWithReserved(cx, peer.get(), name.data(), forwardNativeCall, 0, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX
             
             if (function)
             {
@@ -258,32 +263,28 @@ namespace jsp
                 
                 SetFunctionNativeReserved(function, 0, NumberValue(instanceId));
                 SetFunctionNativeReserved(function, 1, NumberValue(nativeCallId));
-                
-                return true;
             }
         }
         
-        return false;
+        return nativeCallId;
     }
     
-    void Proxy::unregisterNativeCall(HandleObject object, const string &name)
+    bool Proxy::unregisterNativeCall(const string &name)
     {
         auto nativeCallId = getNativeCallId(name);
         
         if (nativeCallId != -1)
         {
-            removeNativeCall(nativeCallId);
+            bool success = false;
             
-            /*
-             * TODO: SOME CONDITIONS SHOULD BE MET IN ORDER TO DELETE
-             *
-             * 1) object HAS A name PROPERTY CONTAINING A JSFunction
-             * 2) JSFunction HAS 2 NATIVE-RESERVED SLOTS
-             * 3) SLOT 1 CONTAINS VALUE EQUAL TO instanceId
-             * 4) SLOT 2 CONTAINS VALUE EQUAL TO nativeCallId
-             */
-            JS_DeleteProperty(cx, object, name.data());
+            if (JS_DeleteProperty2(cx, peer, name.data(), &success) && success)
+            {
+                removeNativeCall(nativeCallId);
+                return true;
+            }
         }
+        
+        return false;
     }
 
     bool Proxy::forwardNativeCall(JSContext *cx, unsigned argc, Value *vp)

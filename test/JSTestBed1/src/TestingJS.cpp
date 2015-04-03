@@ -75,12 +75,61 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testGetterSetter1)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || false, testCustomConstruction1)
         JSP_TEST(force || false, testCustomConstruction2)
         JSP_TEST(force || true, testNativeConstruction)
     }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || true, testPermanentProperty1)
+        JSP_TEST(force || true, testPermanentProperty2)
+    }
+}
+
+#pragma mark ---------------------------------------- PERMANENT PROPERTIES ----------------------------------------
+
+/*
+ * FINDING: PERMANENT PROPERTIES CAN'T BE DELETED, EVEN VIA C++
+ *
+ * IT'S CRITICAL TO USE JS_DeleteProperty2 AND NOT JS_DeleteProperty,
+ * OTHERWISE: IT'S NOT POSSIBLE TO DETECT THAT DELETION FAILED
+ */
+void TestingJS::testPermanentProperty1()
+{
+    RootedValue value(cx, NumberValue(123));
+    JS_DefineProperty(cx, globalHandle(), "test1", value, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+    
+    bool success = false;
+    
+    if (!JS_DeleteProperty2(cx, globalHandle(), "test1", &success) && success)
+    {
+        JSP_CHECK(false, "PROPERTY test1 SHOULD NOT BE DELETABLE VIA C++");
+    }
+    
+    LOGI << "UNABLE TO DELETE (PERMANENT) PROPERTY VIA C++" << endl;
+}
+
+/*
+ * FINDING: READ-ONLY PROPERTIES CAN BE DELETED VIA JS
+ *
+ * TODO: FIND OUT HOW TO DEFINE A NON-DELETABLE-VIA-JS BUT STILL-DELETABLE-VIA-C++ PROPERTY?
+ */
+void TestingJS::testPermanentProperty2()
+{
+    RootedValue value(cx, NumberValue(999));
+    JS_DefineProperty(cx, globalHandle(), "test2", value, JSPROP_ENUMERATE | JSPROP_READONLY);
+    
+    executeScript("delete this.test2");
+    
+    if (hasOwnProperty(globalHandle(), "test2"))
+    {
+        JSP_CHECK(false, "PROPERTY test2 SHOULD BE DELETABLE VIA JS");
+    }
+    
+    LOGI << "ABLE TO DELETE (READ-ONLY) PROPERTY VIA JS" << endl;
 }
 
 #pragma mark ---------------------------------------- CUSTOM CONSTRUCTION ----------------------------------------
