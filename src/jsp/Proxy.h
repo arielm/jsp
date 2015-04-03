@@ -206,7 +206,7 @@ namespace jsp
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
-        struct StaticData
+        struct Statics
         {
             int32_t lastInstanceId = -1;
             std::map<int32_t, Proxy*> instances;
@@ -214,7 +214,7 @@ namespace jsp
             Heap<WrappedObject> peers;
         };
         
-        static StaticData *data;
+        static Statics *statics;
         
         static int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
         static void removeInstance(int32_t instanceId);

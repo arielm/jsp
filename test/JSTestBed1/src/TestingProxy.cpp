@@ -19,7 +19,7 @@ using namespace jsp;
 void TestingProxy::performRun(bool force)
 {
     JSP_TEST(force || true, testPeers1);
-    JSP_TEST(force || true, testNativeCalls1);
+    JSP_TEST(force || false, testNativeCalls1);
 }
 
 // ---

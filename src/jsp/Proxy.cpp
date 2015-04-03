@@ -17,86 +17,98 @@ using namespace chr;
 
 namespace jsp
 {
-    Proxy::StaticData *Proxy::data = nullptr;
+    Proxy::Statics *Proxy::statics = nullptr;
 
     bool Proxy::init()
     {
-        if (!data)
+        if (!statics)
         {
-            data = new StaticData;
+            statics = new Statics;
             
-            data->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-            JS_DefineProperty(cx, globalHandle(), "peers", data->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+            statics->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+            JS_DefineProperty(cx, globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
-        return data;
+        return statics;
     }
     
     void Proxy::uninit()
     {
-        if (data)
+        if (statics)
         {
-            data->lastInstanceId = -1;
-            data->instances.clear();
+            statics->lastInstanceId = -1;
+            statics->instances.clear();
             
-            data->peers = nullptr;
+            statics->peers = nullptr;
             JS_DeleteProperty(cx, globalHandle(), "peers");
             
-            delete data;
-            data = nullptr;
+            delete statics;
+            statics = nullptr;
         }
     }
     
     int32_t Proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
     {
-        data->instances.emplace(++data->lastInstanceId, instance);
-        
-        // ---
-        
-        const char *name = peerProperties.name.data();
-        
-        instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-        
-        if (peerProperties.isSingleton)
+        if (!peerProperties.name.empty())
         {
-            JS_DefineProperty(cx, data->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
-        }
-        else
-        {
-            RootedObject peerArray(cx);
-            uint32_t peerCount = 0;
+            const char *name = peerProperties.name.data();
             
-            RootedValue tmp1(cx);
-            JS_GetProperty(cx, data->peers, name, &tmp1);
+            RootedValue property(cx);
+            JS_GetProperty(cx, statics->peers, name, &property);
             
-            if (tmp1.isUndefined())
+            bool propertyIsDefined = !property.isUndefined();
+            bool propertyIsArray = JS_IsArrayObject(cx, property);
+            
+            bool singletonEnabled = !propertyIsDefined;
+            bool multipleInstancesEnabled = (propertyIsDefined && propertyIsArray) || !propertyIsDefined;
+            
+            if ((peerProperties.isSingleton && singletonEnabled) || (!peerProperties.isSingleton && multipleInstancesEnabled))
             {
-                peerArray = JS_NewArrayObject(cx, 0);
-                JS_DefineProperty(cx, data->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+                
+                if (peerProperties.isSingleton)
+                {
+                    JS_DefineProperty(cx, statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                }
+                else
+                {
+                    RootedObject peerArray(cx);
+                    uint32_t peerCount = 0;
+                    
+                    if (propertyIsDefined)
+                    {
+                        peerArray = property.toObjectOrNull();
+                        JS_GetArrayLength(cx, peerArray, &peerCount);
+                    }
+                    else
+                    {
+                        peerArray = JS_NewArrayObject(cx, 0);
+                        JS_DefineProperty(cx, statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+                    }
+                    
+                    instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+                    JS_DefineElement(cx, peerArray, peerCount, instance->peer.get(), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
+                }
+                
+                statics->instances.emplace(++statics->lastInstanceId, instance);
+                
+                return statics->lastInstanceId;
             }
-            else
-            {
-                peerArray = tmp1.toObjectOrNull();
-                JS_GetArrayLength(cx, peerArray, &peerCount);
-            }
-            
-            RootedValue tmp2(cx, instance->peer.get());
-            JS_DefineElement(cx, peerArray, peerCount, tmp2, nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
-        return data->lastInstanceId;
+        return -1;
     }
     
     void Proxy::removeInstance(int32_t instanceId)
     {
-        data->instances.erase(instanceId);
+        statics->instances.erase(instanceId);
     }
     
     Proxy* Proxy::getInstance(int32_t instanceId)
     {
-        auto found = data->instances.find(instanceId);
+        auto found = statics->instances.find(instanceId);
         
-        if (found != data->instances.end())
+        if (found != statics->instances.end())
         {
             return found->second;
         }
@@ -109,19 +121,28 @@ namespace jsp
     Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
     {
         this->target = target;
+        assert(this->target);
+
         instanceId = addInstance(this, peerProperties);
+        assert(instanceId > -1);
     }
     
     Proxy::Proxy(Proto *target)
     {
         this->target = target ? target : defaultTarget();
+        assert(this->target);
+
         instanceId = addInstance(this, defaultPeerProperties());
+        assert(instanceId > -1);
     }
     
     Proxy::Proxy(const string &peerName, bool isSingleton)
     {
         target = defaultTarget();
+        assert(this->target);
+
         instanceId = addInstance(this, PeerProperties(peerName, isSingleton));
+        assert(instanceId > -1);
     }
 
     Proxy::~Proxy()
