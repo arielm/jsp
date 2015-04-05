@@ -394,13 +394,26 @@ void TestingJS::testNewObject()
     JSP_CHECK(!newObject("xxx"));
 
     /*
-     * JS SHOULD COMPLAIN THAT "function print() ... is not a contructor"
+     * JS COMPLAINS THAT "function print() ... is not a contructor"
      */
     JSP_CHECK(!newObject("print"));
     
+    // ---
+    
     /*
-     * TODO: TEST newObject() WITH NON-NATIVE CUSTOM JS-OBJECT
+     * INSTANTIATING PURE JS CUSTOM OBJECT...
      */
+    
+    executeScript("\
+                  var Person = function(name) { this.name = name; };\
+                  Person.prototype.sayHello = function() { return 'my name is ' + this.name; };\
+                  ");
+    
+    RootedValue arg(cx, toValue("Luka"));
+    RootedObject person(cx, newObject("Person", arg));
+    
+    RootedValue result(cx, call(person, "sayHello"));
+    JSP_CHECK(compare(result, "my name is Luka"));
 }
 
 #pragma mark ---------------------------------------- CUSTOM GETTERS / SETTERS ----------------------------------------
