@@ -195,24 +195,15 @@ namespace jsp
         return false;
     }
     
-    inline bool compare(HandleValue &&value, bool other) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue &&value, bool other) // POSSIBLY SLOW
     {
         return ToBoolean(std::forward<HandleValue>(value)) == other;
     }
     
-    inline bool compare(HandleValue &&value, const char *other) // INFAILIBLE, POSSIBLY SLOW
+    inline bool compare(HandleValue &&value, const char *other) // POSSIBLY SLOW
     {
-        RootedString s1(cx, ToString(cx, std::forward<HandleValue>(value)));
-        RootedString s2(cx, toJSString(other));
-        
-        int32_t result;
-        
-        if (JS_CompareStrings(cx, s1, s2, &result))
-        {
-            return (result == 0);
-        }
-        
-        return false;
+        RootedString rooted(cx, ToString(cx, std::forward<HandleValue>(value)));
+        return toString(rooted) == other;
     }
     
     // ---
