@@ -86,7 +86,7 @@ namespace jsp
     
     inline JSString* toJSString(const char *s)
     {
-        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getBuffer()));
+        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
     }
     
     // ---
