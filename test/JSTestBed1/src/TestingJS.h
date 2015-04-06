@@ -69,4 +69,7 @@ public:
     
     void testGetProperty1();
     void testGetElement1();
+    
+    void testSetElement1();
+    void testSetElement2();
 };

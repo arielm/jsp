@@ -93,7 +93,9 @@ void TestingJS::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || false, testGetProperty1)
-        JSP_TEST(force || true, testGetElement1)
+        JSP_TEST(force || false, testGetElement1)
+        JSP_TEST(force || false, testSetElement1)
+        JSP_TEST(force || true, testSetElement2)
     }
 }
 
@@ -147,6 +149,39 @@ void TestingJS::testGetElement1()
     {
         JSP_CHECK(false);
     }
+}
+
+// ---
+
+void TestingJS::testSetElement1()
+{
+    RootedObject array(cx, newArray());
+
+    JS_SetElement(cx, array, 0, 33.33);
+    JS_SetElement(cx, array, 1, -255);
+    JS_SetElement(cx, array, 2, (uint32_t)9999);
+    
+    RootedObject object(cx, newPlainObject());
+    JS_SetElement(cx, array, 3, object);
+    
+    RootedString s(cx, toJSString("foo"));
+    JS_SetElement(cx, array, 4, s);
+    
+    JSP_CHECK(toSource(array) == "[33.33, -255, 9999, {}, \"foo\"]");
+}
+
+void TestingJS::testSetElement2()
+{
+    RootedObject array(cx, newArray());
+
+    set(array, (uint32_t)0, 33.33); // FIXME: MEMBER FUNCTION set IS AMBIGUOUS BECAUSE "0" CAN BE CAST TO "const char*" (I.E. USED WHEN SETTING PROPERTIES)
+    set(array, 1, -255);
+    set(array, 2, (uint32_t)9999);
+    
+    set(array, 3, newPlainObject());
+    set(array, 4, "foo");
+    
+    JSP_CHECK(toSource(array) == "[33.33, -255, 9999, {}, \"foo\"]");
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------
