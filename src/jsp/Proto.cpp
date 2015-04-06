@@ -73,10 +73,6 @@ namespace jsp
     
 #pragma mark ---------------------------------------- PROPERTY GETTERS (SAFE) ----------------------------------------
     
-    /*
-     * TODO: RECONSIDER NOT CALLING value.isUndefined() AFTER getProperty()
-     */
-    
     template <>
     JSObject* Proto::get(HandleObject targetObject, const char *propertyName, JSObject *defaultValue)
     {
@@ -84,10 +80,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toObjectSafely(value, defaultValue);
-            }
+            return toObjectSafely(value, defaultValue);
         }
         
         return defaultValue;
@@ -100,10 +93,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toFloat32Safely(value, defaultValue);
-            }
+            return toFloat32Safely(value, defaultValue);
         }
         
         return defaultValue;
@@ -116,10 +106,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toFloat64Safely(value, defaultValue);
-            }
+            return toFloat64Safely(value, defaultValue);
         }
         
         return defaultValue;
@@ -132,10 +119,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toInt32Safely(value, defaultValue);
-            }
+            return toInt32Safely(value, defaultValue);
         }
         
         return defaultValue;
@@ -148,10 +132,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toUInt32Safely(value, defaultValue);
-            }
+            return toUInt32Safely(value, defaultValue);
         }
         
         return defaultValue;
@@ -164,10 +145,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
-            }
+            return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
         }
         
         return defaultValue;
@@ -180,20 +158,13 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
-            }
+            return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
         }
         
         return defaultValue;
     }
     
 #pragma mark ---------------------------------------- ELEMENT GETTERS (CAN THROW) ----------------------------------------
-    
-    /*
-     * TODO: RECONSIDER CALLING value.isUndefined() AFTER getElement()
-     */
     
     template <>
     JSObject* Proto::get(HandleObject targetArray, uint32_t elementIndex)

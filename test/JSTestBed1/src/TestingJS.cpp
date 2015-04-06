@@ -75,7 +75,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testGetterSetter1)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testCustomConstruction1)
         JSP_TEST(force || true, testCustomConstruction2)
@@ -88,6 +88,64 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testReadOnlyProperty2)
         JSP_TEST(force || true, testPermanentProperty1)
         JSP_TEST(force || true, testPermanentProperty2)
+    }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || false, testGetProperty1)
+        JSP_TEST(force || true, testGetElement1)
+    }
+}
+
+#pragma mark ---------------------------------------- GETTING / SETTING PROPERTIES ----------------------------------------
+
+/*
+ * TESTING THE BEHAVIOR OF JS_GetProperty FOR NON-DEFINED PROPERTIES:
+ *
+ * - IT "RETURNS" A VALUE OF TYPE "UNDEFINED"
+ * - IT'S POSSIBLE TO CHECK THE TYPE OF THE RETURNED VALUE
+ */
+void TestingJS::testGetProperty1()
+{
+    RootedValue result(cx);
+    
+    if (JS_GetProperty(cx, globalHandle(), "notDefined", &result))
+    {
+        JSP_CHECK(result.isUndefined());
+        
+        JSP_CHECK(!result.isNull());
+        JSP_CHECK(!result.isObject());
+        JSP_CHECK(!result.isNumber());
+        JSP_CHECK(!result.isInt32());
+        JSP_CHECK(!result.isString());
+    }
+    else
+    {
+        JSP_CHECK(false);
+    }
+}
+
+/*
+ * TESTING THE BEHAVIOR OF JS_GetElement FOR NON-DEFINED ELEMENTS: SIMILAR TO JS_GetProperty
+ */
+void TestingJS::testGetElement1()
+{
+    RootedObject array(cx, newArray());
+    RootedValue result(cx);
+    
+    if (JS_GetElement(cx, array, 33, &result))
+    {
+        JSP_CHECK(result.isUndefined());
+        
+        JSP_CHECK(!result.isNull());
+        JSP_CHECK(!result.isObject());
+        JSP_CHECK(!result.isNumber());
+        JSP_CHECK(!result.isInt32());
+        JSP_CHECK(!result.isString());
+    }
+    else
+    {
+        JSP_CHECK(false);
     }
 }
 
@@ -394,7 +452,7 @@ void TestingJS::testNewObject()
     JSP_CHECK(!newObject("xxx"));
 
     /*
-     * JS COMPLAINS THAT "function print() ... is not a contructor"
+     * JS COMPLAINS THAT "function print() ... is not a constructor"
      */
     JSP_CHECK(!newObject("print"));
     

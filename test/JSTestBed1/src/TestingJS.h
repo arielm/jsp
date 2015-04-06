@@ -64,4 +64,9 @@ public:
 
     void testPermanentProperty1();
     void testPermanentProperty2();
+    
+    // ---
+    
+    void testGetProperty1();
+    void testGetElement1();
 };
