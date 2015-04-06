@@ -71,42 +71,35 @@ namespace jsp
     void removeGCCallback(void *instance);
     
     // ---
-    
-    inline std::string toString(const jschar *s)
+
+    inline JSString* toJSString(const char *s)
+    {
+        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
+    }
+
+    inline const std::string toString(const jschar *s)
     {
         std::string tmp;
         return UnicodeString(reinterpret_cast<const UChar*>(s)).toUTF8String(tmp);
     }
 
-    inline std::string toString(HandleString &&s)
+    inline const std::string toString(HandleString s)
     {
         JSAutoByteString tmp;
-        return tmp.encodeUtf8(cx, std::forward<HandleString>(s)) ? tmp.ptr() : "";
+        return tmp.encodeUtf8(cx, s) ? tmp.ptr() : "";
     }
     
-    inline JSString* toJSString(const char *s)
+    inline const std::string toString(HandleValue value)
     {
-        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
-    }
-    
-    // ---
-    
-    inline bool toBoolean(HandleValue &&value) // INFAILIBLE, POSSIBLY SLOW
-    {
-        return ToBoolean(std::forward<HandleValue>(value));
-    }
-    
-    inline std::string toString(HandleValue &&value) // INFAILIBLE, POSSIBLY SLOW
-    {
-        RootedString rooted(cx, ToString(cx, std::forward<HandleValue>(value)));
+        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
         return toString(rooted);
     }
     
     // ---
     
-    inline bool toObjectMaybe(const Value &value, JSObject **result)
+    inline bool toObjectMaybe(HandleValue value, JSObject **result)
     {
-        if (value.isObject())
+        if (value.isObjectOrNull())
         {
             *result = value.toObjectOrNull();
             return true;
@@ -115,7 +108,7 @@ namespace jsp
         return false;
     }
     
-    inline bool toFloat32Maybe(const Value &value, float *result)
+    inline bool toFloat32Maybe(HandleValue value, float *result)
     {
         if (value.isDouble())
         {
@@ -126,7 +119,7 @@ namespace jsp
         return false;
     }
     
-    inline bool toFloat64Maybe(const Value &value, double *result)
+    inline bool toFloat64Maybe(HandleValue value, double *result)
     {
         if (value.isDouble())
         {
@@ -137,7 +130,7 @@ namespace jsp
         return false;
     }
     
-    inline bool toInt32Maybe(const Value &value, int32_t *result)
+    inline bool toInt32Maybe(HandleValue value, int32_t *result)
     {
         if (value.isInt32())
         {
@@ -148,7 +141,7 @@ namespace jsp
         return false;
     }
     
-    inline bool toUInt32Maybe(const Value &value, uint32_t *result)
+    inline bool toUInt32Maybe(HandleValue value, uint32_t *result)
     {
         if (value.isInt32())
         {
@@ -165,36 +158,72 @@ namespace jsp
         return false;
     }
     
+    inline bool toBooleanMaybe(HandleValue value, bool *result)
+    {
+        if (!value.isUndefined())
+        {
+            *result = ToBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            return true;
+        }
+        
+        return false;
+    }
+    
+    inline bool toStringMaybe(HandleValue value, std::string *result)
+    {
+        if (!value.isUndefined())
+        {
+            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
+            
+            *result = toString(rooted);
+            return true;
+        }
+        
+        return false;
+    }
+    
     // ---
     
-    inline JSObject* toObjectSafely(const Value &value, JSObject *defaultValue)
+    inline JSObject* toObjectSafely(HandleValue value, JSObject *defaultValue)
     {
         JSObject *result;
         return toObjectMaybe(value, &result) ? result : defaultValue;
     }
     
-    inline float toFloat32Safely(const Value &value, float defaultValue)
+    inline float toFloat32Safely(HandleValue value, float defaultValue)
     {
         float result;
         return toFloat32Maybe(value, &result) ? result : defaultValue;
     }
     
-    inline double toFloat64Safely(const Value &value, double defaultValue)
+    inline double toFloat64Safely(HandleValue value, double defaultValue)
     {
         double result;
         return toFloat64Maybe(value, &result) ? result : defaultValue;
     }
     
-    inline int32_t toInt32Safely(const Value &value, int32_t defaultValue)
+    inline int32_t toInt32Safely(HandleValue value, int32_t defaultValue)
     {
         int32_t result;
         return toInt32Maybe(value, &result) ? result : defaultValue;
     }
     
-    inline uint32_t toUInt32Safely(const Value &value, uint32_t defaultValue)
+    inline uint32_t toUInt32Safely(HandleValue value, uint32_t defaultValue)
     {
         uint32_t result;
         return toUInt32Maybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline bool toBooleanSafely(HandleValue value, bool defaultValue)
+    {
+        bool result;
+        return toBooleanMaybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline const std::string toStringSafely(HandleValue value, const char *defaultValue)
+    {
+        std::string result;
+        return toStringMaybe(value, &result) ? result : defaultValue;
     }
     
     // ---
@@ -298,7 +327,7 @@ namespace jsp
     /*
      * TEMPLATE SPECIALIZATION IS NECESSARY, OTHERWISE toValue(bool) IS ALWAYS "PICKED"
      *
-     * IN ADDITION: toValue(const std::string &s) IS NEVER "PICKED", HENCE toValue(const char *s)
+     * IN ADDITION: toValue(const std::string&) IS NEVER "PICKED", HENCE toValue(const char*)
      */
     
     template<typename T>
@@ -693,7 +722,7 @@ public:
      */
 
     static uint32_t toHTMLColor(const std::string &colorName, uint32_t defaultValue = 0x000000);
-    static uint32_t toHTMLColor(JS::HandleValue &&value, uint32_t defaultValue = 0x000000); // INFAILIBLE
+    static uint32_t toHTMLColor(JS::HandleValue value, uint32_t defaultValue = 0x000000); // INFAILIBLE
     
 private:
     static constexpr size_t TRACE_BUFFER_SIZE = 256;

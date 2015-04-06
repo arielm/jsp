@@ -695,11 +695,11 @@ uint32_t JSP::toHTMLColor(const string &colorName, uint32_t defaultValue)
     return lookupHTMLColor(colorName, &result) ? result : defaultValue;
 }
 
-uint32_t JSP::toHTMLColor(HandleValue &&value, uint32_t defaultValue)
+uint32_t JSP::toHTMLColor(HandleValue value, uint32_t defaultValue)
 {
     if (value.isString())
     {
-        string tmp = toString(forward<HandleValue>(value));
+        string tmp = toString(value);
         
         if (!tmp.empty())
         {
@@ -718,7 +718,7 @@ uint32_t JSP::toHTMLColor(HandleValue &&value, uint32_t defaultValue)
     }
     else
     {
-        return toUInt32Safely(forward<HandleValue>(value), defaultValue);
+        return toUInt32Safely(value, defaultValue);
     }
     
     return defaultValue;

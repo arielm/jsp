@@ -94,7 +94,8 @@ void TestingJS::performRun(bool force)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
-        JSP_TEST(force || true, testGetProperties)
+        JSP_TEST(force || false, testGetProperties1)
+        JSP_TEST(force || true, testGetElements1)
         JSP_TEST(force || false, testSetElements1)
         JSP_TEST(force || false, testSetElements2)
     }
@@ -110,9 +111,10 @@ void TestingJS::performRun(bool force)
  */
 void TestingJS::testGetProperty1()
 {
+    RootedObject object(cx, newPlainObject());
     RootedValue result(cx);
     
-    if (JS_GetProperty(cx, globalHandle(), "notDefined", &result))
+    if (JS_GetProperty(cx, object, "notDefined", &result))
     {
         JSP_CHECK(result.isUndefined());
         
@@ -136,7 +138,7 @@ void TestingJS::testGetElement1()
     RootedObject array(cx, newArray());
     RootedValue result(cx);
     
-    if (JS_GetElement(cx, array, 33, &result))
+    if (JS_GetElement(cx, array, 999, &result))
     {
         JSP_CHECK(result.isUndefined());
         
@@ -154,7 +156,7 @@ void TestingJS::testGetElement1()
 
 // ---
 
-void TestingJS::testGetProperties()
+void TestingJS::testGetProperties1()
 {
     RootedObject object(cx, evaluateObject("({x: 25.5, area: 33.33, balance: -255, count: 0xff123456, alive: true, parent: null, child: {}, name: 'foo'})"));
 
@@ -176,7 +178,33 @@ void TestingJS::testGetProperties()
     JSP_CHECK(get<STRING>(object, "notDefined") == "");
 }
 
+void TestingJS::testGetElements1()
+{
+    RootedObject array(cx, evaluateObject("([25.5, 33.33, -255, 0xff123456, true, null, {}, 'foo'])"));
+
+    JSP_CHECK(get<FLOAT32>(array, (uint32_t)0) == 25.5f);// FIXME: MEMBER FUNCTION get IS AMBIGUOUS BECAUSE "0" CAN BE CAST TO "const char*" (I.E. USED WHEN GETTING PROPERTIES)
+    JSP_CHECK(get<FLOAT64>(array, 1) == 33.33);
+    JSP_CHECK(get<INT32>(array, 2) == -255);
+    JSP_CHECK(get<UINT32>(array, 3) == 0xff123456);
+    JSP_CHECK(get<BOOLEAN>(array, 4) == true);
+    JSP_CHECK(get<OBJECT>(array, 5) == nullptr);
+    JSP_CHECK(get<OBJECT>(array, 6)->getClass() == &JSObject::class_);
+    JSP_CHECK(get<STRING>(array, 7) == "foo");
+    
+    /*
+    JSP_CHECK(get<FLOAT32>(array, 999) == 0);
+    JSP_CHECK(get<FLOAT64>(array, 999) == 0);
+    JSP_CHECK(get<INT32>(array, 999) == 0);
+    JSP_CHECK(get<UINT32>(array, 999) == 0);
+    JSP_CHECK(get<BOOLEAN>(array, 999) == false);
+    JSP_CHECK(get<OBJECT>(array, 999) == nullptr);
+    JSP_CHECK(get<STRING>(array, 999) == "");
+    */
+}
+
 // ---
+
+const char *expectedArraySource = "[33.33, -255, 4279383126, true, null, {}, \"foo\"]";
 
 void TestingJS::testSetElements1()
 {
@@ -184,18 +212,21 @@ void TestingJS::testSetElements1()
 
     JS_SetElement(cx, array, 0, 33.33);
     JS_SetElement(cx, array, 1, -255);
-    JS_SetElement(cx, array, 2, (uint32_t)9999);
+    JS_SetElement(cx, array, 2, 0xff123456);
 
-    RootedValue value(cx, NullValue());
-    JS_SetElement(cx, array, 3, value);
+    RootedValue b(cx, TrueValue());
+    JS_SetElement(cx, array, 3, b);
+    
+    RootedValue n(cx, NullValue());
+    JS_SetElement(cx, array, 4, n);
 
-    RootedObject object(cx, newPlainObject());
-    JS_SetElement(cx, array, 4, object);
+    RootedObject o(cx, newPlainObject());
+    JS_SetElement(cx, array, 5, o);
     
     RootedString s(cx, toJSString("foo"));
-    JS_SetElement(cx, array, 5, s);
+    JS_SetElement(cx, array, 6, s);
     
-    JSP_CHECK(toSource(array) == "[33.33, -255, 9999, null, {}, \"foo\"]");
+    JSP_CHECK(toSource(array) == expectedArraySource);
 }
 
 void TestingJS::testSetElements2()
@@ -204,12 +235,13 @@ void TestingJS::testSetElements2()
 
     set(array, 0, 33.33);
     set(array, 1, -255);
-    set(array, 2, (uint32_t)9999);
-    set(array, 3, nullptr);
-    set(array, 4, newPlainObject());
-    set(array, 5, "foo");
+    set(array, 2, 0xff123456);
+    set(array, 3, true);
+    set(array, 4, nullptr);
+    set(array, 5, newPlainObject());
+    set(array, 6, "foo");
     
-    JSP_CHECK(toSource(array) == "[33.33, -255, 9999, null, {}, \"foo\"]");
+    JSP_CHECK(toSource(array) == expectedArraySource);
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------

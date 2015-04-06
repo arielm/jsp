@@ -145,10 +145,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
-            }
+            return toBooleanSafely(value, defaultValue);
         }
         
         return defaultValue;
@@ -161,10 +158,7 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            if (!value.isUndefined())
-            {
-                return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
-            }
+            return toStringSafely(value, defaultValue);
         }
         
         return defaultValue;
@@ -269,9 +263,11 @@ namespace jsp
         
         if (getElement(targetArray, elementIndex, &value))
         {
-            if (!value.isUndefined())
+            bool result;
+            
+            if (toBooleanMaybe(value, &result))
             {
-                return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+                return result;
             }
         }
         
@@ -285,9 +281,11 @@ namespace jsp
         
         if (getElement(targetArray, elementIndex, &value))
         {
-            if (!value.isUndefined())
+            std::string result;
+            
+            if (toStringMaybe(value, &result))
             {
-                return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
+                return result;
             }
         }
         
