@@ -132,69 +132,6 @@ namespace jsp
             element.second(rt, status);
         }
     }
-
-#pragma mark ---------------------------------------- VALUE TO TYPE (MAYBE) ----------------------------------------
-    
-    bool toObjectMaybe(const Value &value, JSObject **result)
-    {
-        if (value.isObject())
-        {
-            *result = value.toObjectOrNull();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool toFloat32Maybe(const Value &value, float *result)
-    {
-        if (value.isDouble())
-        {
-            *result = float(value.toDouble());
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool toFloat64Maybe(const Value &value, double *result)
-    {
-        if (value.isDouble())
-        {
-            *result = value.toDouble();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool toInt32Maybe(const Value &value, int32_t *result)
-    {
-        if (value.isInt32())
-        {
-            *result = value.toInt32();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool toUInt32Maybe(const Value &value, uint32_t *result)
-    {
-        if (value.isInt32())
-        {
-            *result = uint32_t(value.toInt32());
-            return true;
-        }
-        
-        if (value.isDouble())
-        {
-            *result = uint32_t(value.toDouble());
-            return true;
-        }
-        
-        return false;
-    }
     
 #pragma mark ---------------------------------------- DOWNCASTING TO JS OBJECT ----------------------------------------
     

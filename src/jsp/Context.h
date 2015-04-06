@@ -77,7 +77,7 @@ namespace jsp
         std::string tmp;
         return UnicodeString(reinterpret_cast<const UChar*>(s)).toUTF8String(tmp);
     }
-    
+
     inline std::string toString(HandleString &&s)
     {
         JSAutoByteString tmp;
@@ -91,12 +91,6 @@ namespace jsp
     
     // ---
     
-    bool toObjectMaybe(const Value &value, JSObject **result);
-    bool toFloat32Maybe(const Value &value, float *result);
-    bool toFloat64Maybe(const Value &value, double *result);
-    bool toInt32Maybe(const Value &value, int32_t *result);
-    bool toUInt32Maybe(const Value &value, uint32_t *result);
-
     inline bool toBoolean(HandleValue &&value) // INFAILIBLE, POSSIBLY SLOW
     {
         return ToBoolean(std::forward<HandleValue>(value));
@@ -106,6 +100,69 @@ namespace jsp
     {
         RootedString rooted(cx, ToString(cx, std::forward<HandleValue>(value)));
         return toString(rooted);
+    }
+    
+    // ---
+    
+    inline bool toObjectMaybe(const Value &value, JSObject **result)
+    {
+        if (value.isObject())
+        {
+            *result = value.toObjectOrNull();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    inline bool toFloat32Maybe(const Value &value, float *result)
+    {
+        if (value.isDouble())
+        {
+            *result = float(value.toDouble());
+            return true;
+        }
+        
+        return false;
+    }
+    
+    inline bool toFloat64Maybe(const Value &value, double *result)
+    {
+        if (value.isDouble())
+        {
+            *result = value.toDouble();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    inline bool toInt32Maybe(const Value &value, int32_t *result)
+    {
+        if (value.isInt32())
+        {
+            *result = value.toInt32();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    inline bool toUInt32Maybe(const Value &value, uint32_t *result)
+    {
+        if (value.isInt32())
+        {
+            *result = uint32_t(value.toInt32());
+            return true;
+        }
+        
+        if (value.isDouble())
+        {
+            *result = uint32_t(value.toDouble());
+            return true;
+        }
+        
+        return false;
     }
     
     // ---
@@ -178,7 +235,7 @@ namespace jsp
     {
         if (value.isDouble())
         {
-            return other == float(value.toDouble()); // TODO: TEST
+            return other == float(value.toDouble());
         }
         
         return false;
@@ -219,11 +276,17 @@ namespace jsp
         return false;
     }
     
+    /*
+     * TODO: CONSIDER CHECKING IF value.isBoolean()
+     */
     inline bool compare(HandleValue &&value, bool other) // POSSIBLY SLOW
     {
         return ToBoolean(std::forward<HandleValue>(value)) == other;
     }
     
+    /*
+     * TODO: CONSIDER CHECKING IF value.isString()
+     */
     inline bool compare(HandleValue &&value, const char *other) // POSSIBLY SLOW
     {
         RootedString rooted(cx, ToString(cx, std::forward<HandleValue>(value)));
