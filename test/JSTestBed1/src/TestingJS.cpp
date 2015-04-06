@@ -94,8 +94,9 @@ void TestingJS::performRun(bool force)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
-        JSP_TEST(force || true, testSetElement1)
-        JSP_TEST(force || true, testSetElement2)
+        JSP_TEST(force || true, testGetProperties)
+        JSP_TEST(force || false, testSetElements1)
+        JSP_TEST(force || false, testSetElements2)
     }
 }
 
@@ -153,7 +154,31 @@ void TestingJS::testGetElement1()
 
 // ---
 
-void TestingJS::testSetElement1()
+void TestingJS::testGetProperties()
+{
+    RootedObject object(cx, evaluateObject("({x: 25.5, area: 33.33, balance: -255, count: 0xff123456, alive: true, parent: null, child: {}, name: 'foo'})"));
+
+    JSP_CHECK(get<FLOAT32>(object, "x") == 25.5f);
+    JSP_CHECK(get<FLOAT64>(object, "area") == 33.33);
+    JSP_CHECK(get<INT32>(object, "balance") == -255);
+    JSP_CHECK(get<UINT32>(object, "count") == 0xff123456);
+    JSP_CHECK(get<BOOLEAN>(object, "alive") == true);
+    JSP_CHECK(get<OBJECT>(object, "parent") == nullptr);
+    JSP_CHECK(get<OBJECT>(object, "child")->getClass() == &JSObject::class_);
+    JSP_CHECK(get<STRING>(object, "name") == "foo");
+
+    JSP_CHECK(get<FLOAT32>(object, "notDefined") == 0);
+    JSP_CHECK(get<FLOAT64>(object, "notDefined") == 0);
+    JSP_CHECK(get<INT32>(object, "notDefined") == 0);
+    JSP_CHECK(get<UINT32>(object, "notDefined") == 0);
+    JSP_CHECK(get<BOOLEAN>(object, "notDefined") == false);
+    JSP_CHECK(get<OBJECT>(object, "notDefined") == nullptr);
+    JSP_CHECK(get<STRING>(object, "notDefined") == "");
+}
+
+// ---
+
+void TestingJS::testSetElements1()
 {
     RootedObject array(cx, newArray());
 
@@ -173,7 +198,7 @@ void TestingJS::testSetElement1()
     JSP_CHECK(toSource(array) == "[33.33, -255, 9999, null, {}, \"foo\"]");
 }
 
-void TestingJS::testSetElement2()
+void TestingJS::testSetElements2()
 {
     RootedObject array(cx, newArray());
 

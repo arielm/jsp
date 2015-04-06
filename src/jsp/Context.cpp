@@ -135,7 +135,7 @@ namespace jsp
 
 #pragma mark ---------------------------------------- VALUE TO TYPE (MAYBE) ----------------------------------------
     
-    bool toObjectMaybe(HandleValue &&value, JSObject **result)
+    bool toObjectMaybe(const Value &value, JSObject **result)
     {
         if (value.isObject())
         {
@@ -146,64 +146,54 @@ namespace jsp
         return false;
     }
     
-    bool toFloat32Maybe(HandleValue &&value, float *result)
+    bool toFloat32Maybe(const Value &value, float *result)
     {
-        double d;
-        
-        if (ToNumber(cx, forward<HandleValue>(value), &d))
+        if (value.isDouble())
         {
-            *result = float(d);
+            *result = float(value.toDouble());
             return true;
         }
         
         return false;
     }
     
-    bool toFloat64Maybe(HandleValue &&value, double *result)
+    bool toFloat64Maybe(const Value &value, double *result)
     {
-        return ToNumber(cx, forward<HandleValue>(value), result);
+        if (value.isDouble())
+        {
+            *result = value.toDouble();
+            return true;
+        }
+        
+        return false;
     }
     
-    bool toInt32Maybe(HandleValue &&value, int32_t *result)
+    bool toInt32Maybe(const Value &value, int32_t *result)
     {
-        return ToInt32(cx, forward<HandleValue>(value), result);
+        if (value.isInt32())
+        {
+            *result = value.toInt32();
+            return true;
+        }
+        
+        return false;
     }
     
-    bool toUInt32Maybe(HandleValue &&value, uint32_t *result)
+    bool toUInt32Maybe(const Value &value, uint32_t *result)
     {
-        return ToUint32(cx, forward<HandleValue>(value), result);
-    }
-    
-#pragma mark ---------------------------------------- VALUE TO TYPE (SAFELY) ----------------------------------------
-    
-    JSObject* toObjectSafely(HandleValue &&value, JSObject *defaultValue)
-    {
-        JSObject *result;
-        return toObjectMaybe(forward<HandleValue>(value), &result) ? result : defaultValue;
-    }
-    
-    float toFloat32Safely(HandleValue &&value, float defaultValue)
-    {
-        float result;
-        return toFloat32Maybe(forward<HandleValue>(value), &result) ? result : defaultValue;
-    }
-    
-    double toFloat64Safely(HandleValue &&value, double defaultValue)
-    {
-        double result;
-        return toFloat64Maybe(forward<HandleValue>(value), &result) ? result : defaultValue;
-    }
-    
-    int32_t toInt32Safely(HandleValue &&value, int32_t defaultValue)
-    {
-        int32_t result;
-        return toInt32Maybe(forward<HandleValue>(value), &result) ? result : defaultValue;
-    }
-    
-    uint32_t toUInt32Safely(HandleValue &&value, uint32_t defaultValue)
-    {
-        uint32_t result;
-        return toUInt32Maybe(forward<HandleValue>(value), &result) ? result : defaultValue;
+        if (value.isInt32())
+        {
+            *result = uint32_t(value.toInt32());
+            return true;
+        }
+        
+        if (value.isDouble())
+        {
+            *result = uint32_t(value.toDouble());
+            return true;
+        }
+        
+        return false;
     }
     
 #pragma mark ---------------------------------------- DOWNCASTING TO JS OBJECT ----------------------------------------

@@ -91,11 +91,11 @@ namespace jsp
     
     // ---
     
-    bool toObjectMaybe(HandleValue &&value, JSObject **result);
-    bool toFloat32Maybe(HandleValue &&value, float *result);
-    bool toFloat64Maybe(HandleValue &&value, double *result);
-    bool toInt32Maybe(HandleValue &&value, int32_t *result);
-    bool toUInt32Maybe(HandleValue &&value, uint32_t *result);
+    bool toObjectMaybe(const Value &value, JSObject **result);
+    bool toFloat32Maybe(const Value &value, float *result);
+    bool toFloat64Maybe(const Value &value, double *result);
+    bool toInt32Maybe(const Value &value, int32_t *result);
+    bool toUInt32Maybe(const Value &value, uint32_t *result);
 
     inline bool toBoolean(HandleValue &&value) // INFAILIBLE, POSSIBLY SLOW
     {
@@ -110,11 +110,35 @@ namespace jsp
     
     // ---
     
-    JSObject* toObjectSafely(HandleValue &&value, JSObject *defaultValue = nullptr);
-    float toFloat32Safely(HandleValue &&value, float defaultValue = 0);
-    double toFloat64Safely(HandleValue &&value, double defaultValue = 0);
-    int32_t toInt32Safely(HandleValue &&value, int32_t defaultValue = 0);
-    uint32_t toUInt32Safely(HandleValue &&value, uint32_t defaultValue = 0);
+    inline JSObject* toObjectSafely(const Value &value, JSObject *defaultValue)
+    {
+        JSObject *result;
+        return toObjectMaybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline float toFloat32Safely(const Value &value, float defaultValue)
+    {
+        float result;
+        return toFloat32Maybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline double toFloat64Safely(const Value &value, double defaultValue)
+    {
+        double result;
+        return toFloat64Maybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline int32_t toInt32Safely(const Value &value, int32_t defaultValue)
+    {
+        int32_t result;
+        return toInt32Maybe(value, &result) ? result : defaultValue;
+    }
+    
+    inline uint32_t toUInt32Safely(const Value &value, uint32_t defaultValue)
+    {
+        uint32_t result;
+        return toUInt32Maybe(value, &result) ? result : defaultValue;
+    }
     
     // ---
 
@@ -310,7 +334,7 @@ namespace jsp
     // ---
     
     /*
-     * TODO: USE toObject TEMPLATE FOR toSource(), stringify(), isFunction(), ETC.
+     * TODO: CONSIDER USING toObject TEMPLATE FOR toSource(), stringify(), isFunction(), ETC.
      */
     
     template <typename T>
