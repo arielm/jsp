@@ -145,7 +145,10 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            if (!value.isUndefined())
+            {
+                return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            }
         }
         
         return defaultValue;
@@ -158,7 +161,10 @@ namespace jsp
         
         if (getProperty(targetObject, propertyName, &value))
         {
-            return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
+            if (!value.isUndefined())
+            {
+                return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
+            }
         }
         
         return defaultValue;
@@ -263,7 +269,10 @@ namespace jsp
         
         if (getElement(targetArray, elementIndex, &value))
         {
-            return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            if (!value.isUndefined())
+            {
+                return toBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            }
         }
         
         throw EXCEPTION(Proto, "CAN'T GET ELEMENT AT INDEX " + ci::toString(elementIndex));
@@ -276,7 +285,10 @@ namespace jsp
         
         if (getElement(targetArray, elementIndex, &value))
         {
-            return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
+            if (!value.isUndefined())
+            {
+                return jsp::toString(value); // INFAILIBLE, POSSIBLY SLOW
+            }
         }
         
         throw EXCEPTION(Proto, "CAN'T GET ELEMENT AT INDEX " + ci::toString(elementIndex));

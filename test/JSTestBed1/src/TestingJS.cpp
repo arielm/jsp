@@ -99,7 +99,7 @@ void TestingJS::performRun(bool force)
     }
 }
 
-#pragma mark ---------------------------------------- GETTING / SETTING PROPERTIES ----------------------------------------
+#pragma mark ---------------------------------------- GETTING / SETTING PROPERTIES AND ELEMENTS ----------------------------------------
 
 /*
  * TESTING THE BEHAVIOR OF JS_GetProperty FOR NON-DEFINED PROPERTIES:
@@ -177,7 +177,7 @@ void TestingJS::testSetElement2()
 {
     RootedObject array(cx, newArray());
 
-    set(array, (uint32_t)0, 33.33); // FIXME: MEMBER FUNCTION set IS AMBIGUOUS BECAUSE "0" CAN BE CAST TO "const char*" (I.E. USED WHEN SETTING PROPERTIES)
+    set(array, 0, 33.33);
     set(array, 1, -255);
     set(array, 2, (uint32_t)9999);
     set(array, 3, nullptr);
