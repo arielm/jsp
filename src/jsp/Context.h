@@ -303,17 +303,55 @@ namespace jsp
     
     // ---
     
-    template <typename T>
+    template<typename T>
     inline const Value toValue(JSObject *object)
     {
         return ObjectOrNullValue(object);
     }
 
+    template<typename T>
+    inline const Value toValue(float f)
+    {
+        return DoubleValue(f);
+    }
+    
+    template<typename T>
+    inline const Value toValue(double d)
+    {
+        return DoubleValue(d);
+    }
+    
+    template<typename T>
+    inline const Value toValue(int32_t i)
+    {
+        return Int32Value(i);
+    }
+    
+    template<typename T>
+    inline const Value toValue(uint32_t ui)
+    {
+        return NumberValue(ui);
+    }
+    
+    template<typename T>
+    inline const Value toValue(bool b)
+    {
+        return BooleanValue(b);
+    }
+
     template <typename T>
+    inline const Value toValue(const std::string &s)
+    {
+        return StringValue(toJSString(s));
+    }
+
+    template<typename T>
     inline const Value toValue(const char *s)
     {
         return StringValue(toJSString(s));
     }
+    
+    //
     
     template<typename T>
     inline const Value toValue(T&&);

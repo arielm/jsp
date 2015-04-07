@@ -85,4 +85,9 @@ public:
     void testSetElements2();
     void setConstChars2(JS::HandleObject array, int index, const char *s);
     void setConstString2(JS::HandleObject array, int index, const std::string &s);
+    
+    // ---
+    
+    void testGetElements3();
+    void testSetElements3();
 };

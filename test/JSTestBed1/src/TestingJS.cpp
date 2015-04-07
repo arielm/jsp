@@ -94,10 +94,13 @@ void TestingJS::performRun(bool force)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
-        JSP_TEST(force || true, testGetProperties1)
-        JSP_TEST(force || true, testGetElements1)
-        JSP_TEST(force || true, testSetElements1)
-        JSP_TEST(force || true, testSetElements2)
+        JSP_TEST(force || false, testGetProperties1)
+        JSP_TEST(force || false, testGetElements1)
+        JSP_TEST(force || false, testSetElements1)
+        JSP_TEST(force || false, testSetElements2)
+        
+        JSP_TEST(force || true, testGetElements3)
+        JSP_TEST(force || true, testSetElements3)
     }
 }
 
@@ -209,7 +212,6 @@ void TestingJS::testGetElements1()
     JSP_CHECK(get<OBJECT>(array, index++)->getClass() == &JSObject::class_);
     JSP_CHECK(get<STRING>(array, index++) == "foo");
 
-    /*
     JSP_CHECK(get<FLOAT32>(array, 999) == 0);
     JSP_CHECK(get<FLOAT64>(array, 999) == 0);
     JSP_CHECK(get<INT32>(array, 999) == 0);
@@ -217,15 +219,14 @@ void TestingJS::testGetElements1()
     JSP_CHECK(get<BOOLEAN>(array, 999) == false);
     JSP_CHECK(get<OBJECT>(array, 999) == nullptr);
     JSP_CHECK(get<STRING>(array, 999) == "");
-    */
     
     const char s1[] = "bar";
     JSP_CHECK(get<STRING>(array, index++) == s1);
-//  JSP_CHECK(get<STRING>(array, 999) != s1);
+    JSP_CHECK(get<STRING>(array, 999) != s1);
     
     const string s2 = "baz";
     JSP_CHECK(get<STRING>(array, index++) == s2);
-//  JSP_CHECK(get<STRING>(array, 999) != s2);
+    JSP_CHECK(get<STRING>(array, 999) != s2);
 }
 
 // ---
@@ -307,6 +308,50 @@ void TestingJS::setConstChars2(HandleObject array, int index, const char *s)
 void TestingJS::setConstString2(HandleObject array, int index, const std::string &s)
 {
     set(array, index, s);
+}
+
+// ---
+
+/*
+ * TODO: TEST ADDITIONAL TYPES
+ */
+void TestingJS::testGetElements3()
+{
+    RootedObject array(cx, evaluateObject("([10, 'x', 30])"));
+    
+    vector<INT32> elements;
+    
+    JSP_CHECK(!getElements(array, elements, 99));
+    JSP_CHECK((elements[0] == 10) && (elements[1] == 99) && (elements[2] == 30));
+}
+
+/*
+ * TODO: FIX ISSUE WITH BOOLEANS
+ */
+void TestingJS::testSetElements3()
+{
+    RootedObject array(cx, newArray());
+
+    JSP_CHECK(setElements(array, vector<FLOAT32> {1.5f, 2.5f, 3.5f}));
+    JSP_CHECK(toSource(array) == "[1.5, 2.5, 3.5]");
+    
+    JSP_CHECK(setElements(array, vector<FLOAT64> {1.33, 2.33, 3.33}));
+    JSP_CHECK(toSource(array) == "[1.33, 2.33, 3.33]");
+    
+    JSP_CHECK(setElements(array, vector<INT32> {-4096, 256, 8192}));
+    JSP_CHECK(toSource(array) == "[-4096, 256, 8192]");
+    
+    JSP_CHECK(setElements(array, vector<UINT32> {0xff123456, 256, 8192}));
+    JSP_CHECK(toSource(array) == "[4279383126, 256, 8192]");
+    
+//  JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, true}));
+//  JSP_CHECK(toSource(array) == "[true, false, true]");
+    
+    JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
+    JSP_CHECK(toSource(array) == "[{}, null, []]");
+    
+    JSP_CHECK(setElements(array, vector<STRING> {"one", "two", "three"}));
+    JSP_CHECK(toSource(array) == "[\"one\", \"two\", \"three\"]");
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------

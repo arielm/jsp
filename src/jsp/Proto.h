@@ -215,21 +215,16 @@ namespace jsp
         // ---
         
         template<typename T>
-        inline const T get(HandleObject targetArray, int elementIndex)
+        inline const T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             RootedValue value(cx);
             
             if (getElement(targetArray, elementIndex, &value))
             {
-                T result;
-                
-                if (convertMaybe(value, &result))
-                {
-                    return result;
-                }
+                return convertSafely<T>(value, defaultValue);
             }
             
-            throw EXCEPTION(Proto, "CAN'T GET ELEMENT AT INDEX " + ci::toString(elementIndex));
+            return defaultValue;
         }
         
         template<typename T>
@@ -240,35 +235,59 @@ namespace jsp
         }
         
         template<typename T>
-        bool getElements(HandleObject array, std::vector<T> &values)
+        bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             auto size = getLength(array);
+            int converted = 0;
             
-            values.clear();
-            values.reserve(size);
+            elements.clear();
+            elements.reserve(size);
             
-            for (auto i = 0; i < size; i++)
+            RootedValue value(cx);
+            
+            for (auto index = 0; index < size; index++)
             {
-                values.emplace_back(get<T>(array, i));
+                elements.emplace_back();
+
+                if (getElement(array, index, &value))
+                {
+                    if (convertMaybe<T>(value, &elements[index]))
+                    {
+                        converted++;
+                        continue;
+                    }
+                }
+                
+                elements[index] = defaultValue;
             }
             
-            return size;
+            return (size == converted);
         }
         
         template<typename T>
-        bool setElements(HandleObject array, const std::vector<T> &values)
+        bool setElements(HandleObject array, const std::vector<T> &elements)
         {
-            int index = 0;
-            
-            for (const auto &value : values)
+            if (JS_SetArrayLength(cx, array, 0))
             {
-                if (!set(array, index++, value))
+                int index = 0;
+                int converted = 0;
+
+                RootedValue value(cx);
+                
+                for (auto &element : elements)
                 {
-                    return false;
+                    value = toValue<T>(element);
+                    
+                    if (setElement(array, index++, value))
+                    {
+                        converted++;
+                    }
                 }
+                
+                return (index == converted);
             }
             
-            return true;
+            return false;
         }
     };
 }
