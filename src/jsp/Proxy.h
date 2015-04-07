@@ -144,22 +144,22 @@ namespace jsp
             return FORWARD(newArray, contents);
         }
         
-        inline uint32_t getLength(HandleObject array) final
+        inline size_t getLength(HandleObject array) final
         {
             return FORWARD(getLength, array);
         }
         
-        inline bool getElement(HandleObject array, uint32_t index, MutableHandleValue result) final
+        inline bool getElement(HandleObject array, int index, MutableHandleValue result) final
         {
             return FORWARD(getElement, array, index, result);
         }
         
-        inline bool setElement(HandleObject array, uint32_t index, HandleValue value) final
+        inline bool setElement(HandleObject array, int index, HandleValue value) final
         {
             return FORWARD(setElement, array, index, value);
         }
         
-        inline bool deleteElement(HandleObject array, uint32_t index) final
+        inline bool deleteElement(HandleObject array, int index) final
         {
             return FORWARD(deleteElement, array, index);
         }

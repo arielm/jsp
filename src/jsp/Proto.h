@@ -159,7 +159,7 @@ namespace jsp
 
         // ---
         
-        template<class T>
+        template<typename T>
         inline T get(HandleObject targetObject, const char *propertyName, typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             RootedValue value(cx);
@@ -182,10 +182,19 @@ namespace jsp
         // ---
         
         /*
+         * PURPOSELY NOT USING uint32_t FOR ARRAY INDICES:
+         *
+         * 1) BECAUSE OF THE AMBIGUITY WITH const char* WHEN INDEX IS 0
+         *
+         * 2) BECAUSE IT'S MORE EXPLICIT, E.G.
+         *    - "CAN'T GET ELEMENT AT INDEX -1" VS "CAN'T GET ELEMENT AT INDEX 4294967295"
+         */
+        
+        /*
          * TODO:
          *
-         * 1) bool hasElement(HandleObject array, uint32_t index)
-         * 2) bool defineElement(HandleObject array, uint32_t index, HandleValue value, unsigned attrs)
+         * 1) bool hasElement(HandleObject array, int index)
+         * 2) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
          * 3) template<typename T> bool push(HandleObject targetArray, T value)
          *
          * 4) C++11 ITERATORS
@@ -196,17 +205,17 @@ namespace jsp
         virtual JSObject* newArray(size_t length = 0) = 0;
         virtual JSObject* newArray(const HandleValueArray& contents) = 0;
 
-        virtual uint32_t getLength(HandleObject array) = 0;
+        virtual size_t getLength(HandleObject array) = 0;
         
-        virtual bool getElement(HandleObject array, uint32_t index, MutableHandleValue result) = 0;
-        virtual bool setElement(HandleObject array, uint32_t index, HandleValue value) = 0;
+        virtual bool getElement(HandleObject array, int index, MutableHandleValue result) = 0;
+        virtual bool setElement(HandleObject array, int index, HandleValue value) = 0;
         
-        virtual bool deleteElement(HandleObject array, uint32_t index) = 0;
+        virtual bool deleteElement(HandleObject array, int index) = 0;
 
         // ---
         
-        template<class T>
-        inline T get(HandleObject targetArray, int elementIndex) // XXX: NOT USING uint32_t FOR elementIndex BECAUSE OF THE AMBIGUITY WITH const char* WHEN VALUE IS 0
+        template<typename T>
+        inline T get(HandleObject targetArray, int elementIndex)
         {
             RootedValue value(cx);
             
@@ -224,7 +233,7 @@ namespace jsp
         }
         
         template<typename T>
-        inline bool set(const HandleObject &targetArray, int elementIndex, T value) // XXX: NOT USING uint32_t FOR elementIndex BECAUSE OF THE AMBIGUITY WITH const char* WHEN VALUE IS 0
+        inline bool set(const HandleObject &targetArray, int elementIndex, T value)
         {
             RootedValue rooted(cx, toValue<T>(value));
             return setElement(targetArray, elementIndex, rooted);
@@ -249,7 +258,7 @@ namespace jsp
         template<typename T>
         bool setElements(HandleObject array, const std::vector<T> &values)
         {
-            uint32_t index = 0;
+            int index = 0;
             
             for (const auto &value : values)
             {

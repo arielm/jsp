@@ -214,7 +214,7 @@ namespace jsp
         return JS_NewArrayObject(cx, contents);
     }
     
-    uint32_t BaseProto::getLength(HandleObject array)
+    size_t BaseProto::getLength(HandleObject array)
     {
         if (array)
         {
@@ -229,9 +229,9 @@ namespace jsp
         return 0;
     }
     
-    bool BaseProto::getElement(HandleObject array, uint32_t index, MutableHandleValue result)
+    bool BaseProto::getElement(HandleObject array, int index, MutableHandleValue result)
     {
-        if (array)
+        if (array && (index >= 0))
         {
             return JS_GetElement(cx, array, index, result);
         }
@@ -239,9 +239,9 @@ namespace jsp
         return false;
     }
     
-    bool BaseProto::setElement(HandleObject array, uint32_t index, HandleValue value)
+    bool BaseProto::setElement(HandleObject array, int index, HandleValue value)
     {
-        if (array)
+        if (array && (index >= 0))
         {
             return JS_SetElement(cx, array, index, value);
         }
@@ -249,9 +249,9 @@ namespace jsp
         return false;
     }
     
-    bool BaseProto::deleteElement(HandleObject array, uint32_t index)
+    bool BaseProto::deleteElement(HandleObject array, int index)
     {
-        if (array)
+        if (array && (index >= 0))
         {
             bool success;
             

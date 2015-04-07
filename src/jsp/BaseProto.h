@@ -70,12 +70,12 @@ namespace jsp
         JSObject* newArray(size_t length = 0) override;
         JSObject* newArray(const HandleValueArray& contents) override;
         
-        uint32_t getLength(HandleObject array) override;
+        size_t getLength(HandleObject array) override;
         
-        bool getElement(HandleObject array, uint32_t index, MutableHandleValue result) override;
-        bool setElement(HandleObject array, uint32_t index, HandleValue value) override;
+        bool getElement(HandleObject array, int index, MutableHandleValue result) override;
+        bool setElement(HandleObject array, int index, HandleValue value) override;
         
-        bool deleteElement(HandleObject array, uint32_t index) override;
+        bool deleteElement(HandleObject array, int index) override;
         
     private:
         BaseProto() = default;
