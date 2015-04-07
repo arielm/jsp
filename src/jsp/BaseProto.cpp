@@ -253,7 +253,12 @@ namespace jsp
     {
         if (array)
         {
-            return JS_DeleteElement(cx, array, index);
+            bool success;
+            
+            if (JS_DeleteElement2(cx, array, index, &success))
+            {
+                return success;
+            }
         }
         
         return false;
