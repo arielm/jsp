@@ -87,7 +87,7 @@ namespace jsp
         RootedValue rootedId(cx, Int32Value(barkerId));
         JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         
-        RootedValue rootedName(cx, StringValue(toJSString(finalName.data())));
+        RootedValue rootedName(cx, toValue(finalName));
         JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
         
         // ---

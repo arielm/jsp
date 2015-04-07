@@ -96,8 +96,8 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || false, testGetElement1)
         JSP_TEST(force || true, testGetProperties1)
         JSP_TEST(force || true, testGetElements1)
-        JSP_TEST(force || false, testSetElements1)
-        JSP_TEST(force || false, testSetElements2)
+        JSP_TEST(force || true, testSetElements1)
+        JSP_TEST(force || true, testSetElements2)
     }
 }
 
@@ -158,7 +158,7 @@ void TestingJS::testGetElement1()
 
 void TestingJS::testGetProperties1()
 {
-    RootedObject object(cx, evaluateObject("({x: 25.5, area: 33.33, balance: -255, count: 0xff123456, alive: true, parent: null, child: {}, name: 'foo'})"));
+    RootedObject object(cx, evaluateObject("({x: 25.5, area: 33.33, balance: -255, count: 0xff123456, alive: true, parent: null, child: {}, name: 'foo', whatever: 'bar', doh: 'baz'})"));
 
     JSP_CHECK(get<FLOAT32>(object, "x") == 25.5f);
     JSP_CHECK(get<FLOAT64>(object, "area") == 33.33);
@@ -176,21 +176,39 @@ void TestingJS::testGetProperties1()
     JSP_CHECK(get<BOOLEAN>(object, "notDefined") == false);
     JSP_CHECK(get<OBJECT>(object, "notDefined") == nullptr);
     JSP_CHECK(get<STRING>(object, "notDefined") == "");
+    
+    testConstChars1(object, "whatever", "bar");
+    testConstString1(object, "doh", "baz");
 }
+
+void TestingJS::testConstChars1(HandleObject object, const char *propertyName, const char *s)
+{
+    JSP_CHECK(get<STRING>(object, propertyName) == s);
+    JSP_CHECK(get<STRING>(object, "notDefined") != s);
+}
+
+void TestingJS::testConstString1(HandleObject object, const char *propertyName, const std::string &s)
+{
+    JSP_CHECK(get<STRING>(object, propertyName) == s);
+    JSP_CHECK(get<STRING>(object, "notDefined") != s);
+}
+
+// ---
 
 void TestingJS::testGetElements1()
 {
-    RootedObject array(cx, evaluateObject("([25.5, 33.33, -255, 0xff123456, true, null, {}, 'foo'])"));
+    RootedObject array(cx, evaluateObject("([25.5, 33.33, -255, 0xff123456, true, null, {}, 'foo', 'bar', 'baz'])"));
+    int index = 0;
 
-    JSP_CHECK(get<FLOAT32>(array, 0) == 25.5f);
-    JSP_CHECK(get<FLOAT64>(array, 1) == 33.33);
-    JSP_CHECK(get<INT32>(array, 2) == -255);
-    JSP_CHECK(get<UINT32>(array, 3) == 0xff123456);
-    JSP_CHECK(get<BOOLEAN>(array, 4) == true);
-    JSP_CHECK(get<OBJECT>(array, 5) == nullptr);
-    JSP_CHECK(get<OBJECT>(array, 6)->getClass() == &JSObject::class_);
-    JSP_CHECK(get<STRING>(array, 7) == "foo");
-    
+    JSP_CHECK(get<FLOAT32>(array, index++) == 25.5f);
+    JSP_CHECK(get<FLOAT64>(array, index++) == 33.33);
+    JSP_CHECK(get<INT32>(array, index++) == -255);
+    JSP_CHECK(get<UINT32>(array, index++) == 0xff123456);
+    JSP_CHECK(get<BOOLEAN>(array, index++) == true);
+    JSP_CHECK(get<OBJECT>(array, index++) == nullptr);
+    JSP_CHECK(get<OBJECT>(array, index++)->getClass() == &JSObject::class_);
+    JSP_CHECK(get<STRING>(array, index++) == "foo");
+
     /*
     JSP_CHECK(get<FLOAT32>(array, 999) == 0);
     JSP_CHECK(get<FLOAT64>(array, 999) == 0);
@@ -200,48 +218,95 @@ void TestingJS::testGetElements1()
     JSP_CHECK(get<OBJECT>(array, 999) == nullptr);
     JSP_CHECK(get<STRING>(array, 999) == "");
     */
+    
+    const char s1[] = "bar";
+    JSP_CHECK(get<STRING>(array, index++) == s1);
+//  JSP_CHECK(get<STRING>(array, 999) != s1);
+    
+    const string s2 = "baz";
+    JSP_CHECK(get<STRING>(array, index++) == s2);
+//  JSP_CHECK(get<STRING>(array, 999) != s2);
 }
 
 // ---
 
-const char *expectedArraySource = "[33.33, -255, 4279383126, true, null, {}, \"foo\"]";
-
 void TestingJS::testSetElements1()
 {
     RootedObject array(cx, newArray());
+    int index = 0;
 
-    JS_SetElement(cx, array, 0, 33.33);
-    JS_SetElement(cx, array, 1, -255);
-    JS_SetElement(cx, array, 2, 0xff123456);
+    RootedValue f(cx, toValue(25.5f));
+    JS_SetElement(cx, array, index++, f);
+    
+    RootedValue d(cx, toValue(33.33));
+    JS_SetElement(cx, array, index++, d);
+    
+    RootedValue i(cx, toValue(-255));
+    JS_SetElement(cx, array, index++, i);
+    
+    RootedValue ui(cx, toValue(0xff123456));
+    JS_SetElement(cx, array, index++, ui);
 
-    RootedValue b(cx, TrueValue());
-    JS_SetElement(cx, array, 3, b);
+    RootedValue b(cx, toValue(true));
+    JS_SetElement(cx, array, index++, b);
     
-    RootedValue n(cx, NullValue());
-    JS_SetElement(cx, array, 4, n);
+    RootedValue n(cx, toValue(nullptr));
+    JS_SetElement(cx, array, index++, n);
 
-    RootedObject o(cx, newPlainObject());
-    JS_SetElement(cx, array, 5, o);
+    RootedValue o(cx, toValue(newPlainObject()));
+    JS_SetElement(cx, array, index++, o);
     
-    RootedString s(cx, toJSString("foo"));
-    JS_SetElement(cx, array, 6, s);
+    RootedValue s(cx, toValue("foo"));
+    JS_SetElement(cx, array, index++, s);
     
-    JSP_CHECK(toSource(array) == expectedArraySource);
+    setConstChars1(array, index++, "bar");
+    setConstString1(array, index++, "baz");
+    
+    JSP_CHECK(toSource(array) == "[25.5, 33.33, -255, 4279383126, true, null, {}, \"foo\", \"bar\", \"baz\"]");
 }
+
+void TestingJS::setConstChars1(HandleObject array, int index, const char *s)
+{
+    RootedValue rooted(cx, toValue(s));
+    JS_SetElement(cx, array, index, rooted);
+}
+
+void TestingJS::setConstString1(HandleObject array, int index, const std::string &s)
+{
+    RootedValue rooted(cx, toValue(s));
+    JS_SetElement(cx, array, index, rooted);
+}
+
+// ---
 
 void TestingJS::testSetElements2()
 {
     RootedObject array(cx, newArray());
-
-    set(array, 0, 33.33);
-    set(array, 1, -255);
-    set(array, 2, 0xff123456);
-    set(array, 3, true);
-    set(array, 4, nullptr);
-    set(array, 5, newPlainObject());
-    set(array, 6, "foo");
+    int index = 0;
     
-    JSP_CHECK(toSource(array) == expectedArraySource);
+    set(array, index++, 25.5f);
+    set(array, index++, 33.33);
+    set(array, index++, -255);
+    set(array, index++, 0xff123456);
+    set(array, index++, true);
+    set(array, index++, nullptr);
+    set(array, index++, newPlainObject());
+    set(array, index++, "foo");
+
+    setConstChars2(array, index++, "bar");
+    setConstString2(array, index++, "baz");
+    
+    JSP_CHECK(toSource(array) == "[25.5, 33.33, -255, 4279383126, true, null, {}, \"foo\", \"bar\", \"baz\"]");
+}
+
+void TestingJS::setConstChars2(HandleObject array, int index, const char *s)
+{
+    set(array, index, s);
+}
+
+void TestingJS::setConstString2(HandleObject array, int index, const std::string &s)
+{
+    set(array, index, s);
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------

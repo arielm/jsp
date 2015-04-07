@@ -76,6 +76,11 @@ namespace jsp
     {
         return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
     }
+    
+    inline JSString* toJSString(const std::string &s)
+    {
+        return toJSString(s.data());
+    }
 
     inline const std::string toString(const jschar *s)
     {
@@ -190,11 +195,11 @@ namespace jsp
         
         return false;
     }
-    
+
     // ---
     
     template<class T>
-    inline T convertSafely(HandleValue value, T defaultValue)
+    inline const T convertSafely(HandleValue value, const T defaultValue)
     {
         T result;
         return convertMaybe(value, &result) ? result : defaultValue;
@@ -297,60 +302,90 @@ namespace jsp
     }
     
     // ---
+    
+    template <typename T>
+    inline const Value toValue(JSObject *object)
+    {
+        return ObjectOrNullValue(object);
+    }
 
-    /*
-     * TEMPLATE SPECIALIZATION IS NECESSARY, OTHERWISE toValue(bool) IS ALWAYS "PICKED"
-     *
-     * IN ADDITION: toValue(const std::string&) IS NEVER "PICKED", HENCE toValue(const char*)
-     */
+    template <typename T>
+    inline const Value toValue(const char *s)
+    {
+        return StringValue(toJSString(s));
+    }
     
     template<typename T>
-    inline const Value toValue(T);
-    
+    inline const Value toValue(T&&);
+
     template <>
-    inline const Value toValue(std::nullptr_t)
+    inline const Value toValue(std::nullptr_t&&)
     {
         return NullValue();
     }
     
     template <>
-    inline const Value toValue(JSObject *object)
+    inline const Value toValue(JSObject &object)
+    {
+        return ObjectValue(object);
+    }
+    
+    template <>
+    inline const Value toValue(JSObject *&&object)
     {
         return ObjectOrNullValue(object);
     }
     
     template <>
-    inline const Value toValue(float f)
+    inline const Value toValue(float &&f)
     {
         return DoubleValue(f);
     }
     
     template <>
-    inline const Value toValue(double d)
+    inline const Value toValue(double &&d)
     {
         return DoubleValue(d);
     }
     
     template <>
-    inline const Value toValue(int32_t i)
+    inline const Value toValue(int32_t &&i)
     {
         return Int32Value(i);
     }
 
     template <>
-    inline const Value toValue(uint32_t ui)
+    inline const Value toValue(uint32_t &&ui)
     {
         return NumberValue(ui);
     }
     
     template <>
-    inline const Value toValue(bool b)
+    inline const Value toValue(bool &&b)
     {
         return BooleanValue(b);
     }
+
+    template <>
+    inline const Value toValue(std::string &s)
+    {
+        return StringValue(toJSString(s));
+    }
+
+    template <>
+    inline const Value toValue(const std::string &s)
+    {
+        return StringValue(toJSString(s));
+    }
     
     template <>
-    inline const Value toValue(const char *s)
+    inline const Value toValue(const char *&s)
+    {
+        return StringValue(toJSString(s));
+    }
+    
+    template <size_t N>
+    inline const Value toValue(const char (&s)[N])
     {
         return StringValue(toJSString(s));
     }
@@ -695,8 +730,8 @@ public:
      * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THESE 2 TO SOME MORE "SPECIALIZED" CLASS...)
      */
 
-    static uint32_t toHTMLColor(const std::string &colorName, uint32_t defaultValue = 0x000000);
-    static uint32_t toHTMLColor(JS::HandleValue value, uint32_t defaultValue = 0x000000); // INFAILIBLE
+    static const uint32_t toHTMLColor(const std::string &colorName, const uint32_t defaultValue = 0x000000);
+    static const uint32_t toHTMLColor(JS::HandleValue value, const uint32_t defaultValue = 0x000000); // INFAILIBLE
     
 private:
     static constexpr size_t TRACE_BUFFER_SIZE = 256;
