@@ -97,7 +97,11 @@ namespace jsp
     
     // ---
     
-    inline bool toObjectMaybe(HandleValue value, JSObject **result)
+    template<class T>
+    inline bool convertMaybe(HandleValue value, T *result);
+    
+    template <>
+    inline bool convertMaybe(HandleValue value, JSObject **result)
     {
         if (value.isObjectOrNull())
         {
@@ -108,7 +112,8 @@ namespace jsp
         return false;
     }
     
-    inline bool toFloat32Maybe(HandleValue value, float *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, float *result)
     {
         if (value.isDouble())
         {
@@ -119,7 +124,8 @@ namespace jsp
         return false;
     }
     
-    inline bool toFloat64Maybe(HandleValue value, double *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, double *result)
     {
         if (value.isDouble())
         {
@@ -130,7 +136,8 @@ namespace jsp
         return false;
     }
     
-    inline bool toInt32Maybe(HandleValue value, int32_t *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, int32_t *result)
     {
         if (value.isInt32())
         {
@@ -141,7 +148,8 @@ namespace jsp
         return false;
     }
     
-    inline bool toUInt32Maybe(HandleValue value, uint32_t *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, uint32_t *result)
     {
         if (value.isInt32())
         {
@@ -158,7 +166,8 @@ namespace jsp
         return false;
     }
     
-    inline bool toBooleanMaybe(HandleValue value, bool *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, bool *result)
     {
         if (!value.isUndefined())
         {
@@ -169,12 +178,12 @@ namespace jsp
         return false;
     }
     
-    inline bool toStringMaybe(HandleValue value, std::string *result)
+    template <>
+    inline bool convertMaybe(HandleValue value, std::string *result)
     {
         if (!value.isUndefined())
         {
             RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-            
             *result = toString(rooted);
             return true;
         }
@@ -184,48 +193,13 @@ namespace jsp
     
     // ---
     
-    inline JSObject* toObjectSafely(HandleValue value, JSObject *defaultValue)
+    template<class T>
+    inline T convertSafely(HandleValue value, T defaultValue)
     {
-        JSObject *result;
-        return toObjectMaybe(value, &result) ? result : defaultValue;
+        T result;
+        return convertMaybe(value, &result) ? result : defaultValue;
     }
-    
-    inline float toFloat32Safely(HandleValue value, float defaultValue)
-    {
-        float result;
-        return toFloat32Maybe(value, &result) ? result : defaultValue;
-    }
-    
-    inline double toFloat64Safely(HandleValue value, double defaultValue)
-    {
-        double result;
-        return toFloat64Maybe(value, &result) ? result : defaultValue;
-    }
-    
-    inline int32_t toInt32Safely(HandleValue value, int32_t defaultValue)
-    {
-        int32_t result;
-        return toInt32Maybe(value, &result) ? result : defaultValue;
-    }
-    
-    inline uint32_t toUInt32Safely(HandleValue value, uint32_t defaultValue)
-    {
-        uint32_t result;
-        return toUInt32Maybe(value, &result) ? result : defaultValue;
-    }
-    
-    inline bool toBooleanSafely(HandleValue value, bool defaultValue)
-    {
-        bool result;
-        return toBooleanMaybe(value, &result) ? result : defaultValue;
-    }
-    
-    inline const std::string toStringSafely(HandleValue value, const char *defaultValue)
-    {
-        std::string result;
-        return toStringMaybe(value, &result) ? result : defaultValue;
-    }
-    
+
     // ---
 
     inline bool compare(const Value &value, const Value &other)

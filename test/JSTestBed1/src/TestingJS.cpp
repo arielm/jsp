@@ -94,7 +94,7 @@ void TestingJS::performRun(bool force)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
-        JSP_TEST(force || false, testGetProperties1)
+        JSP_TEST(force || true, testGetProperties1)
         JSP_TEST(force || true, testGetElements1)
         JSP_TEST(force || false, testSetElements1)
         JSP_TEST(force || false, testSetElements2)

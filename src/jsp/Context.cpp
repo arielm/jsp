@@ -718,7 +718,7 @@ uint32_t JSP::toHTMLColor(HandleValue value, uint32_t defaultValue)
     }
     else
     {
-        return toUInt32Safely(value, defaultValue);
+        return convertSafely(value, defaultValue);
     }
     
     return defaultValue;

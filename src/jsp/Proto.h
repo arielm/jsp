@@ -21,7 +21,7 @@
 
 #include "jsp/Context.h"
 
-#include "chronotext/InputSource.h"
+#include "chronotext/utils/Utils.h"
 
 namespace jsp
 {
@@ -159,8 +159,18 @@ namespace jsp
 
         // ---
         
-        template<typename T>
-        T get(HandleObject targetObject, const char *propertyName, typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        template<class T>
+        inline T get(HandleObject targetObject, const char *propertyName, typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
+        {
+            RootedValue value(cx);
+            
+            if (getProperty(targetObject, propertyName, &value))
+            {
+                return convertSafely<T>(value, defaultValue);
+            }
+            
+            return defaultValue;
+        }
         
         template<typename ID=char, typename T>
         inline bool set(const HandleObject &targetObject, const ID* propertyName, T value)
@@ -195,8 +205,23 @@ namespace jsp
 
         // ---
         
-        template<typename T>
-        T get(HandleObject targetArray, uint32_t elementIndex);
+        template<class T>
+        inline T get(HandleObject targetArray, uint32_t elementIndex)
+        {
+            RootedValue value(cx);
+            
+            if (getElement(targetArray, elementIndex, &value))
+            {
+                T result;
+                
+                if (convertMaybe(value, &result))
+                {
+                    return result;
+                }
+            }
+            
+            throw EXCEPTION(Proto, "CAN'T GET ELEMENT AT INDEX " + ci::toString(elementIndex));
+        }
         
         template<typename ID=uint32_t, typename T>
         inline bool set(const HandleObject &targetArray, ID elementIndex, T value)
