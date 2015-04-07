@@ -182,7 +182,7 @@ void TestingJS::testGetElements1()
 {
     RootedObject array(cx, evaluateObject("([25.5, 33.33, -255, 0xff123456, true, null, {}, 'foo'])"));
 
-    JSP_CHECK(get<FLOAT32>(array, (uint32_t)0) == 25.5f);// FIXME: MEMBER FUNCTION get IS AMBIGUOUS BECAUSE "0" CAN BE CAST TO "const char*" (I.E. USED WHEN GETTING PROPERTIES)
+    JSP_CHECK(get<FLOAT32>(array, 0) == 25.5f);
     JSP_CHECK(get<FLOAT64>(array, 1) == 33.33);
     JSP_CHECK(get<INT32>(array, 2) == -255);
     JSP_CHECK(get<UINT32>(array, 3) == 0xff123456);

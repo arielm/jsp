@@ -172,8 +172,8 @@ namespace jsp
             return defaultValue;
         }
         
-        template<typename ID=char, typename T>
-        inline bool set(const HandleObject &targetObject, const ID* propertyName, T value)
+        template<typename T>
+        inline bool set(const HandleObject &targetObject, const char* propertyName, T value)
         {
             RootedValue rooted(cx, toValue<T>(value));
             return setProperty(targetObject, propertyName, rooted);
@@ -206,7 +206,7 @@ namespace jsp
         // ---
         
         template<class T>
-        inline T get(HandleObject targetArray, uint32_t elementIndex)
+        inline T get(HandleObject targetArray, int elementIndex) // XXX: NOT USING uint32_t FOR elementIndex BECAUSE OF THE AMBIGUITY WITH const char* WHEN VALUE IS 0
         {
             RootedValue value(cx);
             
@@ -223,8 +223,8 @@ namespace jsp
             throw EXCEPTION(Proto, "CAN'T GET ELEMENT AT INDEX " + ci::toString(elementIndex));
         }
         
-        template<typename ID=uint32_t, typename T>
-        inline bool set(const HandleObject &targetArray, ID elementIndex, T value)
+        template<typename T>
+        inline bool set(const HandleObject &targetArray, int elementIndex, T value) // XXX: NOT USING uint32_t FOR elementIndex BECAUSE OF THE AMBIGUITY WITH const char* WHEN VALUE IS 0
         {
             RootedValue rooted(cx, toValue<T>(value));
             return setElement(targetArray, elementIndex, rooted);
