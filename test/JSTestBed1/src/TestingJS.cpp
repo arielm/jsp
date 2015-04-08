@@ -325,9 +325,6 @@ void TestingJS::testGetElements3()
     JSP_CHECK((elements[0] == 10) && (elements[1] == 99) && (elements[2] == 30));
 }
 
-/*
- * TODO: FIX ISSUE WITH BOOLEANS
- */
 void TestingJS::testSetElements3()
 {
     RootedObject array(cx, newArray());
@@ -344,8 +341,8 @@ void TestingJS::testSetElements3()
     JSP_CHECK(setElements(array, vector<UINT32> {0xff123456, 256, 8192}));
     JSP_CHECK(toSource(array) == "[4279383126, 256, 8192]");
     
-//  JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, true}));
-//  JSP_CHECK(toSource(array) == "[true, false, true]");
+    JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, true}));
+    JSP_CHECK(toSource(array) == "[true, false, true]");
     
     JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
     JSP_CHECK(toSource(array) == "[{}, null, []]");

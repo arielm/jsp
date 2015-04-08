@@ -195,10 +195,10 @@ namespace jsp
          *
          * 1) bool hasElement(HandleObject array, int index)
          * 2) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-         * 3) template<typename T> bool push(HandleObject targetArray, T value)
+         * 3) template<typename T> bool append(HandleObject targetArray, T value)
+         * 4) bool append(const HandleValueArray& contents)
          *
-         * 4) C++11 ITERATORS
-         * 5) BULK READ/WRITE OPERATIONS (I.E. BYPASSING "GENERIC" ELEMENT-LOOKUP)
+         * 5) C++11 ITERATORS
          * 6) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
          */
         
@@ -274,9 +274,9 @@ namespace jsp
 
                 RootedValue value(cx);
                 
-                for (auto &element : elements)
+                for (typename std::vector<T>::const_iterator it = elements.begin(); it != elements.end(); ++it)
                 {
-                    value = toValue<T>(element);
+                    value = toValue<T>(*it);
                     
                     if (setElement(array, index++, value))
                     {
