@@ -149,6 +149,11 @@ namespace jsp
             return FORWARD(getLength, array);
         }
         
+        inline bool setLength(HandleObject array, size_t length) final
+        {
+            return FORWARD(setLength, array, length);
+        }
+        
         inline bool getElement(HandleObject array, int index, MutableHandleValue result) final
         {
             return FORWARD(getElement, array, index, result);

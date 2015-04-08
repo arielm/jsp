@@ -206,6 +206,7 @@ namespace jsp
         virtual JSObject* newArray(const HandleValueArray& contents) = 0;
 
         virtual size_t getLength(HandleObject array) = 0;
+        virtual bool setLength(HandleObject array, size_t length) = 0;
         
         virtual bool getElement(HandleObject array, int index, MutableHandleValue result) = 0;
         virtual bool setElement(HandleObject array, int index, HandleValue value) = 0;
@@ -243,39 +244,44 @@ namespace jsp
         {
             auto size = getLength(array);
             
-            int index = 0;
-            int converted = 0;
-            bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
-            
-            elements.clear();
-            elements.resize(size, TypeTraits<T>::defaultValue());
-            
-            RootedValue value(cx);
-            
-            for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
+            if (size > 0)
             {
-                if (getElement(array, index++, &value))
+                elements.clear();
+                elements.resize(size, TypeTraits<T>::defaultValue());
+
+                bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
+                int index = 0;
+                int converted = 0;
+                
+                RootedValue value(cx);
+                
+                for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
                 {
-                    if (Convert<T>::maybe(value, it))
+                    if (getElement(array, index++, &value))
                     {
-                        converted++;
-                        continue;
+                        if (Convert<T>::maybe(value, it))
+                        {
+                            converted++;
+                            continue;
+                        }
+                    }
+                    
+                    if (assignUnconverted)
+                    {
+                        *it = defaultValue;
                     }
                 }
                 
-                if (assignUnconverted)
-                {
-                    *it = defaultValue;
-                }
+                return (index == converted);
             }
             
-            return (index == converted);
+            return false;
         }
         
         template<typename T>
         bool setElements(HandleObject array, const std::vector<T> &elements)
         {
-            if (JS_SetArrayLength(cx, array, 0))
+            if ((elements.size() > 0) && setLength(array, 0))
             {
                 int index = 0;
                 int converted = 0;

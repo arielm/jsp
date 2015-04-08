@@ -229,6 +229,16 @@ namespace jsp
         return 0;
     }
     
+    bool BaseProto::setLength(HandleObject array, size_t length)
+    {
+        if (array)
+        {
+            return JS_SetArrayLength(cx, array, length);
+        }
+        
+        return false;
+    }
+    
     bool BaseProto::getElement(HandleObject array, int index, MutableHandleValue result)
     {
         if (array && (index >= 0))

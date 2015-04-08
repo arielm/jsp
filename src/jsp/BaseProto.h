@@ -71,6 +71,7 @@ namespace jsp
         JSObject* newArray(const HandleValueArray& contents) override;
         
         size_t getLength(HandleObject array) override;
+        bool setLength(HandleObject array, size_t length) override;
         
         bool getElement(HandleObject array, int index, MutableHandleValue result) override;
         bool setElement(HandleObject array, int index, HandleValue value) override;

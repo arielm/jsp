@@ -103,7 +103,7 @@ void TestingJS::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || true, testGetElements3)
-        JSP_TEST(force || false, testSetElements3)
+        JSP_TEST(force || true, testSetElements3)
     }
 }
 
@@ -387,12 +387,27 @@ void TestingJS::testGetElements3()
         JSP_CHECK(!getElements(array, elements, "INVALID")); // USING A CUSTOM DEFAULT-VALUE
         JSP_CHECK(write(elements) == "[one, INVALID, three]");
     }
+    
+    // ---
+    
+    vector<UINT32> elements;
+    RootedObject array(cx, newArray());
+    
+    /*
+     * RETURNS FALSE BECAUSE JS ARRAY IS NULL
+     */
+    JSP_CHECK(!getElements(NullPtr(), elements));
+    
+    /*
+     * RETURNS FALSE BECAUSE JS ARRAY IS EMPTY
+     */
+    JSP_CHECK(!getElements(array, elements));
 }
 
 void TestingJS::testSetElements3()
 {
     RootedObject array(cx, newArray());
-
+    
     JSP_CHECK(setElements(array, vector<FLOAT32> {1.5f, 2.5f, 3.5f}));
     JSP_CHECK(toSource(array) == "[1.5, 2.5, 3.5]");
     
@@ -413,6 +428,41 @@ void TestingJS::testSetElements3()
     
     JSP_CHECK(setElements(array, vector<STRING> {"one", "two", "three"}));
     JSP_CHECK(toSource(array) == "[\"one\", \"two\", \"three\"]");
+    
+    // ---
+
+    /*
+     * RETURNS FALSE BECAUSE JS ARRAY IS NULL
+     */
+    JSP_CHECK(!setElements(NullPtr(), vector<INT32> {1, 2, 3}));
+    
+    
+    /*
+     * RETURNS FALSE BECAUSE C++ ARRAY IS EMPTY
+     */
+    JSP_CHECK(!setElements(array, vector<INT32> {}));
+    
+    // ---
+    
+    setElements(array, vector<STRING> {"A", "B", "C", "D", "E", "F"});
+    
+    RootedValue value(cx, toValue(99));
+    JS_DefineElement(cx, array, 4, value, nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
+    
+    /*
+     * RETURNS FALSE BECAUSE JS ARRAY CAN'T BE RESET
+     *
+     * JS EXCEPTION: "TypeError: property 4 is non-configurable and can't be deleted"
+     */
+    JSP_CHECK(!setElements(array, vector<INT32> {1, 2, 3}));
+    
+    /*
+     * SOME OF THE ELEMENTS WERE CLEARED:
+     *
+     * - STARTING FROM THE END OF THE ARRAY
+     * - UNTIL THE FIRST "NON-CONFIGURABLE"
+     */
+    JSP_CHECK(toSource(array) == "[\"A\", \"B\", \"C\", \"D\", 99]");
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------
