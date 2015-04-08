@@ -234,34 +234,42 @@ namespace jsp
             return setElement(targetArray, elementIndex, rooted);
         }
         
+        /*
+         * THE OVER-COMPLEXITY OF THE FOLLOWING 2 IS A CONSEQUENCE OF THE PARTIAL SUPPORT OF std::vector<bool> IN C++11
+         */
+        
         template<typename T>
         bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             auto size = getLength(array);
+            
+            int index = 0;
             int converted = 0;
+            bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
             
             elements.clear();
-            elements.reserve(size);
+            elements.resize(size, TypeTraits<T>::defaultValue());
             
             RootedValue value(cx);
             
-            for (auto index = 0; index < size; index++)
+            for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
             {
-                elements.emplace_back();
-
-                if (getElement(array, index, &value))
+                if (getElement(array, index++, &value))
                 {
-                    if (convertMaybe<T>(value, &elements[index]))
+                    if (Convert<T>::maybe(value, it))
                     {
                         converted++;
                         continue;
                     }
                 }
                 
-                elements[index] = defaultValue;
+                if (assignUnconverted)
+                {
+                    *it = defaultValue;
+                }
             }
             
-            return (size == converted);
+            return (index == converted);
         }
         
         template<typename T>

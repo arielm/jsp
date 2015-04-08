@@ -90,17 +90,20 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testPermanentProperty2)
     }
     
+    if (force || false)
+    {
+        JSP_TEST(force || true, testGetProperty1)
+        JSP_TEST(force || true, testGetElement1)
+        JSP_TEST(force || true, testGetProperties1)
+        JSP_TEST(force || true, testGetElements1)
+        JSP_TEST(force || true, testSetElements1)
+        JSP_TEST(force || true, testSetElements2)
+    }
+    
     if (force || true)
     {
-        JSP_TEST(force || false, testGetProperty1)
-        JSP_TEST(force || false, testGetElement1)
-        JSP_TEST(force || false, testGetProperties1)
-        JSP_TEST(force || false, testGetElements1)
-        JSP_TEST(force || false, testSetElements1)
-        JSP_TEST(force || false, testSetElements2)
-        
         JSP_TEST(force || true, testGetElements3)
-        JSP_TEST(force || true, testSetElements3)
+        JSP_TEST(force || false, testSetElements3)
     }
 }
 
@@ -313,16 +316,77 @@ void TestingJS::setConstString2(HandleObject array, int index, const std::string
 // ---
 
 /*
- * TODO: TEST ADDITIONAL TYPES
+ * SOURCE: http://en.cppreference.com/w/cpp/container/vector/vector
  */
+template<typename T>
+const std::string write(const std::vector<T> &v)
+{
+    char comma[3] = {'\0', ' ', '\0'};
+
+    std::stringstream s;
+    s.put('[');
+    
+    for (const auto &e : v)
+    {
+        s << comma << e;
+        comma[0] = ',';
+    }
+    
+    s.put(']');
+    return s.str();
+}
+
 void TestingJS::testGetElements3()
 {
-    RootedObject array(cx, evaluateObject("([10, 'x', 30])"));
+    {
+        vector<FLOAT64> elements;
+        RootedObject array(cx, evaluateObject("([1.33, , 3.33])"));
+        
+        JSP_CHECK(!getElements(array, elements));
+        JSP_CHECK(write(elements) == "[1.33, 0, 3.33]");
+    }
+
+    {
+        vector<INT32> elements;
+        RootedObject array(cx, evaluateObject("([-4096, , 8192])"));
+        
+        JSP_CHECK(!getElements(array, elements, 555)); // USING A CUSTOM DEFAULT-VALUE
+        JSP_CHECK(write(elements) == "[-4096, 555, 8192]");
+    }
     
-    vector<INT32> elements;
+    {
+        vector<UINT32> elements;
+        RootedObject array(cx, evaluateObject("([0xff123456, , 8192])"));
+        
+        JSP_CHECK(!getElements(array, elements));
+        JSP_CHECK(write(elements) == "[4279383126, 0, 8192]");
+    }
     
-    JSP_CHECK(!getElements(array, elements, 99));
-    JSP_CHECK((elements[0] == 10) && (elements[1] == 99) && (elements[2] == 30));
+    {
+        vector<BOOLEAN> elements;
+        RootedObject array(cx, evaluateObject("([true, , false])"));
+
+        JSP_CHECK(!getElements(array, elements));
+        JSP_CHECK(write(elements) == "[1, 0, 0]");
+    }
+
+    {
+        vector<OBJECT> elements;
+        
+        RootedObject array(cx, evaluateObject("([{}, , []])"));
+        JSP_CHECK(!getElements(array, elements));
+        
+        JSP_CHECK(setElements(array, elements));
+        JSP_CHECK(toSource(array) == "[{}, null, []]");
+    }
+    
+    {
+        vector<STRING> elements;
+        RootedObject array(cx, evaluateObject("(['one', , 'three'])"));
+        
+        JSP_CHECK(!getElements(array, elements, "INVALID")); // USING A CUSTOM DEFAULT-VALUE
+        JSP_CHECK(write(elements) == "[one, INVALID, three]");
+    }
 }
 
 void TestingJS::testSetElements3()
@@ -341,8 +405,8 @@ void TestingJS::testSetElements3()
     JSP_CHECK(setElements(array, vector<UINT32> {0xff123456, 256, 8192}));
     JSP_CHECK(toSource(array) == "[4279383126, 256, 8192]");
     
-    JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, true}));
-    JSP_CHECK(toSource(array) == "[true, false, true]");
+    JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, false}));
+    JSP_CHECK(toSource(array) == "[true, false, false]");
     
     JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
     JSP_CHECK(toSource(array) == "[{}, null, []]");

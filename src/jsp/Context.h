@@ -28,6 +28,7 @@
 #include <cassert>
 #include <map>
 #include <sstream>
+#include <vector>
 
 #include "unicode/unistr.h" // TODO: CONSIDER REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
 
@@ -195,6 +196,33 @@ namespace jsp
         
         return false;
     }
+    
+    //
+    
+    template <class T>
+    struct Convert
+    {
+        inline static bool maybe(const HandleValue &v, typename std::vector<T>::iterator &result)
+        {
+            return convertMaybe<T>(v, &*result);
+        }
+    };
+    
+    template <>
+    struct Convert<bool>
+    {
+        inline static bool maybe(const HandleValue &v, std::vector<bool>::iterator &result)
+        {
+            if (!v.isUndefined())
+            {
+                *result = ToBoolean(v);
+                return true;
+            }
+            
+            return false;
+
+        }
+    };
 
     // ---
     
@@ -309,6 +337,12 @@ namespace jsp
         return ObjectOrNullValue(object);
     }
 
+    template<typename T>
+    inline const Value toValue(std::nullptr_t)
+    {
+        return NullValue();
+    }
+    
     template<typename T>
     inline const Value toValue(float f)
     {
