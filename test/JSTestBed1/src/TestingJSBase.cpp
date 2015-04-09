@@ -31,6 +31,35 @@ void TestingJSBase::run(bool force)
     performRun(force);
 }
 
+/*
+ * QUICK AND DIRTY IMPLEMENTATION
+ *
+ * TODO: CONSIDER IMPLEMENTING "TRUE" FUNCTION CREATION AND COMPILATION, ETC.
+ */
+bool TestingJSBase::evaluateBoolean(const string &source)
+{
+    string wrapped = "(function() { " + source + " })()";
+    
+    // ---
+    
+    OwningCompileOptions options(cx);
+    options.setForEval(true);
+    options.setVersion(JSVersion::JSVERSION_LATEST);
+    options.setUTF8(true);
+    options.setFileAndLine(cx, "", 1);
+    
+    // ---
+    
+    RootedValue result(cx);
+    
+    if (eval(wrapped, options, &result))
+    {
+        return ToBoolean(result);
+    }
+    
+    throw EXCEPTION(TestingJSBase, "EVALUATION FAILED");
+}
+
 // ---
 
 bool TestingJSBase::fail(const string &file, int line, const string &reason)

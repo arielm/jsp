@@ -27,6 +27,8 @@ public:
     virtual void performShutdown() {}
     virtual void performRun(bool force) = 0;
 
+    bool evaluateBoolean(const std::string &source);
+    
     static bool fail(const std::string &file = "", int line = 0, const std::string &reason = "");
 };
 

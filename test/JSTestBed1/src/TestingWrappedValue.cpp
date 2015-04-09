@@ -257,21 +257,21 @@ void TestingWrappedValue::testBooleanCasting()
     WrappedValue wrapped;
     JSP_CHECK(!wrapped);
     
-    executeScript("var tmp = {}; print(tmp.foo ? 'true' : 'false')"); // TODO: CONSIDER IMPLEMENTING SOME KIND OF bool evaluateBoolean("return true")
+    JSP_CHECK(!evaluateBoolean("var tmp = {}; return (tmp.foo ? true : false)"));
     
     //
     
     wrapped = nullptr;
     JSP_CHECK(!wrapped);
     
-    executeScript("var tmp = {foo: null}; print(tmp.foo ? 'true' : 'false')");
+    JSP_CHECK(!evaluateBoolean("var tmp = {foo: null}; return (tmp.foo ? true : false)"));
     
     //
     
     wrapped = "";
     JSP_CHECK(!wrapped);
     
-    executeScript("var tmp = {foo: ''}; print(tmp.foo ? 'true' : 'false')");
+    JSP_CHECK(!evaluateBoolean("var tmp = {foo: ''}; return (tmp.foo ? true : false)"));
 }
 
 // ---
@@ -329,14 +329,14 @@ void TestingWrappedValue::testStringComparison2()
     WrappedValue wrapped;
     JSP_CHECK(wrapped != "undefined");
 
-    executeScript("var tmp = {}; print((tmp.foo == 'undefined') ? 'true' : 'false')");
+    JSP_CHECK(!evaluateBoolean("var tmp = {}; return (tmp.foo == 'undefined')"));
 
     //
     
     wrapped = nullptr;
     JSP_CHECK(wrapped != "null");
     
-    executeScript("var tmp = {foo: null}; print((tmp.foo == 'null') ? 'true' : 'false')");
+    JSP_CHECK(!evaluateBoolean("var tmp = {foo: null}; return(tmp.foo == 'null')"));
     
     //
     
@@ -344,8 +344,8 @@ void TestingWrappedValue::testStringComparison2()
     JSP_CHECK(wrapped == "123");
     JSP_CHECK(wrapped != "xxx");
     
-    executeScript("var tmp = {foo: 123}; print((tmp.foo == '123') ? 'true' : 'false')");
-    executeScript("var tmp = {foo: 123}; print((tmp.foo == 'xxx') ? 'true' : 'false')");
+    JSP_CHECK(evaluateBoolean("var tmp = {foo: 123}; return (tmp.foo == '123')"));
+    JSP_CHECK(!evaluateBoolean("var tmp = {foo: 123}; return (tmp.foo == 'xxx')"));
 }
 
 void TestingWrappedValue::testStringCasting()
@@ -425,7 +425,7 @@ void TestingWrappedValue::testAutoWrappedValueVector()
      */
     JSP::forceGC();
     
-    call(globalHandle(), "print", args); // TODO: "CAPTURE" LOG
+    call(globalHandle(), "print", args); // TODO: "CAPTURE" LOG AND CHECK RESULTS
 }
 
 /*
