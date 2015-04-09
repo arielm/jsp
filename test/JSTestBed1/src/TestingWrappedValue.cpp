@@ -51,12 +51,12 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testAutomaticComparison);
     }
     
-    if (force || true)
+    if (force || false)
     {
-        JSP_TEST(force || false, testBooleanComparison);
+        JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
         
-        JSP_TEST(force || false, testStringComparison1);
+        JSP_TEST(force || true, testStringComparison1);
         JSP_TEST(force || true, testStringComparison2);
         JSP_TEST(force || true, testStringCasting);
     }
@@ -67,7 +67,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testHeapComparison);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testAutoWrappedValueVector);
     }
@@ -425,7 +425,7 @@ void TestingWrappedValue::testAutoWrappedValueVector()
      */
     JSP::forceGC();
     
-    call(globalHandle(), "print", args); // TODO: "CAPTURE" LOG AND CHECK RESULTS
+    JSP_CHECK(write(args) == "123 foo [object Barker] 33.33");
 }
 
 /*

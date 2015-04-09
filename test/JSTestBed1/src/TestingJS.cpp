@@ -315,27 +315,6 @@ void TestingJS::setConstString2(HandleObject array, int index, const std::string
 
 // ---
 
-/*
- * SOURCE: http://en.cppreference.com/w/cpp/container/vector/vector
- */
-template<typename T>
-const std::string write(const std::vector<T> &v)
-{
-    char comma[3] = {'\0', ' ', '\0'};
-
-    std::stringstream s;
-    s.put('[');
-    
-    for (const auto &e : v)
-    {
-        s << comma << e;
-        comma[0] = ',';
-    }
-    
-    s.put(']');
-    return s.str();
-}
-
 void TestingJS::testGetElements3()
 {
     {

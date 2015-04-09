@@ -132,14 +132,14 @@ namespace jsp
         string buffer;
         RootedString rooted(cx);
         
-        for (int i = 0; i < args.length(); i++)
+        for (auto i = 0; i < args.length(); i++)
         {
             rooted = ToString(cx, args[i]);
             JSAutoByteString tmp;
             
             if (tmp.encodeUtf8(cx, rooted))
             {
-                buffer += (i > 0) ? " " : "";
+                if (i > 0) buffer += ' ';
                 buffer += tmp.ptr();
             }
             else
@@ -149,7 +149,7 @@ namespace jsp
             }
         }
         
-        if (buffer.size())
+        if (!buffer.empty())
         {
             LOGI << buffer << endl; // TODO: IT SHOULD BE POSSIBLE TO DEFINE WHICH std::ostream IS USED
         }

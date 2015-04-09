@@ -29,6 +29,29 @@ public:
 
     bool evaluateBoolean(const std::string &source);
     
+    const std::string write(const JS::HandleValueArray& args);
+
+    /*
+     * SOURCE: http://en.cppreference.com/w/cpp/container/vector/vector
+     */
+    template<typename T>
+    static const std::string write(const std::vector<T> &v)
+    {
+        char comma[3] = {'\0', ' ', '\0'};
+        
+        std::stringstream s;
+        s.put('[');
+        
+        for (const auto &e : v)
+        {
+            s << comma << e;
+            comma[0] = ',';
+        }
+        
+        s.put(']');
+        return s.str();
+    }
+    
     static bool fail(const std::string &file = "", int line = 0, const std::string &reason = "");
 };
 
