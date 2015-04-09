@@ -36,7 +36,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,22 +44,30 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
-        JSP_TEST(force || true, testBooleanComparison);
-        JSP_TEST(force || true, testStringComparison);
         JSP_TEST(force || true, testAutomaticComparison);
     }
     
     if (force || true)
     {
+        JSP_TEST(force || false, testBooleanComparison);
+        JSP_TEST(force || true, testBooleanCasting);
+        
+        JSP_TEST(force || false, testStringComparison1);
+        JSP_TEST(force || true, testStringComparison2);
+        JSP_TEST(force || true, testStringCasting);
+    }
+    
+    if (force || false)
+    {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAutoWrappedValueVector);
     }
@@ -203,21 +211,72 @@ void TestingWrappedValue::testObjectComparison()
     JSP_CHECK(wrapped1 == wrapped2);
 }
 
-void TestingWrappedValue::testBooleanComparison()
+void TestingWrappedValue::testAutomaticComparison()
 {
-    WrappedValue wrapped2 = true;
-    JSP_CHECK(wrapped2 == true); // THANKS TO WrappedValue::operator==(bool)
-    JSP_CHECK(wrapped2 != false); // THANKS TO WrappedValue::operator!=(bool)
+    WrappedValue wrapped = 33.33;
+    JSP_CHECK(wrapped == 33.33);
+    JSP_CHECK(wrapped != 55.55);
     
-    JSP_CHECK(wrapped2); // THANKS TO WrappedValue::operator const bool ()
+    wrapped = -255;
+    JSP_CHECK(wrapped == -255);
+    JSP_CHECK(wrapped != 127);
     
-    wrapped2 = false;
-    JSP_CHECK(!wrapped2); // THANKS TO WrappedValue::operator const bool ()
+    JSP_CHECK(wrapped != "foo"); // SLOW, BECAUSE wrapped WILL BE CONVERTED TO STRING (ACCORDING TO JAVASCRIPT RULES)
+    JSP_CHECK(wrapped != nullptr);
+    
+    wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED
+    JSP_CHECK(wrapped == 0xff123456);
+    JSP_CHECK(wrapped != 0x12345678);
+    
+    JSP_CHECK(wrapped);
+    
+    wrapped = 0;
+    JSP_CHECK(!wrapped);
 }
 
 // ---
 
-void TestingWrappedValue::testStringComparison()
+void TestingWrappedValue::testBooleanComparison()
+{
+    WrappedValue wrapped2 = true;
+    JSP_CHECK(wrapped2 == true); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(bool)
+    JSP_CHECK(wrapped2 != false); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(bool)
+    
+    /*
+     * THE FOLLOWING 2 ARE PASSING VIA WrappedValue::operator const bool ()
+     */
+    
+    JSP_CHECK(wrapped2);
+    
+    wrapped2 = false;
+    JSP_CHECK(!wrapped2);
+}
+
+void TestingWrappedValue::testBooleanCasting()
+{
+    WrappedValue wrapped;
+    JSP_CHECK(!wrapped);
+    
+    executeScript("var tmp = {}; print(tmp.foo ? 'true' : 'false')"); // TODO: CONSIDER IMPLEMENTING SOME KIND OF bool evaluateBoolean("return true")
+    
+    //
+    
+    wrapped = nullptr;
+    JSP_CHECK(!wrapped);
+    
+    executeScript("var tmp = {foo: null}; print(tmp.foo ? 'true' : 'false')");
+    
+    //
+    
+    wrapped = "";
+    JSP_CHECK(!wrapped);
+    
+    executeScript("var tmp = {foo: ''}; print(tmp.foo ? 'true' : 'false')");
+}
+
+// ---
+
+void TestingWrappedValue::testStringComparison1()
 {
     WrappedValue wrapped = "foo";
     JSP_CHECK(wrapped == "foo"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const char*)
@@ -234,11 +293,11 @@ void TestingWrappedValue::testStringComparison()
     
     //
     
+    JSP_CHECK(WrappedValue("bar") == toValue("bar")); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(WrappedValue("BAR") != toValue("bar")); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const Value&)
+    
     compareConstChars("hello", "HELLO");
-    compareConstString("hello", "HELLO");
-
-    JSP_CHECK(WrappedValue("bar") == toValue("bar")); // THANKS TO WrappedValue::operator==(const Value&)
-    JSP_CHECK(WrappedValue("BAR") != toValue("bar")); // THANKS TO WrappedValue::operator!=(const Value&)
+    compareConstStrings("hello", "HELLO");
 }
 
 void TestingWrappedValue::compareConstChars(const char *s1, const char *s2)
@@ -252,7 +311,7 @@ void TestingWrappedValue::compareConstChars(const char *s1, const char *s2)
     JSP_CHECK(!compare(rootedWrapped, s2));
 }
 
-void TestingWrappedValue::compareConstString(const string &s1, const string &s2)
+void TestingWrappedValue::compareConstStrings(const string &s1, const string &s2)
 {
     WrappedValue wrapped = s1;
     JSP_CHECK(wrapped == s1);
@@ -263,29 +322,57 @@ void TestingWrappedValue::compareConstString(const string &s1, const string &s2)
     JSP_CHECK(!compare(rootedWrapped, s2));
 }
 
-// ---
+//
 
-void TestingWrappedValue::testAutomaticComparison()
+void TestingWrappedValue::testStringComparison2()
 {
-    WrappedValue wrapped = 33.33;
-    JSP_CHECK(wrapped == 33.33);
-    JSP_CHECK(wrapped != 55.55);
-    
-    wrapped = -255;
-    JSP_CHECK(wrapped == -255);
-    JSP_CHECK(wrapped != 127);
-    
-    JSP_CHECK(wrapped != "foo");
-    JSP_CHECK(wrapped != nullptr);
-    
-    wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED
-    JSP_CHECK(wrapped == 0xff123456);
-    JSP_CHECK(wrapped != 0x12345678);
+    WrappedValue wrapped;
+    JSP_CHECK(wrapped != "undefined");
 
-    JSP_CHECK(wrapped); // XXX
+    executeScript("var tmp = {}; print((tmp.foo == 'undefined') ? 'true' : 'false')");
 
-    wrapped = 0;
-    JSP_CHECK(!wrapped); // XXX
+    //
+    
+    wrapped = nullptr;
+    JSP_CHECK(wrapped != "null");
+    
+    executeScript("var tmp = {foo: null}; print((tmp.foo == 'null') ? 'true' : 'false')");
+    
+    //
+    
+    wrapped = 123;
+    JSP_CHECK(wrapped == "123");
+    JSP_CHECK(wrapped != "xxx");
+    
+    executeScript("var tmp = {foo: 123}; print((tmp.foo == '123') ? 'true' : 'false')");
+    executeScript("var tmp = {foo: 123}; print((tmp.foo == 'xxx') ? 'true' : 'false')");
+}
+
+void TestingWrappedValue::testStringCasting()
+{
+    Rooted<WrappedValue> rootedWrapped(cx);
+    JSP_CHECK(jsp::toString(rootedWrapped) == "undefined");
+    
+    rootedWrapped = 2.5f;
+    JSP_CHECK(jsp::toString(rootedWrapped) == "2.5");
+    
+    rootedWrapped = 55.55;
+    JSP_CHECK(jsp::toString(rootedWrapped) == "55.55");
+
+    rootedWrapped = -255;
+    JSP_CHECK(jsp::toString(rootedWrapped) == "-255");
+
+    rootedWrapped = 0xff123456;
+    JSP_CHECK(jsp::toString(rootedWrapped) == "4279383126");
+
+    rootedWrapped = true;
+    JSP_CHECK(jsp::toString(rootedWrapped) == "true");
+    
+    rootedWrapped.set(nullptr); // XXX: IMPOSSIBLE TO ASSIGN nullptr DIRECTLY TO A Rooted<WrappedValue> DUE TO AMBIGUITIES AT THE Rooted<T> LEVEL
+    JSP_CHECK(jsp::toString(rootedWrapped) == "null");
+    
+    rootedWrapped = newPlainObject();
+    JSP_CHECK(jsp::toString(rootedWrapped) == "[object Object]");
 }
 
 // ---

@@ -173,7 +173,7 @@ namespace jsp
     {
         if (!value.isUndefined())
         {
-            *result = ToBoolean(value); // INFAILIBLE, POSSIBLY SLOW
+            *result = ToBoolean(value); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
             return true;
         }
         
@@ -211,7 +211,7 @@ namespace jsp
         {
             if (!v.isUndefined())
             {
-                *result = ToBoolean(v); // INFAILIBLE, POSSIBLY SLOW
+                *result = ToBoolean(v); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
                 return true;
             }
             
@@ -307,25 +307,33 @@ namespace jsp
         return false;
     }
     
-    /*
-     * TODO: CONSIDER RETURNING FALSE IF value IS UNDEFINED IN THE FOLLOWING 3
-     */
+    //
     
     inline bool compare(HandleValue value, bool other)
     {
-        return ToBoolean(value) == other; // INFAILIBLE, POSSIBLY SLOW
+        return ToBoolean(value) == other; // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
     }
 
     inline bool compare(HandleValue value, const std::string &other)
     {
-        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-        return toString(rooted) == other;
+        if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
+        {
+            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
+            return toString(rooted) == other;
+        }
+        
+        return false;
     }
     
     inline bool compare(HandleValue value, const char *other)
     {
-        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-        return toString(rooted) == other;
+        if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
+        {
+            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
+            return toString(rooted) == other;
+        }
+        
+        return false;
     }
     
     // ---

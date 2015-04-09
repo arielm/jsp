@@ -13,8 +13,8 @@
  *    - E.G. exec(), newArray(), ETC.
  *    - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
  *
- * 2) CONSIDER NOT THROWING C++ EXCEPTIONS IN ANY CODE POTENTIALLY INVOCABLE FROM JS
- *    - E.G. VIA "NATIVE CALLS"
+ * 2) HANDLE COMPLEX EXCEPTION SITUATIONS", E.G.
+ *    - CALLING exec() FROM C++ -> CALLING C++ CODE FROM JS -> C++ EXCEPTION
  */
 
 #pragma once
@@ -48,18 +48,18 @@ namespace jsp
          * TODO INSTEAD:
          *
          * bool exec<Maybe>(const std::string &source, const ReadOnlyCompileOptions &options);
-         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
+         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
          *
          * bool exec<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         virtual bool exec(const std::string &source, const ReadOnlyCompileOptions &options) = 0;
         
         /*
          * TODO INSTEAD:
          *
-         * bool exec<Maybe>(const std::string &source); // UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
-         * bool exec<CanThrow>(const std::string &source); // UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * bool exec<Maybe>(const std::string &source); // UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
+         * bool exec<CanThrow>(const std::string &source); // UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         void executeScript(const std::string &source, const std::string &file = "", int line = 1);
         
@@ -68,11 +68,11 @@ namespace jsp
          *
          * bool exec<Maybe>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: RETURNS FALSE
-         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
+         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
          *
          * bool exec<CanThrow>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         void executeScript(chr::InputSource::Ref inputSource);
         
@@ -80,10 +80,10 @@ namespace jsp
          * TODO INSTEAD:
          *
          * bool eval<Maybe>(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
-         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS FALSE
+         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
          *
          * bool eval<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         virtual bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result) = 0;
         
@@ -91,10 +91,10 @@ namespace jsp
          * TODO INSTEAD:
          *
          * WrappedValue eval<Maybe>(const std::string &source);
-         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS "UNDEFINED" WrappedValue
+         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS "UNDEFINED" WrappedValue
          *
          * WrappedValue eval<CanThrow>(const std::string &source);
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         JSObject* evaluateObject(const std::string &source, const std::string &file = "", int line = 1);
         
@@ -103,18 +103,23 @@ namespace jsp
          *
          * WrappedValue eval<Maybe>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: RETURNS "UNDEFINED" VALUE
-         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS AND RETURNS "UNDEFINED" WrappedValue
+         * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS "UNDEFINED" WrappedValue
          *
          * WrappedValue eval<CanThrow>(chr::InputSource<std::string>::Ref textSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
-         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION WITH JS-ERROR EMBEDDED
+         * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
         JSObject* evaluateObject(chr::InputSource::Ref inputSource);
         
         // ---
         
         /*
-         * TODO: DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
+         * TODO:
+         *
+         * 1) DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
+         *
+         * 2) THERE SHOULD BE ONLY ONE VIRTUAL METHOD (THE ONE TAKE A HandleValue)
+         *    - THE OTHER ONES SHOULD BE SHORTHAND VERSIONS
          */
         
         virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) = 0;
@@ -131,6 +136,7 @@ namespace jsp
          * TODO:
          *
          * 1) bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs)
+         * 2) bool clear(HandleObject object)
          */
         
         virtual JSObject* newPlainObject() = 0;

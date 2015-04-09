@@ -31,12 +31,21 @@ public:
     
     void testValueComparison();
     void testObjectComparison();
-    void testBooleanComparison();
-    void testStringComparison();
     void testAutomaticComparison();
+
+    // ---
     
+    void testBooleanComparison();
+    void testBooleanCasting();
+
+    // ---
+    
+    void testStringComparison1();
     void compareConstChars(const char *s1, const char *s2);
-    void compareConstString(const std::string &s1, const std::string &s2);
+    void compareConstStrings(const std::string &s1, const std::string &s2);
+    
+    void testStringComparison2();
+    void testStringCasting();
 
     // ---
     
