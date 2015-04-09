@@ -18,8 +18,8 @@ using namespace jsp;
 
 void TestingWrappedValue::performSetup()
 {
-    WrappedValue::LOG_VERBOSE = true;
-    WrappedObject::LOG_VERBOSE = true;
+    WrappedValue::LOG_VERBOSE = false;
+    WrappedObject::LOG_VERBOSE = false;
 }
 
 void TestingWrappedValue::performShutdown()
@@ -71,10 +71,22 @@ void TestingWrappedValue::performRun(bool force)
 void TestingWrappedValue::testStackCreationAndAssignment()
 {
     WrappedValue wrapped;
-    JSP_CHECK(JSP::write(wrapped) == "undefined");
+    JSP_CHECK(wrapped.isUndefined());
     
     wrapped = NumberValue(55.55);
-    JSP_CHECK(JSP::write(wrapped) == "55.55");
+    JSP_CHECK(wrapped.toDouble() == 55.55);
+    
+    wrapped = Int32Value(-255);
+    JSP_CHECK(wrapped.toInt32() == -255);
+    
+    wrapped = NumberValue(0xff123456);
+    JSP_CHECK(wrapped.toNumber() == 0xff123456);
+
+    wrapped = FalseValue();
+    JSP_CHECK(wrapped.isFalse());
+    
+    wrapped = NullValue();
+    JSP_CHECK(wrapped.isNull());
 
     // --
     
@@ -82,7 +94,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
     
     // ---
     
@@ -90,41 +102,39 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
 }
 
 void TestingWrappedValue::testAutomaticConversion()
 {
     WrappedValue wrapped;
-    JSP_CHECK(JSP::write(wrapped) == "undefined");
     
-    wrapped = 55.55;
-    JSP_CHECK(JSP::write(wrapped) == "55.55");
+    wrapped = 2.5f;
+    JSP_CHECK(float(wrapped.toDouble()) == 2.5f);
 
-    wrapped = 255;
-    JSP_CHECK(JSP::write(wrapped) == "255");
+    wrapped = 55.55;
+    JSP_CHECK(wrapped.toDouble() == 55.55);
+
+    wrapped = -255;
+    JSP_CHECK(wrapped.toInt32() == -255);
+    
+    wrapped = 0xff123456;
+    JSP_CHECK(wrapped.toNumber() == 0xff123456);
     
     wrapped = false;
-    JSP_CHECK(JSP::write(wrapped) == "false");
+    JSP_CHECK(wrapped.isFalse());
     
-    wrapped = nullptr; // TODO: CONSIDER HANDLING nullptr_t IN WrappedValue
-    JSP_CHECK(JSP::write(wrapped) == "null");
+    wrapped = nullptr;
+    JSP_CHECK(wrapped.isNull());
     
-    // --
+    wrapped = newPlainObject();
+    JSP_CHECK(wrapped.isObject());
     
-    wrapped = Barker::create("ASSIGNED-TO-VALUE 2");
-    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
+    wrapped = "from const char*";
+    JSP_CHECK(js::StringEqualsAscii(wrapped.toString()->ensureLinear(cx), "from const char*"));
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
-    
-    // ---
-    
-    wrapped = "assigned-to-value 2";
-    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
-    
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped), "UNHEALTHY VALUE"); // REASON: GC-THING NOT ROOTED
+    wrapped = string("from string");
+    JSP_CHECK(js::StringEqualsAscii(wrapped.toString()->ensureLinear(cx), "from string"));
 }
 
 // ---
@@ -134,7 +144,7 @@ void TestingWrappedValue::testObjectStackRooting1()
     RootedObject rootedObject(cx, Barker::create("STACK-ROOTED STANDALONE"));
     
     JSP::forceGC();
-    JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
+    JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE")); // REASON: GC-THING ROOTED
 }
 
 void TestingWrappedValue::testObjectStackRooting2()
@@ -142,7 +152,7 @@ void TestingWrappedValue::testObjectStackRooting2()
     Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-VALUE"));
     
     JSP::forceGC();
-    JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE"), "HEALTHY BARKER"); // REASON: GC-THING ROOTED
+    JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE")); // REASON: GC-THING ROOTED
 }
 
 void TestingWrappedValue::testStringStackRooting1()
@@ -151,11 +161,7 @@ void TestingWrappedValue::testStringStackRooting1()
     WrappedValue wrapped(StringValue(rootedString));
     
     JSP::forceGC();
-    
-    if (JSP_CHECK(JSP::isHealthy(wrapped), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
-    {
-        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B'); //
-    }
+    JSP_CHECK(JSP::isHealthy(wrapped)); // REASON: GC-THING ROOTED
 }
 
 void TestingWrappedValue::testStringStackRooting2()
@@ -163,11 +169,7 @@ void TestingWrappedValue::testStringStackRooting2()
     Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-value");
     
     JSP::forceGC();
-    
-    if (JSP_CHECK(JSP::isHealthy(rootedWrapped.get()), "HEALTHY VALUE")) // REASON: GC-THING ROOTED
-    {
-        JSP_CHECK(JSP::writeGCDescriptor(rootedWrapped.get()) == 'B');
-    }
+    JSP_CHECK(JSP::isHealthy(rootedWrapped.get())); // REASON: GC-THING ROOTED
 }
 
 // ---
@@ -175,14 +177,14 @@ void TestingWrappedValue::testStringStackRooting2()
 void TestingWrappedValue::testValueComparison()
 {
     WrappedValue wrapped1 = NumberValue(33.33);
-    JSP_CHECK(NumberValue(33.33) == wrapped1, "EQUALITY");
-    JSP_CHECK(wrapped1 == NumberValue(33.33), "EQUALITY"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(NumberValue(33.33) == wrapped1);
+    JSP_CHECK(wrapped1 == NumberValue(33.33)); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
     
     WrappedValue wrapped2;
-    JSP_CHECK(wrapped2 != wrapped1, "INEQUALITY"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const WrappedValue&)
+    JSP_CHECK(wrapped2 != wrapped1); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const WrappedValue&)
     
     wrapped2 = NumberValue(33.33);
-    JSP_CHECK(wrapped2 == wrapped1, "EQUALITY"); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const WrappedValue&)
+    JSP_CHECK(wrapped2 == wrapped1); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const WrappedValue&)
 }
 
 void TestingWrappedValue::testObjectComparison()
@@ -193,58 +195,58 @@ void TestingWrappedValue::testObjectComparison()
     WrappedValue wrapped1(object1);
     WrappedValue wrapped2(object2);
     
-    JSP_CHECK(wrapped1 == object1, "EQUALITY"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const JSObject*)
+    JSP_CHECK(wrapped1 == object1); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const JSObject*)
     
-    JSP_CHECK(wrapped1 != object2, "INEQUALITY"); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const JSObject*)
-    JSP_CHECK(wrapped1 != wrapped2, "INEQUALITY");
+    JSP_CHECK(wrapped1 != object2); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const JSObject*)
+    JSP_CHECK(wrapped1 != wrapped2);
 
     wrapped2 = object1;
-    JSP_CHECK(wrapped1 == wrapped2, "EQUALITY");
+    JSP_CHECK(wrapped1 == wrapped2);
 }
 
 void TestingWrappedValue::testBooleanComparison()
 {
     WrappedValue wrapped2 = true;
-    JSP_CHECK(wrapped2 == true, "EQUALITY"); // THANKS TO WrappedValue::operator==(bool)
-    JSP_CHECK(wrapped2 != false, "INEQUALITY"); // THANKS TO WrappedValue::operator!=(bool)
+    JSP_CHECK(wrapped2 == true); // THANKS TO WrappedValue::operator==(bool)
+    JSP_CHECK(wrapped2 != false); // THANKS TO WrappedValue::operator!=(bool)
     
-    JSP_CHECK(wrapped2, "TRUE"); // THANKS TO WrappedValue::operator const bool ()
+    JSP_CHECK(wrapped2); // THANKS TO WrappedValue::operator const bool ()
     
     wrapped2 = false;
-    JSP_CHECK(!wrapped2, "FALSE"); // THANKS TO WrappedValue::operator const bool ()
+    JSP_CHECK(!wrapped2); // THANKS TO WrappedValue::operator const bool ()
 }
 
 void TestingWrappedValue::testStringComparison()
 {
     WrappedValue wrapped = "foo";
-    JSP_CHECK(wrapped == "foo", "EQUALITY"); // THANKS TO WrappedValue::operator==(const char*)
-    JSP_CHECK(wrapped != "FOO", "INEQUALITY"); // THANKS TO WrappedValue::operator!=(const char*)
+    JSP_CHECK(wrapped == "foo"); // THANKS TO WrappedValue::operator==(const char*)
+    JSP_CHECK(wrapped != "FOO"); // THANKS TO WrappedValue::operator!=(const char*)
 
-    JSP_CHECK(WrappedValue("bar") == toValue("bar"), "EQUALITY"); // THANKS TO WrappedValue::operator==(const Value&)
-    JSP_CHECK(WrappedValue("BAR") != toValue("bar"), "INEQUALITY"); // THANKS TO WrappedValue::operator!=(const Value&)
+    JSP_CHECK(WrappedValue("bar") == toValue("bar")); // THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(WrappedValue("BAR") != toValue("bar")); // THANKS TO WrappedValue::operator!=(const Value&)
 }
 
 void TestingWrappedValue::testAutomaticComparison()
 {
     WrappedValue wrapped = 33.33;
-    JSP_CHECK(wrapped == 33.33, "EQUALITY");
-    JSP_CHECK(wrapped != 55.55, "INEQUALITY");
+    JSP_CHECK(wrapped == 33.33);
+    JSP_CHECK(wrapped != 55.55);
     
-    wrapped = 255;
-    JSP_CHECK(wrapped == 255, "EQUALITY");
-    JSP_CHECK(wrapped != 127, "INEQUALITY");
+    wrapped = -255;
+    JSP_CHECK(wrapped == -255);
+    JSP_CHECK(wrapped != 127);
     
-    JSP_CHECK(wrapped != "foo", "FALSE");
-    JSP_CHECK(wrapped != nullptr, "FALSE");
+    JSP_CHECK(wrapped != "foo");
+    JSP_CHECK(wrapped != nullptr);
     
-    wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED (TODO: TEST ON 32-BIT SYSTEMS)
-    JSP_CHECK(wrapped == 0xff123456, "EQUALITY");
-    JSP_CHECK(wrapped != 0x12345678, "INEQUALITY");
+    wrapped = 0xff123456; // VALUES > 0x7fffffff ARE PROPERLY CONSIDERED AS UNSIGNED
+    JSP_CHECK(wrapped == 0xff123456);
+    JSP_CHECK(wrapped != 0x12345678);
 
-    JSP_CHECK(wrapped, "FALSE");
+    JSP_CHECK(wrapped); // XXX
 
     wrapped = 0;
-    JSP_CHECK(!wrapped, "FALSE");
+    JSP_CHECK(!wrapped); // XXX
 }
 
 // ---
@@ -253,16 +255,16 @@ void TestingWrappedValue::testRootedComparison()
 {
     Rooted<WrappedValue> rootedWrapped1A(cx, 123);
     Rooted<WrappedValue> rootedWrapped1B(cx, 123);
-    JSP_CHECK(rootedWrapped1A == rootedWrapped1B, "EQUALITY");
+    JSP_CHECK(rootedWrapped1A == rootedWrapped1B);
 
     Rooted<WrappedValue> rootedWrapped2A(cx, "hello");
     Rooted<WrappedValue> rootedWrapped2B(cx, "hello");
-    JSP_CHECK(rootedWrapped2A == rootedWrapped2B, "EQUALITY");
+    JSP_CHECK(rootedWrapped2A == rootedWrapped2B);
     
     JSObject *barker = Barker::create("BARKER 3");
     Rooted<WrappedValue> rootedWrapped3A(cx, barker);
     Rooted<WrappedValue> rootedWrapped3B(cx, barker);
-    JSP_CHECK(rootedWrapped3A == rootedWrapped3B, "EQUALITY");
+    JSP_CHECK(rootedWrapped3A == rootedWrapped3B);
 }
 
 void TestingWrappedValue::testHeapComparison()
@@ -297,7 +299,7 @@ void TestingWrappedValue::testAutoWrappedValueVector()
      */
     JSP::forceGC();
     
-    call(globalHandle(), "print", args);
+    call(globalHandle(), "print", args); // TODO: "CAPTURE" LOG
 }
 
 /*

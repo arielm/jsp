@@ -73,12 +73,8 @@ namespace jsp
     
     // ---
 
-    inline JSString* toJSString(const char *s)
-    {
-        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
-    }
-    
-    inline JSString* toJSString(const std::string &s)
+    template<class T>
+    inline JSString* toJSString(const T s)
     {
         return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
     }
@@ -215,7 +211,7 @@ namespace jsp
         {
             if (!v.isUndefined())
             {
-                *result = ToBoolean(v);
+                *result = ToBoolean(v); // INFAILIBLE, POSSIBLY SLOW
                 return true;
             }
             
@@ -315,17 +311,17 @@ namespace jsp
     /*
      * TODO: CONSIDER CHECKING IF value.isBoolean()
      */
-    inline bool compare(HandleValue value, bool other) // POSSIBLY SLOW
+    inline bool compare(HandleValue value, bool other)
     {
-        return ToBoolean(value) == other;
+        return ToBoolean(value) == other; // INFAILIBLE, POSSIBLY SLOW
     }
     
     /*
      * TODO: CONSIDER CHECKING IF value.isString()
      */
-    inline bool compare(HandleValue value, const char *other) // POSSIBLY SLOW
+    inline bool compare(HandleValue value, const char *other)
     {
-        RootedString rooted(cx, ToString(cx, value));
+        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
         return toString(rooted) == other;
     }
     
@@ -497,6 +493,11 @@ namespace jsp
     inline void assignValue(Value &target, bool b)
     {
         target.setBoolean(b);
+    }
+    
+    inline void assignValue(Value &target, const std::string &s)
+    {
+        target.setString(toJSString(s));
     }
     
     inline void assignValue(Value &target, const char *s)
