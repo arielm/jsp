@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,14 +44,14 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
         JSP_TEST(force || true, testAutomaticComparison);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
@@ -61,7 +61,7 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringCasting);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);

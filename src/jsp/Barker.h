@@ -22,15 +22,18 @@
  * TODO:
  *
  * 1) IT WOULD BE BETTER TO HAVE: barkers['some barker name']
- *    INSTEAD OF AS CURRENTLY: Barker.instances('some barker name')
+ *    INSTEAD OF AS CURRENTLY: Barker.getInstance('some barker name')
  *    HINT: jsapi-tests/testClassGetter.cpp
  *
  * 2) COMPLETE UN-INITIALIZATION
  *
  * 3) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
  *
- * 4) CONSIDER USING SOME KIND OF "BI-MAP" FOR barker::instances AND barker::names
- *    - CONSTRAIN: SOLUTION SHOULD BE PURE C++11 / STL
+ * 4) CONSIDER USING A CUSTOM NATIVE OBJECT EXTENDING JSObject:
+ *    - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/builtin/TestingFunctions.cpp#L1262-1421
+ *    - ALTERNATIVELY:
+ *      - CHECK THE "Helper Macros for creating JSClasses that function as proxies" (EG. "PROXY_CLASS_WITH_EXT") IN jsfriendapi.h
+ *      - EXAMPLE IN jsapi-tests/testBug604087.cpp
  */
 
 #pragma once
