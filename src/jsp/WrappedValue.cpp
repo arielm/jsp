@@ -161,6 +161,18 @@ namespace jsp
         return ToBoolean(rooted) != other;
     }
     
+    bool WrappedValue::operator==(const string &other) const
+    {
+        RootedValue rooted(cx, value);
+        return compare(rooted, other);
+    }
+
+    bool WrappedValue::operator!=(const string &other) const
+    {
+        RootedValue rooted(cx, value);
+        return !compare(rooted, other);
+    }
+    
     bool WrappedValue::operator==(const char *other) const
     {
         RootedValue rooted(cx, value);

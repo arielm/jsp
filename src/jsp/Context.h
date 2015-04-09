@@ -216,7 +216,6 @@ namespace jsp
             }
             
             return false;
-
         }
     };
 
@@ -309,16 +308,20 @@ namespace jsp
     }
     
     /*
-     * TODO: CONSIDER CHECKING IF value.isBoolean()
+     * TODO: CONSIDER RETURNING FALSE IF value IS UNDEFINED IN THE FOLLOWING 3
      */
+    
     inline bool compare(HandleValue value, bool other)
     {
         return ToBoolean(value) == other; // INFAILIBLE, POSSIBLY SLOW
     }
+
+    inline bool compare(HandleValue value, const std::string &other)
+    {
+        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
+        return toString(rooted) == other;
+    }
     
-    /*
-     * TODO: CONSIDER CHECKING IF value.isString()
-     */
     inline bool compare(HandleValue value, const char *other)
     {
         RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW

@@ -30,7 +30,7 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
@@ -48,7 +48,6 @@ void TestingWrappedValue::performRun(bool force)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
-        
         JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testStringComparison);
         JSP_TEST(force || true, testAutomaticComparison);
@@ -216,15 +215,55 @@ void TestingWrappedValue::testBooleanComparison()
     JSP_CHECK(!wrapped2); // THANKS TO WrappedValue::operator const bool ()
 }
 
+// ---
+
 void TestingWrappedValue::testStringComparison()
 {
     WrappedValue wrapped = "foo";
-    JSP_CHECK(wrapped == "foo"); // THANKS TO WrappedValue::operator==(const char*)
-    JSP_CHECK(wrapped != "FOO"); // THANKS TO WrappedValue::operator!=(const char*)
+    JSP_CHECK(wrapped == "foo"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const char*)
+    JSP_CHECK(wrapped != "FOO"); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const char*)
+
+    //
+    
+    string fo = "fo";
+    string FO = "FO";
+
+    wrapped = FO + "O";
+    JSP_CHECK(wrapped == FO + "O"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const string&)
+    JSP_CHECK(wrapped != fo + "o"); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const string&)
+    
+    //
+    
+    compareConstChars("hello", "HELLO");
+    compareConstString("hello", "HELLO");
 
     JSP_CHECK(WrappedValue("bar") == toValue("bar")); // THANKS TO WrappedValue::operator==(const Value&)
     JSP_CHECK(WrappedValue("BAR") != toValue("bar")); // THANKS TO WrappedValue::operator!=(const Value&)
 }
+
+void TestingWrappedValue::compareConstChars(const char *s1, const char *s2)
+{
+    WrappedValue wrapped = s1;
+    JSP_CHECK(wrapped == s1);
+    JSP_CHECK(wrapped != s2);
+    
+    Rooted<WrappedValue> rootedWrapped(cx, wrapped);
+    JSP_CHECK(compare(rootedWrapped, s1));
+    JSP_CHECK(!compare(rootedWrapped, s2));
+}
+
+void TestingWrappedValue::compareConstString(const string &s1, const string &s2)
+{
+    WrappedValue wrapped = s1;
+    JSP_CHECK(wrapped == s1);
+    JSP_CHECK(wrapped != s2);
+    
+    Rooted<WrappedValue> rootedWrapped(cx, wrapped);
+    JSP_CHECK(compare(rootedWrapped, s1));
+    JSP_CHECK(!compare(rootedWrapped, s2));
+}
+
+// ---
 
 void TestingWrappedValue::testAutomaticComparison()
 {
@@ -271,16 +310,16 @@ void TestingWrappedValue::testHeapComparison()
 {
     Heap<WrappedValue> heapWrapped1A(123);
     Heap<WrappedValue> heapWrapped1B(123);
-    JSP_CHECK(heapWrapped1A == heapWrapped1B, "EQUALITY");
+    JSP_CHECK(heapWrapped1A == heapWrapped1B);
     
     Heap<WrappedValue> heapWrapped2A("hello");
     Heap<WrappedValue> heapWrapped2B("hello");
-    JSP_CHECK(heapWrapped2A == heapWrapped2B, "EQUALITY");
+    JSP_CHECK(heapWrapped2A == heapWrapped2B);
     
     JSObject *barker = Barker::create("BARKER 4");
     Heap<WrappedValue> heapWrapped3A(barker);
     Heap<WrappedValue> heapWrapped3B(barker);
-    JSP_CHECK(heapWrapped3A == heapWrapped3B, "EQUALITY");
+    JSP_CHECK(heapWrapped3A == heapWrapped3B);
 }
 
 // ---

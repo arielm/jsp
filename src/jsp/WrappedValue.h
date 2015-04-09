@@ -118,6 +118,9 @@ namespace jsp
         bool operator==(bool other) const;
         bool operator!=(bool other) const;
         
+        bool operator==(const std::string &other) const;
+        bool operator!=(const std::string &other) const;
+        
         bool operator==(const char *other) const;
         bool operator!=(const char *other) const;
 
