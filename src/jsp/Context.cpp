@@ -651,12 +651,12 @@ void JSP::setGCZeal(uint8_t zeal, uint32_t frequency)
 
 #pragma mark ---------------------------------------- HTML COLORS ----------------------------------------
 
+/*
+ * REFERENCE FOR FUTURE WORK: https://github.com/mrdoob/three.js/blob/master/src/math/Color.js
+ */
+
 bool JSP::defineHTMLColors()
 {
-    /*
-     * XXX: THERE SHOULD BE MORE COLORS
-     */
-    
     if (htmlColors.empty())
     {
         htmlColors["black"] = 0x000000;

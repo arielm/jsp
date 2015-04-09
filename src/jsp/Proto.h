@@ -166,14 +166,19 @@ namespace jsp
             
             if (getProperty(targetObject, propertyName, &value))
             {
-                return convertSafely<T>(value, defaultValue);
+                T result;
+                
+                if (convertMaybe(value, &result))
+                {
+                    return result;
+                }
             }
             
             return defaultValue;
         }
         
         template<typename T>
-        inline bool set(const HandleObject &targetObject, const char* propertyName, T &&value)
+        inline bool set(HandleObject targetObject, const char* propertyName, T &&value)
         {
             RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
             return setProperty(targetObject, propertyName, rooted);
@@ -222,14 +227,19 @@ namespace jsp
             
             if (getElement(targetArray, elementIndex, &value))
             {
-                return convertSafely<T>(value, defaultValue);
+                T result;
+                
+                if (convertMaybe(value, &result))
+                {
+                    return result;
+                }
             }
             
             return defaultValue;
         }
         
         template<typename T>
-        inline bool set(const HandleObject &targetArray, int elementIndex, T &&value)
+        inline bool set(HandleObject targetArray, int elementIndex, T &&value)
         {
             RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
             return setElement(targetArray, elementIndex, rooted);

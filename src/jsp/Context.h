@@ -80,7 +80,7 @@ namespace jsp
     
     inline JSString* toJSString(const std::string &s)
     {
-        return toJSString(s.data());
+        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
     }
 
     inline const std::string toString(const jschar *s)
@@ -204,7 +204,7 @@ namespace jsp
     {
         inline static bool maybe(const HandleValue &v, typename std::vector<T>::iterator &result)
         {
-            return convertMaybe<T>(v, &*result);
+            return convertMaybe(v, &*result);
         }
     };
     
@@ -315,17 +315,17 @@ namespace jsp
     /*
      * TODO: CONSIDER CHECKING IF value.isBoolean()
      */
-    inline bool compare(HandleValue &&value, bool other) // POSSIBLY SLOW
+    inline bool compare(HandleValue value, bool other) // POSSIBLY SLOW
     {
-        return ToBoolean(std::forward<HandleValue>(value)) == other;
+        return ToBoolean(value) == other;
     }
     
     /*
      * TODO: CONSIDER CHECKING IF value.isString()
      */
-    inline bool compare(HandleValue &&value, const char *other) // POSSIBLY SLOW
+    inline bool compare(HandleValue value, const char *other) // POSSIBLY SLOW
     {
-        RootedString rooted(cx, ToString(cx, std::forward<HandleValue>(value)));
+        RootedString rooted(cx, ToString(cx, value));
         return toString(rooted) == other;
     }
     
@@ -799,9 +799,8 @@ public:
     // ---
     
     /*
-     * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THESE 2 TO SOME MORE "SPECIALIZED" CLASS...)
+     * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THESE 2 TO SOME ColorHelper CLASS)
      */
-
     static const uint32_t toHTMLColor(const std::string &colorName, const uint32_t defaultValue = 0x000000);
     static const uint32_t toHTMLColor(JS::HandleValue value, const uint32_t defaultValue = 0x000000); // INFAILIBLE
     
