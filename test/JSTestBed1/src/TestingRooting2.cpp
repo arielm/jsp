@@ -30,7 +30,7 @@ void TestingRooting2::performShutdown()
 
 void TestingRooting2::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAnalysis1)
         JSP_TEST(force || true, testAnalysis2)
@@ -43,14 +43,14 @@ void TestingRooting2::performRun(bool force)
         JSP_TEST(force || true, testBarkerMixedFunctionality);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
         JSP_TEST(force || true, testWrappedObjectAssignment2)
         JSP_TEST(force || true, testWrappedObjectAssignment3)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testBarkerFinalization1)
         JSP_TEST(force || true, testHeapWrappedObject1)
@@ -60,7 +60,7 @@ void TestingRooting2::performRun(bool force)
         JSP_TEST(force || true, testHeapWrappedJSBarker1)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testBarkerPassedToJS1);
         JSP_TEST(force || true, testHeapWrappedJSBarker2);
@@ -160,12 +160,19 @@ void TestingRooting2::testBarkerJSFunctionality()
      * - OBSERVING FINALIZATION
      */
     
-    executeScript("\
-                  print(new Barker('js-created unrooted 1').id, Barker.getInstance('js-created unrooted 1').name);\
-                  Barker.bark('js-created unrooted 1');\
+    executeScript("var testBarkers1 = function(id, name) {\
+                  var idMatch = (new Barker(name).id) == id;\
+                  var nameMatch = Barker.getInstance(name).name == name;\
+                  var barked = Barker.bark(name);\
                   forceGC();\
-                  print(Barker.isFinalized('js-created unrooted 1'));\
-                  ");
+                  return idMatch && nameMatch && Barker.isFinalized(name);\
+                  }");
+    
+    AutoValueVector args(cx);
+    args.append(toValue(1)); // TODO: IMPLEMENT size_t Barker::instanceCount()
+    args.append(toValue("js-created unrooted 1"));
+    
+    JSP_CHECK(call(globalHandle(), "testBarkers1", args).isTrue());
 }
 
 void TestingRooting2::testBarkerMixedFunctionality()
@@ -182,14 +189,21 @@ void TestingRooting2::testBarkerMixedFunctionality()
      *   - FORCING-GC (BARKER FINALIZED WHILE IN THE NURSERY)
      *   - OBSERVING FINALIZATION
      */
+
+    uint32_t nextId = 2; // TODO: IMPLEMENT size_t Barker::instanceCount()
+    string name = "CPP-CREATED UNROOTED 1";
     
-    LOGI << Barker::getId(Barker::create("CPP-CREATED UNROOTED 1")) << " " << Barker::getName(Barker::getInstance("CPP-CREATED UNROOTED 1")) << endl;
+    JSP_CHECK(Barker::getId(Barker::create(name)) == nextId);
+    JSP_CHECK(Barker::getName(Barker::getInstance(name.data())) == name);
     
-    executeScript("\
-                  Barker.bark('CPP-CREATED UNROOTED 1');\
+    executeScript("var testBarkers2 = function(name) {\
+                  var barked = Barker.bark(name);\
                   forceGC();\
-                  print(Barker.isFinalized('CPP-CREATED UNROOTED 1'));\
-                  ");
+                  return barked && Barker.isFinalized(name);\
+                  }");
+    
+    RootedValue arg(cx, toValue(name));
+    JSP_CHECK(call(globalHandle(), "testBarkers2", arg).isTrue());
 }
 
 // ---
