@@ -71,20 +71,20 @@ public:
     void testGetElement1();
 
     void testGetProperties1();
-    void testConstChars1(JS::HandleObject array, const char *name, const char *s);
-    void testConstString1(JS::HandleObject array,  const char *name, const std::string &s);
+    void testGetProperties2();
+    void testProperties(JS::HandleObject object, const std::vector<std::string> &properties, JSObject *o, const std::string &s1, const char *s2);
     
     void testGetElements1();
     
     // ---
 
-    void testSetElements1();
-    void setConstChars1(JS::HandleObject array, int index, const char *s);
-    void setConstString1(JS::HandleObject array, int index, const std::string &s);
+    void testToValue1();
+    void testToValue2();
+    void setValues1(JS::HandleObject array, const std::vector<int> &indices, JSObject &o, const std::string &s1, const char *s2);
 
+    void testSetElements1();
     void testSetElements2();
-    void setConstChars2(JS::HandleObject array, int index, const char *s);
-    void setConstString2(JS::HandleObject array, int index, const std::string &s);
+    void setValues2(JS::HandleObject array, const std::vector<int> &indices, JSObject &o, const std::string &s1, const char *s2);
     
     // ---
     
