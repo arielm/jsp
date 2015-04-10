@@ -408,6 +408,12 @@ namespace jsp
     {
         return ObjectValue(object);
     }
+
+    template <>
+    inline const Value toValue(HandleObject &object)
+    {
+        return ObjectOrNullValue(object);
+    }
     
     template <>
     inline const Value toValue(JSObject *&&object)

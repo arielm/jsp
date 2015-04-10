@@ -72,7 +72,7 @@ public:
 
     void testGetProperties1();
     void testGetProperties2();
-    void testProperties(JS::HandleObject object, const std::vector<std::string> &properties, JSObject *o, const std::string &s1, const char *s2);
+    void testProperties(JS::HandleObject object, const std::vector<std::string> &properties, JS::HandleObject o, const std::string &s1, const char *s2);
     
     void testGetElements1();
     
@@ -80,11 +80,11 @@ public:
 
     void testToValue1();
     void testToValue2();
-    void setValues1(JS::HandleObject array, const std::vector<int> &indices, JSObject &o, const std::string &s1, const char *s2);
+    void setValues1(JS::HandleObject array, const std::vector<int> &indices, JS::HandleObject o, const std::string &s1, const char *s2);
 
     void testSetElements1();
     void testSetElements2();
-    void setValues2(JS::HandleObject array, const std::vector<int> &indices, JSObject &o, const std::string &s1, const char *s2);
+    void setValues2(JS::HandleObject array, const std::vector<int> &indices, JS::HandleObject o, const std::string &s1, const char *s2);
     
     // ---
     

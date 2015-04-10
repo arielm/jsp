@@ -197,10 +197,11 @@ void TestingJS::testGetProperties2()
 {
     RootedObject object(cx, evaluateObject("({bah: {}, whatever: 'bar', doh: 'baz'})"));
 
-    testProperties(object, {"bah", "whatever", "doh"}, get<OBJECT>(object, "bah"), "bar", "baz");
+    RootedObject o(cx, get<OBJECT>(object, "bah"));
+    testProperties(object, {"bah", "whatever", "doh"}, o, "bar", "baz");
 }
 
-void TestingJS::testProperties(HandleObject object, const vector<string> &properties, JSObject *o, const string &s1, const char *s2)
+void TestingJS::testProperties(HandleObject object, const vector<string> &properties, HandleObject o, const string &s1, const char *s2)
 {
     JSP_CHECK(get<OBJECT>(object, properties[0].data()) == o);
     JSP_CHECK(get<OBJECT>(object, "notDefined") != o);
@@ -243,7 +244,7 @@ void TestingJS::testGetElements1()
     
     // ---
     
-    JSObject *o = get<OBJECT>(array, index);
+    RootedObject o(cx, get<OBJECT>(array, index));
     JSP_CHECK(get<OBJECT>(array, index++) == o);
     JSP_CHECK(get<OBJECT>(array, 999) != o);
     
@@ -263,6 +264,10 @@ void TestingJS::testToValue1()
     RootedObject array(cx, newArray());
     int index = 0;
 
+    /*
+     * TODO: toValue(void) COULD PRODUCE AN UNDEFINED VALUE
+     */
+    
     RootedValue f(cx, toValue(25.5f));
     JS_SetElement(cx, array, index++, f);
     
@@ -294,12 +299,13 @@ void TestingJS::testToValue2()
 {
     RootedObject array(cx, newArray());
     
-    setValues1(array, {0, 1, 2}, *newPlainObject(), "bar", "baz");
+    RootedObject o(cx, newPlainObject());
+    setValues1(array, {0, 1, 2}, o, "bar", "baz");
     
     JSP_CHECK(toSource(array) == "[{}, \"bar\", \"baz\"]");
 }
 
-void TestingJS::setValues1(HandleObject array, const vector<int> &indices, JSObject &o, const string &s1, const char *s2)
+void TestingJS::setValues1(HandleObject array, const vector<int> &indices, HandleObject o, const string &s1, const char *s2)
 {
     RootedValue rooted(cx);
     int index = 0;
@@ -321,6 +327,10 @@ void TestingJS::testSetElements1()
     RootedObject array(cx, newArray());
     int index = 0;
     
+    /*
+     * TODO: set(array, index, void) COULD SET AN UNDEFINED VALUE
+     */
+    
     set(array, index++, 25.5f);
     set(array, index++, 33.33);
     set(array, index++, -255);
@@ -337,12 +347,13 @@ void TestingJS::testSetElements2()
 {
     RootedObject array(cx, newArray());
     
-    setValues2(array, {0, 1, 2}, *newPlainObject(), "bar", "baz");
+    RootedObject o(cx, newPlainObject());
+    setValues2(array, {0, 1, 2}, o, "bar", "baz");
     
     JSP_CHECK(toSource(array) == "[{}, \"bar\", \"baz\"]");
 }
 
-void TestingJS::setValues2(HandleObject array, const vector<int> &indices, JSObject &o, const string &s1, const char *s2)
+void TestingJS::setValues2(HandleObject array, const vector<int> &indices, HandleObject o, const string &s1, const char *s2)
 {
     RootedValue rooted(cx);
     int index = 0;
@@ -389,6 +400,10 @@ void TestingJS::testGetElements3()
     }
 
     {
+        /*
+         * TODO: FORBID (OR DISCOURAGE) USAGE OF getElements<JSObject*>
+         */
+        
         vector<OBJECT> elements;
         
         RootedObject array(cx, evaluateObject("([{}, , []])"));
@@ -441,6 +456,9 @@ void TestingJS::testSetElements3()
     JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, false}));
     JSP_CHECK(toSource(array) == "[true, false, false]");
     
+    /*
+     * TODO: FORBID (OR DISCOURAGE) USAGE OF getElements<JSObject*>
+     */
     JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
     JSP_CHECK(toSource(array) == "[{}, null, []]");
     
