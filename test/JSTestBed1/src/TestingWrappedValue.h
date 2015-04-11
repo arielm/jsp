@@ -35,8 +35,11 @@ public:
 
     // ---
     
+    JS::Heap<jsp::WrappedValue> heapWrapped1;
+
     void testBooleanComparison();
     void testBooleanCasting();
+    void testHeapBooleanCasting();
 
     // ---
     

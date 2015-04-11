@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,30 +44,34 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
         JSP_TEST(force || true, testAutomaticComparison);
     }
-    
+
     if (force || true)
     {
-        JSP_TEST(force || true, testBooleanComparison);
+        JSP_TEST(force || false, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
-        
+        JSP_TEST(force || true, testHeapBooleanCasting);
+    }
+    
+    if (force || false)
+    {
         JSP_TEST(force || true, testStringComparison1);
         JSP_TEST(force || true, testStringComparison2);
         JSP_TEST(force || true, testStringCasting);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAutoWrappedValueVector);
     }
@@ -238,20 +242,23 @@ void TestingWrappedValue::testAutomaticComparison()
 
 void TestingWrappedValue::testBooleanComparison()
 {
-    WrappedValue wrapped2 = true;
-    JSP_CHECK(wrapped2 == true); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(bool)
-    JSP_CHECK(wrapped2 != false); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(bool)
+    WrappedValue wrapped = true;
+    JSP_CHECK(wrapped == true); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(bool)
+    JSP_CHECK(wrapped != false); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(bool)
     
     /*
      * THE FOLLOWING 2 ARE PASSING VIA WrappedValue::operator const bool ()
      */
     
-    JSP_CHECK(wrapped2);
+    JSP_CHECK(wrapped);
     
-    wrapped2 = false;
-    JSP_CHECK(!wrapped2);
+    wrapped = false;
+    JSP_CHECK(!wrapped);
 }
 
+/*
+ * WrappedValue::operator const bool() IN ACTION
+ */
 void TestingWrappedValue::testBooleanCasting()
 {
     WrappedValue wrapped;
@@ -267,11 +274,51 @@ void TestingWrappedValue::testBooleanCasting()
     JSP_CHECK(!evaluateBoolean("var tmp = {foo: null}; return (tmp.foo ? true : false)"));
     
     //
-    
-    wrapped = "";
+
+    wrapped = ""; // ACCORDING TO JAVASCRIPT RULES: EMPTY STRINGS CAST TO FALSE
     JSP_CHECK(!wrapped);
     
     JSP_CHECK(!evaluateBoolean("var tmp = {foo: ''}; return (tmp.foo ? true : false)"));
+    
+    //
+    
+    wrapped = "false"; // ACCORDING TO JAVASCRIPT RULES: NON-EMPTY STRINGS CAST TO TRUE
+    JSP_CHECK(wrapped);
+    
+    JSP_CHECK(evaluateBoolean("var tmp = {foo: 'false'}; return (tmp.foo ? true : false)"));
+    
+    /*
+     * THE FOLLOWING IS OBVIOUS-ENOUGH NOT TO PROVIDE PROOFS...
+     */
+    
+    wrapped = 0;
+    JSP_CHECK(!wrapped);
+    
+    wrapped = false;
+    JSP_CHECK(!wrapped);
+}
+
+/*
+ * WrappedValue::operator const bool() IN ACTION
+ */
+void TestingWrappedValue::testHeapBooleanCasting()
+{
+    JSP_CHECK(!heapWrapped1);
+
+    heapWrapped1 = nullptr;
+    JSP_CHECK(!heapWrapped1);
+
+    heapWrapped1 = "";
+    JSP_CHECK(!heapWrapped1);
+
+    heapWrapped1 = "false";
+    JSP_CHECK(heapWrapped1);
+    
+    heapWrapped1 = 0;
+    JSP_CHECK(!heapWrapped1);
+    
+    heapWrapped1 = false;
+    JSP_CHECK(!heapWrapped1);
 }
 
 // ---

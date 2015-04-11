@@ -83,12 +83,6 @@ namespace jsp
         
         operator const Value& () const { return value; }
         
-        /*
-         * TODO: DECIDE WHAT SHOULD BE THE INTENT OF THIS OPERATOR
-         *
-         * - CHECKING HOW THE WRAPPED VALUE CONVERTS TO BOOLEAN (AS FOR NOW)?
-         * - OR CHECKING IF THE WRAPPED VALUE IS DEFINED (AS IN Heap<WrappedObject>)?
-         */
         explicit operator const bool () const;
 
         bool operator==(const WrappedValue &other) const;
@@ -194,4 +188,10 @@ namespace js
         static void relocate(WrappedValue *wrapped) { wrapped->relocate(); }
 #endif
     };
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator const bool () const
+    {
+        const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
+        return bool(self.get()); // ENFORCING WrappedValue::operator const bool()
+    }
 }

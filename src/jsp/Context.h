@@ -563,6 +563,13 @@ namespace js
         template <class U>
         JS::Handle<U*> as() const;
     };
+    
+    template <>
+    class HeapBase<WrappedValue>
+    {
+    public:
+        explicit operator const bool () const;
+    };
 }
 
 class JSP
