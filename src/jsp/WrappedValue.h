@@ -82,7 +82,8 @@ namespace jsp
         }
         
         operator const Value& () const { return value; }
-        
+//      const Value* operator->() const { return &value; }
+
         explicit operator const bool () const;
 
         bool operator==(const WrappedValue &other) const;
@@ -125,23 +126,11 @@ namespace jsp
         void set(const Value &newValue);
         void clear();
         
-        /*
-         * TODO: USE "AUTOMATIC CONVERSION" FOR THE FOLLOWING 2 (AS IMPLEMENTED IN WrappedObject)
-         */
-        
-        static inline Handle<WrappedValue> toHandle(const Heap<WrappedValue> &heapWrapped)
-        {
-            return Handle<WrappedValue>::fromMarkedLocation(heapWrapped.address());
-        }
-        
-        static inline MutableHandle<WrappedValue> toMutableHandle(Heap<WrappedValue> &heapWrapped)
-        {
-            return MutableHandle<WrappedValue>::fromMarkedLocation(heapWrapped.unsafeGet());
-        }
-        
     protected:
         friend class ValueOperations<WrappedValue>;
         friend class MutableValueOperations<WrappedValue>;
+        
+        friend class Heap<WrappedValue>;
         friend struct js::GCMethods<WrappedValue>;
         
         Value value;
@@ -193,5 +182,29 @@ namespace js
     {
         const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
         return bool(self.get()); // ENFORCING WrappedValue::operator const bool()
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::Handle<JS::Value> () const
+    {
+        const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
+        return JS::Handle<JS::Value>::fromMarkedLocation(reinterpret_cast<JS::Value const*>(self.address()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::Handle<WrappedValue> () const
+    {
+        const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
+        return JS::Handle<WrappedValue>::fromMarkedLocation(reinterpret_cast<WrappedValue const*>(self.address()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::MutableHandle<JS::Value> ()
+    {
+        JS::Heap<WrappedValue> &self = *static_cast<JS::Heap<WrappedValue>*>(this);
+        return JS::MutableHandle<JS::Value>::fromMarkedLocation(reinterpret_cast<JS::Value*>(self.unsafeGet()));
+    }
+    
+    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::MutableHandle<WrappedValue> ()
+    {
+        JS::Heap<WrappedValue> &self = *static_cast<JS::Heap<WrappedValue>*>(this);
+        return JS::MutableHandle<WrappedValue>::fromMarkedLocation(reinterpret_cast<WrappedValue*>(self.unsafeGet()));
     }
 }

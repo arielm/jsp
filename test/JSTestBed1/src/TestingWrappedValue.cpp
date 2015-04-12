@@ -51,9 +51,9 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testAutomaticComparison);
     }
 
-    if (force || true)
+    if (force || false)
     {
-        JSP_TEST(force || false, testBooleanComparison);
+        JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
         JSP_TEST(force || true, testHeapBooleanCasting);
     }
@@ -71,9 +71,10 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testHeapComparison);
     }
     
-    if (force || false)
+    if (force || true)
     {
-        JSP_TEST(force || true, testAutoWrappedValueVector);
+        JSP_TEST(force || false, testAutoWrappedValueVector);
+        JSP_TEST(force || true, testHeapWrappedToHandle);
     }
 }
 
@@ -474,6 +475,43 @@ void TestingWrappedValue::testAutoWrappedValueVector()
     
     JSP_CHECK(write(args) == "123 foo [object Barker] 33.33");
 }
+
+// ---
+
+void TestingWrappedValue::testHandleValue1(HandleValue value)
+{
+    JSP::forceGC();
+    
+    JSP_CHECK(value.isGCThing());
+    JSP_CHECK(JSP::isHealthy(value));
+}
+
+void TestingWrappedValue::testMutableHandleValue1(MutableHandleValue value)
+{
+    value.set(NumberValue(123));
+    JSP_CHECK(!value.isGCThing());
+}
+
+void TestingWrappedValue::testHeapWrappedToHandle()
+{
+    heapWrapped2 = Barker::create("HEAP-WRAPPED 2");
+    
+    testHandleValue1(heapWrapped2);
+    testMutableHandleValue1(heapWrapped2);
+    
+    JSP::forceGC();
+    JSP_CHECK(Barker::isFinalized("HEAP-WRAPPED 2"));
+}
+
+//
+
+/*
+void TestingWrappedValue::testHandleValue2(Handle<WrappedValue> value)
+{}
+
+void TestingWrappedValue::testMutableHandleValue2(MutableHandle<WrappedValue> value)
+{}
+*/
 
 /*
 WrappedValue wrapped;

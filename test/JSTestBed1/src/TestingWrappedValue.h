@@ -56,4 +56,16 @@ public:
     void testHeapComparison();
     
     void testAutoWrappedValueVector();
+
+    // ---
+    
+    JS::Heap<jsp::WrappedValue> heapWrapped2;
+    
+    void testHandleValue1(JS::HandleValue value);
+    void testMutableHandleValue1(JS::MutableHandleValue value);
+    
+//  void testHandleValue2(JS::Handle<jsp::WrappedValue> value);
+//  void testMutableHandleValue2(JS::MutableHandle<jsp::WrappedValue> value);
+    
+    void testHeapWrappedToHandle();
 };

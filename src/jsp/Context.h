@@ -569,6 +569,12 @@ namespace js
     {
     public:
         explicit operator const bool () const;
+        
+        operator JS::Handle<JS::Value> () const;
+        operator JS::Handle<WrappedValue> () const;
+        
+        operator JS::MutableHandle<JS::Value> ();
+        operator JS::MutableHandle<WrappedValue> ();
     };
 }
 
