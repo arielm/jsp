@@ -422,9 +422,21 @@ namespace jsp
     }
     
     template <>
+    inline const Value toValue(float &f)
+    {
+        return DoubleValue(f);
+    }
+    
+    template <>
     inline const Value toValue(float &&f)
     {
         return DoubleValue(f);
+    }
+    
+    template <>
+    inline const Value toValue(double &d)
+    {
+        return DoubleValue(d);
     }
     
     template <>
@@ -434,15 +446,33 @@ namespace jsp
     }
     
     template <>
+    inline const Value toValue(int32_t &i)
+    {
+        return Int32Value(i);
+    }
+    
+    template <>
     inline const Value toValue(int32_t &&i)
     {
         return Int32Value(i);
     }
 
     template <>
+    inline const Value toValue(uint32_t &ui)
+    {
+        return NumberValue(ui);
+    }
+
+    template <>
     inline const Value toValue(uint32_t &&ui)
     {
         return NumberValue(ui);
+    }
+    
+    template <>
+    inline const Value toValue(bool &b)
+    {
+        return BooleanValue(b);
     }
     
     template <>

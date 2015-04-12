@@ -37,7 +37,7 @@ void Sketch::setup()
         manager.init();
         
 #if defined(CINDER_MAC) && defined(DEBUG)
-        TestingBase::execute<TestingWrappedValue>(false);
+        TestingBase::execute<TestingWrappedValue>(true);
         TestingBase::execute<TestingRooting2>(true);
 #endif
         

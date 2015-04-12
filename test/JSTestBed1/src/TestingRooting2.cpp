@@ -148,6 +148,9 @@ void TestingRooting2::testBarkerJSFunctionality()
      * - OBSERVING FINALIZATION
      */
     
+    auto nextId = Barker::nextId();
+    string name = "js-created unrooted 1";
+    
     executeScript("var testBarkers1 = function(id, name) {\
                   var idMatch = (new Barker(name).id) == id;\
                   var nameMatch = Barker.getInstance(name).name == name;\
@@ -157,8 +160,8 @@ void TestingRooting2::testBarkerJSFunctionality()
                   }");
     
     AutoValueVector args(cx);
-    args.append(toValue(3)); // TODO: IMPLEMENT size_t Barker::instanceCount()
-    args.append(toValue("js-created unrooted 1"));
+    args.append(toValue(nextId));
+    args.append(toValue(name));
     
     JSP_CHECK(call(globalHandle(), "testBarkers1", args).isTrue());
 }
@@ -178,7 +181,7 @@ void TestingRooting2::testBarkerMixedFunctionality()
      *   - OBSERVING FINALIZATION
      */
 
-    uint32_t nextId = 4; // TODO: IMPLEMENT size_t Barker::instanceCount()
+    auto nextId = Barker::nextId();
     string name = "CPP-CREATED UNROOTED 1";
     
     JSP_CHECK(Barker::getId(Barker::create(name)) == nextId);

@@ -57,6 +57,8 @@ namespace jsp
 
         // ---
         
+        static int32_t nextId();
+        
         static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
         static std::string getName(JSObject *instance); // RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
         static JSObject* getInstance(const char *name); // RETURNS NULL IF THERE IS NO SUCH A LIVING BARKER

@@ -21,7 +21,7 @@ namespace jsp
     {
         bool initialized = false;
         
-        ptrdiff_t constructCount = 0; // CLASS-INSTANCE IS NOT COUNTED
+        ptrdiff_t createCount = 0; // CLASS-INSTANCE IS NOT COUNTED
         map<ptrdiff_t, string> names;
         map<ptrdiff_t, JSObject*> instances;
         
@@ -255,6 +255,11 @@ namespace jsp
     
     // ---
     
+    int32_t Barker::nextId()
+    {
+        return int32_t(barker::createCount) + 1;
+    }
+    
     ptrdiff_t Barker::getId(JSObject *instance)
     {
         if (JSP::isHealthy(instance))
@@ -372,7 +377,7 @@ namespace jsp
         static Barker delegate;
 
         delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        barker::setup(delegate.object, ++barker::constructCount, name);
+        barker::setup(delegate.object, ++barker::createCount, name);
         
         return delegate;
     }
