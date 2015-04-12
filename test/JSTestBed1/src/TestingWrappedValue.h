@@ -63,5 +63,4 @@ public:
 
     void testHeapWrappedToHandle1();
     void testHandleValue1(JS::HandleValue value);
-    void testMutableHandleValue1(JS::MutableHandle<jsp::WrappedValue> value);
 };

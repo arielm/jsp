@@ -30,7 +30,7 @@ void TestingRooting2::performShutdown()
 
 void TestingRooting2::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testAnalysis1)
         JSP_TEST(force || true, testAnalysis2)
@@ -41,26 +41,25 @@ void TestingRooting2::performRun(bool force)
     {
         JSP_TEST(force || true, testBarkerJSFunctionality);
         JSP_TEST(force || true, testBarkerMixedFunctionality);
+        JSP_TEST(force || true, testBarkerFinalization1)
     }
     
-    if (force || false)
+    if (force || true)
+    {
+        JSP_TEST(force || true, testRootedBarker1)
+        JSP_TEST(force || true, testObjectAllocation1)
+    }
+    
+    if (force || true)
     {
         JSP_TEST(force || true, testWrappedObjectAssignment1)
-        JSP_TEST(force || true, testWrappedObjectAssignment2)
-        JSP_TEST(force || true, testWrappedObjectAssignment3)
-    }
-    
-    if (force || false)
-    {
-        JSP_TEST(force || true, testBarkerFinalization1)
-        JSP_TEST(force || true, testHeapWrappedObject1)
         JSP_TEST(force || true, testWrappedBarker1)
         JSP_TEST(force || true, testRootedWrappedBarker1)
         JSP_TEST(force || true, testHeapWrappedBarker1)
         JSP_TEST(force || true, testHeapWrappedJSBarker1)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testBarkerPassedToJS1);
         JSP_TEST(force || true, testHeapWrappedJSBarker2);
@@ -69,27 +68,16 @@ void TestingRooting2::performRun(bool force)
 
 // ---
 
-void TestingRooting2::handleObject1(HandleObject object, const string &source)
+void TestingRooting2::testHandleObject1(HandleObject object)
 {
     JSP::forceGC();
-    
-    JSP_CHECK(JSP::isHealthy(object.get()));
-    JSP_CHECK(source == toSource(object));
+    JSP_CHECK(Barker::bark(object));
 }
 
-void TestingRooting2::handleWrappedBarker1(Handle<WrappedObject> wrappedBarker)
+void TestingRooting2::testMutableHandleObject1(MutableHandleObject object)
 {
+    object.set(nullptr);
     JSP::forceGC();
-    JSP_CHECK(Barker::bark(wrappedBarker));
-}
-
-void TestingRooting2::handleMutableWrappedBarker1(MutableHandle<WrappedObject> wrappedBarker)
-{
-    JSObject *barker = wrappedBarker.get();
-    wrappedBarker.set(nullptr);
-    
-    JSP::forceGC();
-    JSP_CHECK(!Barker::bark(barker));
 }
 
 // ---
@@ -169,7 +157,7 @@ void TestingRooting2::testBarkerJSFunctionality()
                   }");
     
     AutoValueVector args(cx);
-    args.append(toValue(1)); // TODO: IMPLEMENT size_t Barker::instanceCount()
+    args.append(toValue(3)); // TODO: IMPLEMENT size_t Barker::instanceCount()
     args.append(toValue("js-created unrooted 1"));
     
     JSP_CHECK(call(globalHandle(), "testBarkers1", args).isTrue());
@@ -190,7 +178,7 @@ void TestingRooting2::testBarkerMixedFunctionality()
      *   - OBSERVING FINALIZATION
      */
 
-    uint32_t nextId = 2; // TODO: IMPLEMENT size_t Barker::instanceCount()
+    uint32_t nextId = 4; // TODO: IMPLEMENT size_t Barker::instanceCount()
     string name = "CPP-CREATED UNROOTED 1";
     
     JSP_CHECK(Barker::getId(Barker::create(name)) == nextId);
@@ -206,70 +194,26 @@ void TestingRooting2::testBarkerMixedFunctionality()
     JSP_CHECK(call(globalHandle(), "testBarkers2", arg).isTrue());
 }
 
-// ---
-
-void TestingRooting2::testWrappedObjectAssignment1()
-{
-    JSObject *barkerA = Barker::create("ASSIGNED 1A");
-    
-    {
-        WrappedObject wrapped; // ASSIGNMENT 1 (NO-OP)
-        wrapped = Barker::create("ASSIGNED 1B"); // ASSIGNMENT 2
-        wrapped = barkerA; // ASSIGNMENT 3
-        
-        Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
-        
-        JSP::forceGC();
-        JSP_CHECK(Barker::bark(&rootedWrapped)); // REASON: BARKER ROOTED
-    }
-    
-    JSP::forceGC();
-    JSP_CHECK(!Barker::isHealthy("ASSIGNED 1A")); // REASON: BARKER NOT STACK-ROOTED ANYMORE
-}
-
-void TestingRooting2::testWrappedObjectAssignment2()
+void TestingRooting2::testRootedBarker1()
 {
     JSObject *barker = Barker::create("ASSIGNED 2");
     
-    Rooted<WrappedObject> rootedWrapped(cx, barker); // ASSIGNMENT 1
+    RootedObject rooted(cx, barker); // ASSIGNMENT 1
     
     /*
-     * ASSIGNMENT 2:
-     *
-     * THE WrappedObject ENCLOSING barker WILL BE SET TO NULL INSIDE handleMutableWrappedBarker1()
-     *
-     * barker WILL THEREFORE BE FINALIZED DURING THE TRIGGERED GC
+     * 1) WILL TRIGGER A GC
+     * 2) WILL MAKE rooted BARK
      */
-    handleMutableWrappedBarker1(&rootedWrapped);
-}
-
-/*
- * SIMILAR TO testWrappedObjectAssignment2()
- *
- * EXCEPT THAT WE HAD TO WORK HARD, BEHIND THE SCENES (E.G. IN WrappedObject), IN ORDER TO COPE WITH:
- *
- * 1) VALUE RE-ASSIGNABILITY, AUTOMATIC TRACING, ETC.
- *
- * 2) AUTOMATIC-CONVERSION FROM Heap<WrappedObject> TO Handle<WrappedObject>, ETC.
- */
-
-void TestingRooting2::testWrappedObjectAssignment3()
-{
-    JSObject *barker = Barker::create("ASSIGNED 3");
-    
-    Heap<WrappedObject> heapWrapped(barker); // ASSIGNMENT 1
+    testHandleObject1(rooted);
     
     /*
-     * ASSIGNMENT 2:
-     *
-     * THE WrappedObject ENCLOSING barker WILL BE SET TO NULL INSIDE handleMutableWrappedBarker1()
-     *
-     * barker WILL THEREFORE BE FINALIZED DURING THE TRIGGERED GC
+     * 1) ASSIGNMENT 2: WILL SET rooted TO NULL
+     * 2) WILL TRIGGER A GC
      */
-    handleMutableWrappedBarker1(heapWrapped); // AUTOMATIC-CONVERSION FROM Heap<WrappedObject> TO MutableHandle<WrappedObject>
+    testMutableHandleObject1(&rooted);
+    
+    JSP_CHECK(Barker::isFinalized("ASSIGNED 2"));
 }
-
-// ---
 
 /*
  * TODO:
@@ -313,7 +257,7 @@ void TestingRooting2::testBarkerFinalization1()
  *    - bool FinalizeObject(JSObject *obj)
  */
 
-void TestingRooting2::testHeapWrappedObject1()
+void TestingRooting2::testObjectAllocation1()
 {
     /*
      * MYSTERY: OBJECT APPEARS TO BE ALLOCATED DIRECTLY IN THE TENURED-HEAP!?
@@ -332,36 +276,32 @@ void TestingRooting2::testHeapWrappedObject1()
     
     JSObject *object = evaluateObject("({foo: 'baz', bar: 1.5})");
     JSP_CHECK(!JSP::isInsideNursery(object));
+}
+
+// ---
+
+void TestingRooting2::testWrappedObjectAssignment1()
+{
+    JSObject *barkerA = Barker::create("ASSIGNED 1A");
     
     {
-        if (true)
-        {
-            Heap<WrappedObject> heapWrapped(object); // ENCLOSING object IN Heap<WrappedObject> PROTECTS IT FROM GC AND ALLOWS TO FOLLOW "MOVED POINTERS"
-            handleObject1(heapWrapped, toSource(heapWrapped.get()));
-        }
-        else
-        {
-            JSP::forceGC(); // object WILL BE FINALIZED
-            JSP_CHECK(!JSP::isHealthy(object));
-            
-            return;
-        }
+        WrappedObject wrapped; // ASSIGNMENT 1 (NO-OP)
+        wrapped = Barker::create("ASSIGNED 1B"); // ASSIGNMENT 2
+        wrapped = barkerA; // ASSIGNMENT 3
+        
+        Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
+        
+        JSP::forceGC();
+        JSP_CHECK(Barker::bark(&rootedWrapped)); // REASON: BARKER ROOTED
     }
     
     JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(object));
+    JSP_CHECK(!Barker::isHealthy("ASSIGNED 1A")); // REASON: BARKER NOT STACK-ROOTED ANYMORE
 }
 
 void TestingRooting2::testWrappedBarker1()
 {
     WrappedObject wrapped(Barker::create("WRAPPED 1"));
-    
-    /*
-     * BARKING VIA handleWrappedObject1() DOES NOT MAKE SENSE SINCE wrapped IS:
-     * - NOT ENCLOSED IN Rooted<WrappedObject>
-     * - NOT ENCLOSED IN Heap<WrappedObject>
-     */
-    
     JSP_CHECK(Barker::bark(&wrapped));
     
     JSP::forceGC();
@@ -374,7 +314,7 @@ void TestingRooting2::testRootedWrappedBarker1()
     
     {
         Rooted<WrappedObject> rootedWrapped(cx, object);
-        handleWrappedBarker1(rootedWrapped);
+        testHandleObject1(rootedWrapped);
     }
     
     JSP::forceGC();
@@ -387,7 +327,7 @@ void TestingRooting2::testHeapWrappedBarker1()
     
     {
         Heap<WrappedObject> heapWrapped(object);
-        handleWrappedBarker1(heapWrapped); // AUTOMATIC-CONVERSION FROM Heap<WrappedObject> TO Handle<WrappedObject>
+        testHandleObject1(heapWrapped); // AUTOMATIC-CONVERSION FROM Heap<WrappedObject> TO Handle<Object>
     }
     
     JSP::forceGC();
@@ -407,23 +347,24 @@ void TestingRooting2::testHeapWrappedBarker1()
 
 /*
 testHeapWrappedBarker1
-Barker CONSTRUCTED: 0x10be00000 {Barker c} [n] | HEAP-WRAPPED 1
-jsp::WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfb0b0 | object: 0x10be00000 {Barker c} [n]
-jsp::WrappedObject::WrappedObject() 0x7fff5fbfb0b8 | object:
-jsp::WrappedObject::WrappedObject(const jsp::WrappedObject &) 0x7fff5fbfafb0 | object: 0x10be00000 {Barker c} [n]
-void jsp::WrappedObject::operator=(const jsp::WrappedObject &) 0x7fff5fbfb0b8 | object: 0x10be00000 {Barker c} [n]
-void jsp::WrappedObject::postBarrier() 0x7fff5fbfb0b8 | object: 0x10be00000 {Barker c} [n]
-jsp::WrappedObject::~WrappedObject() 0x7fff5fbfafb0 | object: 0x10be00000 {Barker c} [n]
-jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb0b0 | object: 0x10be00000 {Barker c} [n]
+Barker CONSTRUCTED: 0x10c600000 {Barker b} [n] | HEAP-WRAPPED 1
+jsp::WrappedObject::WrappedObject(JSObject *) 0x7fff5fbfb310 | object: 0x10c600000 {Barker b} [n]
+jsp::WrappedObject::WrappedObject() 0x7fff5fbfb318 | object:
+jsp::WrappedObject::WrappedObject(const jsp::WrappedObject &) 0x7fff5fbfb210 | object: 0x10c600000 {Barker b} [n]
+void jsp::WrappedObject::operator=(const jsp::WrappedObject &) 0x7fff5fbfb318 | object: 0x10c600000 {Barker b} [n]
+void jsp::WrappedObject::postBarrier() 0x7fff5fbfb318 | object: 0x10c600000 {Barker b} [n]
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb210 | object: 0x10c600000 {Barker b} [n]
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb310 | object: 0x10c600000 {Barker b} [n]
 JSP::forceGC() | BEGIN
-Barker TRACED: 0x10cf43130 {Barker c} [W] | HEAP-WRAPPED 1
-Barker TRACED: 0x10cf43130 {Barker c} [B] | HEAP-WRAPPED 1
+Barker TRACED: 0x10d743130 {Barker b} [W] | HEAP-WRAPPED 1
+void jsp::WrappedObject::trace(JSTracer *) 0x7fff5fbfb318 | object: 0x10d743130 {Barker b} [B]
+Barker TRACED: 0x10d743130 {Barker b} [B] | HEAP-WRAPPED 1
 JSP::forceGC() | END
-Barker BARKED: 0x10cf43130 {Barker c} [B] | HEAP-WRAPPED 1
-void jsp::WrappedObject::relocate() 0x7fff5fbfb0b8 | object: 0x10cf43130 {Barker c} [B]
-jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb0b8 | object: 0x10cf43130 {Barker c} [B]
+Barker BARKED: 0x10d743130 {Barker b} [B] | HEAP-WRAPPED 1
+void jsp::WrappedObject::relocate() 0x7fff5fbfb318 | object: 0x10d743130 {Barker b} [B]
+jsp::WrappedObject::~WrappedObject() 0x7fff5fbfb318 | object: 0x10d743130 {Barker b} [B]
 JSP::forceGC() | BEGIN
-Barker FINALIZED: 0x10cf43130 [P] | HEAP-WRAPPED 1
+Barker FINALIZED: 0x10d743130 [P] | HEAP-WRAPPED 1
 JSP::forceGC() | END
 */
 

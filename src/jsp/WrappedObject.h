@@ -22,8 +22,6 @@
 
 #include "jsp/Context.h"
 
-#include <set>
-
 #define DUMP_WRAPPED_OBJECT if (LOG_VERBOSE) { dump(__PRETTY_FUNCTION__); }
 
 namespace jsp
@@ -32,7 +30,6 @@ namespace jsp
     {
     public:
         static bool LOG_VERBOSE;
-        static std::set<void*> heapTraced;
         
         // ---
         
@@ -61,9 +58,6 @@ namespace jsp
         const JSObject* address() const { return object; }
         JSObject* unsafeGet() { return object; }
         
-        void set(JSObject *newObject);
-        void clear();
-        
     protected:
         friend class Heap<WrappedObject>;
         friend struct js::GCMethods<WrappedObject>;
@@ -72,9 +66,6 @@ namespace jsp
         
         void postBarrier();
         void relocate();
-        
-        void beginTracing();
-        void endTracing();
         void trace(JSTracer *trc);
         
         void dump(const char *prefix);
@@ -113,24 +104,6 @@ namespace js
     {
         const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
         return JS::Handle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject* const*>(self.address()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::Handle<WrappedObject> () const
-    {
-        const JS::Heap<WrappedObject> &self = *static_cast<const JS::Heap<WrappedObject>*>(this);
-        return JS::Handle<WrappedObject>::fromMarkedLocation(reinterpret_cast<WrappedObject const*>(self.address()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::MutableHandle<JSObject*> ()
-    {
-        JS::Heap<WrappedObject> &self = *static_cast<JS::Heap<WrappedObject>*>(this);
-        return JS::MutableHandle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject**>(self.unsafeGet()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedObject>::operator JS::MutableHandle<WrappedObject> ()
-    {
-        JS::Heap<WrappedObject> &self = *static_cast<JS::Heap<WrappedObject>*>(this);
-        return JS::MutableHandle<WrappedObject>::fromMarkedLocation(reinterpret_cast<WrappedObject*>(self.unsafeGet()));
     }
     
     template <class U>

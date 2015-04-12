@@ -19,10 +19,8 @@ public:
     
     // ---
     
-    void handleObject1(JS::HandleObject object, const std::string &source);
-    
-    void handleWrappedBarker1(JS::Handle<jsp::WrappedObject> wrappedBarker);
-    void handleMutableWrappedBarker1(JS::MutableHandle<jsp::WrappedObject> wrappedBarker);
+    void testHandleObject1(JS::HandleObject object);
+    void testMutableHandleObject1(JS::MutableHandleObject object);
     
     // ---
     
@@ -32,13 +30,11 @@ public:
     
     void testBarkerJSFunctionality();
     void testBarkerMixedFunctionality();
+    void testRootedBarker1();
+    void testBarkerFinalization1();
+    void testObjectAllocation1();
 
     void testWrappedObjectAssignment1();
-    void testWrappedObjectAssignment2();
-    void testWrappedObjectAssignment3();
-
-    void testBarkerFinalization1();
-    void testHeapWrappedObject1();
     void testWrappedBarker1();
     void testRootedWrappedBarker1();
     void testHeapWrappedBarker1();

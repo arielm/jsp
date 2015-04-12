@@ -16,7 +16,6 @@ using namespace chr;
 namespace jsp
 {
     bool WrappedObject::LOG_VERBOSE = false;
-    set<void*> WrappedObject::heapTraced;
     
     // ---
 
@@ -29,7 +28,6 @@ namespace jsp
     
     WrappedObject::~WrappedObject()
     {
-        heapTraced.erase(this);
         DUMP_WRAPPED_OBJECT
     }
     
@@ -42,7 +40,7 @@ namespace jsp
     
     WrappedObject& WrappedObject::operator=(JSObject *newObject)
     {
-        set(newObject);
+        object = newObject;
         DUMP_WRAPPED_OBJECT
         
         return *this;
@@ -57,7 +55,7 @@ namespace jsp
     
     WrappedObject& WrappedObject::operator=(const HandleObject &handle)
     {
-        set(handle.get());
+        object = handle.get();
         DUMP_WRAPPED_OBJECT
         
         return *this;
@@ -72,39 +70,7 @@ namespace jsp
     
     void WrappedObject::operator=(const WrappedObject &other)
     {
-        set(other.object);
-        DUMP_WRAPPED_OBJECT
-    }
-    
-    void WrappedObject::set(JSObject *newObject)
-    {
-        if (newObject)
-        {
-            object = newObject;
-            
-            if (heapTraced.count(this))
-            {
-                beginTracing();
-            }
-        }
-        else if (object)
-        {
-            if (heapTraced.count(this))
-            {
-                endTracing();
-            }
-            
-            object = newObject;
-        }
-        else
-        {
-            object = newObject;
-        }
-    }
-    
-    void WrappedObject::clear()
-    {
-        set(nullptr);
+        object = other.object;
         DUMP_WRAPPED_OBJECT
     }
     
@@ -112,30 +78,18 @@ namespace jsp
     
     void WrappedObject::postBarrier()
     {
-        heapTraced.insert(this);
-        beginTracing();
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
+        HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&object));
         
         DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::relocate()
     {
-        heapTraced.erase(this);
-        endTracing();
-        
-        DUMP_WRAPPED_OBJECT
-    }
-    
-    void WrappedObject::beginTracing()
-    {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
-        HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&object));
-    }
-    
-    void WrappedObject::endTracing()
-    {
         HeapCellRelocate(reinterpret_cast<js::gc::Cell**>(&object));
         removeTracerCallback(this);
+        
+        DUMP_WRAPPED_OBJECT
     }
     
     void WrappedObject::trace(JSTracer *trc)

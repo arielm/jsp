@@ -17,8 +17,6 @@
 
 #include "jsp/Context.h"
 
-#include <set>
-
 #define DUMP_WRAPPED_VALUE if (LOG_VERBOSE) { dump(__PRETTY_FUNCTION__); }
 
 namespace jsp
@@ -27,7 +25,6 @@ namespace jsp
     {
     public:
         static bool LOG_VERBOSE;
-        static std::set<void*> heapTraced;
         
         // ---
         
@@ -54,35 +51,13 @@ namespace jsp
         template<typename T>
         WrappedValue& operator=(const T &newValue)
         {
-            if (TypeTraits<T>::isMarkable)
-            {
-                assignValue(value, newValue);
-                
-                if (heapTraced.count(this))
-                {
-                    beginTracing();
-                }
-            }
-            else if (value.isMarkable())
-            {
-                if (heapTraced.count(this))
-                {
-                    endTracing();
-                }
-                
-                assignValue(value, newValue);
-            }
-            else
-            {
-                assignValue(value, newValue);
-            }
-            
+            assignValue(value, newValue);
             DUMP_WRAPPED_VALUE
+            
             return *this;
         }
         
         operator const Value& () const { return value; }
-
         explicit operator const bool () const;
 
         bool operator==(const WrappedValue &other) const;
@@ -122,9 +97,6 @@ namespace jsp
         const Value* address() const { return &value; }
         Value* unsafeGet() { return &value; }
         
-        void set(const Value &newValue);
-        void clear();
-        
     protected:
         friend class ValueOperations<WrappedValue>;
         friend class MutableValueOperations<WrappedValue>;
@@ -139,9 +111,6 @@ namespace jsp
 
         void postBarrier();
         void relocate();
-        
-        void beginTracing();
-        void endTracing();
         void trace(JSTracer *trc);
         
         void dump(const char *prefix);
@@ -170,7 +139,7 @@ namespace js
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
         static bool poisoned(const WrappedValue &wrapped) { return false; }
-        static bool needsPostBarrier(const WrappedValue &wrapped) { return true;/*wrapped.value.isMarkable();*/ }
+        static bool needsPostBarrier(const WrappedValue &wrapped) { return wrapped.value.isMarkable(); }
 #ifdef JSGC_GENERATIONAL
         static void postBarrier(WrappedValue *wrapped) { wrapped->postBarrier(); }
         static void relocate(WrappedValue *wrapped) { wrapped->relocate(); }
@@ -187,11 +156,5 @@ namespace js
     {
         const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
         return JS::Handle<JS::Value>::fromMarkedLocation(reinterpret_cast<JS::Value const*>(self.address()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::MutableHandle<WrappedValue> ()
-    {
-        JS::Heap<WrappedValue> &self = *static_cast<JS::Heap<WrappedValue>*>(this);
-        return JS::MutableHandle<WrappedValue>::fromMarkedLocation(reinterpret_cast<WrappedValue*>(self.unsafeGet()));
     }
 }

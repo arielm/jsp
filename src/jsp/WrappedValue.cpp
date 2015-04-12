@@ -16,7 +16,6 @@ using namespace chr;
 namespace jsp
 {
     bool WrappedValue::LOG_VERBOSE = false;
-    set<void*> WrappedValue::heapTraced;
 
     // ---
     
@@ -29,7 +28,6 @@ namespace jsp
     
     WrappedValue::~WrappedValue()
     {
-        JS_ASSERT(!heapTraced.count(this));
         DUMP_WRAPPED_VALUE
     }
     
@@ -42,7 +40,7 @@ namespace jsp
     
     WrappedValue& WrappedValue::operator=(const Value &v)
     {
-        set(v);
+        value = v;
         DUMP_WRAPPED_VALUE
 
         return *this;
@@ -57,7 +55,7 @@ namespace jsp
     
     void WrappedValue::operator=(const WrappedValue &other)
     {
-        set(other.value);
+        value = other.value;
         DUMP_WRAPPED_VALUE
     }
     
@@ -187,72 +185,20 @@ namespace jsp
     
     // ---
     
-    void WrappedValue::set(const Value &newValue)
-    {
-        if (newValue.isMarkable())
-        {
-            value = newValue;
-            
-            if (heapTraced.count(this))
-            {
-                beginTracing();
-            }
-        }
-        else if (value.isMarkable())
-        {
-            if (heapTraced.count(this))
-            {
-                endTracing();
-            }
-            
-            value = newValue;
-        }
-        else
-        {
-            value = newValue;
-        }
-    }
-    
-    void WrappedValue::clear()
-    {
-        set(UndefinedValue());
-        DUMP_WRAPPED_VALUE
-    }
-    
-    // ---
-    
     void WrappedValue::postBarrier()
     {
-        heapTraced.insert(this);
         addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
-        beginTracing();
+        HeapValuePostBarrier(&value);
         
         DUMP_WRAPPED_VALUE
     }
     
     void WrappedValue::relocate()
     {
-        heapTraced.erase(this);
         removeTracerCallback(this);
-        endTracing();
+        HeapValueRelocate(&value);
         
         DUMP_WRAPPED_VALUE
-    }
-    
-    void WrappedValue::beginTracing()
-    {
-        if (value.isMarkable())
-        {
-            HeapValuePostBarrier(&value);
-        }
-    }
-    
-    void WrappedValue::endTracing()
-    {
-        if (value.isMarkable())
-        {
-            HeapValueRelocate(&value);
-        }
     }
     
     void WrappedValue::trace(JSTracer *trc)

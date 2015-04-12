@@ -30,13 +30,13 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testObjectStackRooting1);
         JSP_TEST(force || true, testObjectStackRooting2);
@@ -44,28 +44,28 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
         JSP_TEST(force || true, testAutomaticComparison);
     }
 
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
         JSP_TEST(force || true, testHeapBooleanCasting);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testStringComparison1);
         JSP_TEST(force || true, testStringComparison2);
         JSP_TEST(force || true, testStringCasting);
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
@@ -73,10 +73,8 @@ void TestingWrappedValue::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || false, testAutoWrappedValueVector);
-        
+        JSP_TEST(force || true, testAutoWrappedValueVector);
         JSP_TEST(force || true, testHeapWrappedToHandle1);
-//        JSP_TEST(force || false, testHeapWrappedToHandle2);
     }
 }
 
@@ -482,10 +480,8 @@ void TestingWrappedValue::testAutoWrappedValueVector()
 
 void TestingWrappedValue::testHeapWrappedToHandle1()
 {
-    heapWrapped1 = 123;
-    
+    heapWrapped1 = Barker::create("HEAP-WRAPPED 1");
     testHandleValue1(heapWrapped1);
-    testMutableHandleValue1(heapWrapped1);
     
     JSP::forceGC();
     JSP_CHECK(Barker::isHealthy("HEAP-WRAPPED 1"));
@@ -500,13 +496,7 @@ void TestingWrappedValue::testHeapWrappedToHandle1()
 
 void TestingWrappedValue::testHandleValue1(HandleValue value)
 {
-    JSP_CHECK(write(HandleValueArray::fromMarkedLocation(1, &value.get())) == "123");
-}
-
-void TestingWrappedValue::testMutableHandleValue1(MutableHandle<WrappedValue> value)
-{
-    value.set(Barker::create("HEAP-WRAPPED 1"));
-    JSP_CHECK(value.get().isGCThing());
+    JSP_CHECK(Barker::bark(value.toObjectOrNull()));
 }
 
 /*

@@ -553,12 +553,7 @@ namespace js
     {
     public:
         explicit operator const bool () const;
-
         operator JS::Handle<JSObject*> () const;
-        operator JS::Handle<WrappedObject> () const;
-        
-        operator JS::MutableHandle<JSObject*> ();
-        operator JS::MutableHandle<WrappedObject> ();
         
         template <class U>
         JS::Handle<U*> as() const;
@@ -569,9 +564,7 @@ namespace js
     {
     public:
         explicit operator const bool () const;
-        
         operator JS::Handle<JS::Value> () const;
-        operator JS::MutableHandle<WrappedValue> ();
     };
 }
 
