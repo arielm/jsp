@@ -29,7 +29,7 @@ namespace jsp
     
     WrappedValue::~WrappedValue()
     {
-        heapTraced.erase(this);
+        JS_ASSERT(!heapTraced.count(this));
         DUMP_WRAPPED_VALUE
     }
     
@@ -224,6 +224,7 @@ namespace jsp
     void WrappedValue::postBarrier()
     {
         heapTraced.insert(this);
+        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
         beginTracing();
         
         DUMP_WRAPPED_VALUE
@@ -232,6 +233,7 @@ namespace jsp
     void WrappedValue::relocate()
     {
         heapTraced.erase(this);
+        removeTracerCallback(this);
         endTracing();
         
         DUMP_WRAPPED_VALUE
@@ -239,14 +241,18 @@ namespace jsp
     
     void WrappedValue::beginTracing()
     {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
-        HeapValuePostBarrier(&value);
+        if (value.isMarkable())
+        {
+            HeapValuePostBarrier(&value);
+        }
     }
     
     void WrappedValue::endTracing()
     {
-        HeapValueRelocate(&value);
-        removeTracerCallback(this);
+        if (value.isMarkable())
+        {
+            HeapValueRelocate(&value);
+        }
     }
     
     void WrappedValue::trace(JSTracer *trc)

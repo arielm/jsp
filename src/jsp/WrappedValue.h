@@ -82,7 +82,6 @@ namespace jsp
         }
         
         operator const Value& () const { return value; }
-//      const Value* operator->() const { return &value; }
 
         explicit operator const bool () const;
 
@@ -171,7 +170,7 @@ namespace js
         static WrappedValue initial() { return JS::UndefinedValue(); }
         static ThingRootKind kind() { return THING_ROOT_VALUE; }
         static bool poisoned(const WrappedValue &wrapped) { return false; }
-        static bool needsPostBarrier(const WrappedValue &wrapped) { return wrapped.value.isMarkable(); }
+        static bool needsPostBarrier(const WrappedValue &wrapped) { return true;/*wrapped.value.isMarkable();*/ }
 #ifdef JSGC_GENERATIONAL
         static void postBarrier(WrappedValue *wrapped) { wrapped->postBarrier(); }
         static void relocate(WrappedValue *wrapped) { wrapped->relocate(); }
@@ -188,18 +187,6 @@ namespace js
     {
         const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
         return JS::Handle<JS::Value>::fromMarkedLocation(reinterpret_cast<JS::Value const*>(self.address()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::Handle<WrappedValue> () const
-    {
-        const JS::Heap<WrappedValue> &self = *static_cast<const JS::Heap<WrappedValue>*>(this);
-        return JS::Handle<WrappedValue>::fromMarkedLocation(reinterpret_cast<WrappedValue const*>(self.address()));
-    }
-    
-    MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::MutableHandle<JS::Value> ()
-    {
-        JS::Heap<WrappedValue> &self = *static_cast<JS::Heap<WrappedValue>*>(this);
-        return JS::MutableHandle<JS::Value>::fromMarkedLocation(reinterpret_cast<JS::Value*>(self.unsafeGet()));
     }
     
     MOZ_ALWAYS_INLINE HeapBase<WrappedValue>::operator JS::MutableHandle<WrappedValue> ()

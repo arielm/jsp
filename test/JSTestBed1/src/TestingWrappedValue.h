@@ -35,7 +35,7 @@ public:
 
     // ---
     
-    JS::Heap<jsp::WrappedValue> heapWrapped1;
+    JS::Heap<jsp::WrappedValue> heapWrapped;
 
     void testBooleanComparison();
     void testBooleanCasting();
@@ -59,13 +59,9 @@ public:
 
     // ---
     
-    JS::Heap<jsp::WrappedValue> heapWrapped2;
-    
+    JS::Heap<jsp::WrappedValue> heapWrapped1;
+
+    void testHeapWrappedToHandle1();
     void testHandleValue1(JS::HandleValue value);
-    void testMutableHandleValue1(JS::MutableHandleValue value);
-    
-//  void testHandleValue2(JS::Handle<jsp::WrappedValue> value);
-//  void testMutableHandleValue2(JS::MutableHandle<jsp::WrappedValue> value);
-    
-    void testHeapWrappedToHandle();
+    void testMutableHandleValue1(JS::MutableHandle<jsp::WrappedValue> value);
 };
