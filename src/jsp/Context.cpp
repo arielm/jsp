@@ -547,17 +547,6 @@ string JSP::writeDetailed(const Value &value) { return ""; }
 
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
 
-bool JSP::isInsideNursery(void *thing)
-{
-    if (thing)
-    {
-        auto cell = static_cast<js::gc::Cell*>(thing);
-        return !cell->isTenured();
-    }
-    
-    return false;
-}
-
 template <>
 bool JSP::isAboutToBeFinalized(JSObject **thing)
 {
@@ -611,12 +600,27 @@ bool JSP::isHealthy(const Value &value)
     return false;
 }
 
-#else
-
-bool JSP::isInsideNursery(void *thing)
+bool JSP::isInsideNursery(const Value &value)
 {
+    if (value.isMarkable())
+    {
+        void *thing = value.toGCThing();
+        
+        if (value.isString())
+        {
+            return isInsideNursery((JSString*)thing);
+        }
+        
+        if (value.isObject())
+        {
+            return isInsideNursery((JSObject*)thing);
+        }
+    }
+    
     return false;
 }
+
+#else
 
 bool JSP::isPoisoned(const Value &value)
 {
@@ -624,6 +628,11 @@ bool JSP::isPoisoned(const Value &value)
 }
 
 bool JSP::isHealthy(const Value &value)
+{
+    return false;
+}
+
+bool JSP::isInsideNursery(const Value &value)
 {
     return false;
 }

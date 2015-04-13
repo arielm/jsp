@@ -616,10 +616,9 @@ public:
     
     // ---
 
-    static bool isInsideNursery(void *thing);
-    
     static bool isPoisoned(const JS::Value &value);
     static bool isHealthy(const JS::Value &value);
+    static bool isInsideNursery(const JS::Value &value);
     
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
     
@@ -727,6 +726,18 @@ public:
     }
     
     template<typename T>
+    static bool isInsideNursery(T *thing)
+    {
+        if (thing)
+        {
+            auto cell = static_cast<js::gc::Cell*>(thing);
+            return !cell->isTenured();
+        }
+        
+        return false;
+    }
+    
+    template<typename T>
     static std::string writeDetailed(T *thing)
     {
         if (thing)
@@ -818,6 +829,12 @@ public:
     
     template<typename T>
     static bool isHealthy(T *thing)
+    {
+        return false;
+    }
+    
+    template<typename T>
+    static bool isInsideNursery(T *thing)
     {
         return false;
     }
