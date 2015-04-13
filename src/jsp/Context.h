@@ -73,10 +73,52 @@ namespace jsp
     
     // ---
 
-    template<class T>
-    inline JSString* toJSString(const T s)
+    inline bool equalStrings(HandleString s1, const std::string &s2)
     {
-        return JS_NewUCStringCopyZ(cx, reinterpret_cast<const jschar*>(UnicodeString::fromUTF8(s).getTerminatedBuffer()));
+        bool result = false;
+        
+        if (s1 && !s2.empty())
+        {
+            const jschar *c1 = s1->getChars(cx);
+            
+            if (c1)
+            {
+                size_t length;
+                jschar *c2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s2.data(), s2.size()), &length).get();
+                
+                if (c2)
+                {
+                    result = js::CompareChars(c1, s1->length(), c2, length) == 0;
+                }
+                
+                js_free(c2);
+            }
+        }
+        
+        return result;
+    }
+    
+    inline JSString* toJSString(const std::string &s)
+    {
+        if (!s.empty())
+        {
+            size_t length;
+            jschar *c = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s.data(), s.size()), &length).get();
+            
+            if (c)
+            {
+                JSString *result = JS_NewUCString(cx, c, length);
+                
+                if (result)
+                {
+                    return result;
+                }
+                
+                js_free(c);
+            }
+        }
+        
+        return cx->emptyString();
     }
 
     inline const std::string toString(const jschar *s)
@@ -313,30 +355,33 @@ namespace jsp
         return false;
     }
     
-    //
-    
-    inline bool compare(HandleValue value, bool other)
+    inline bool compare(const Value &value, bool other)
     {
-        return ToBoolean(value) == other; // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
+        RootedValue rooted(cx, value);
+        return ToBoolean(rooted) == other; // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
     }
 
-    inline bool compare(HandleValue value, const std::string &other)
+    inline bool compare(const Value &value, const std::string &other)
     {
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
-            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-            return toString(rooted) == other;
+            RootedValue rooted(cx, value);
+            RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
+            
+            return equalStrings(s, other);
         }
         
         return false;
     }
     
-    inline bool compare(HandleValue value, const char *other)
+    inline bool compare(const Value &value, const char *other)
     {
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
-            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-            return toString(rooted) == other;
+            RootedValue rooted(cx, value);
+            RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
+            
+            return equalStrings(s, other);
         }
         
         return false;

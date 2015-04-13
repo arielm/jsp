@@ -405,9 +405,8 @@ void TestingWrappedValue::compareConstChars(const char *s1, const char *s2)
     JSP_CHECK(wrapped == s1);
     JSP_CHECK(wrapped != s2);
     
-    Rooted<WrappedValue> rootedWrapped(cx, wrapped);
-    JSP_CHECK(compare(rootedWrapped, s1));
-    JSP_CHECK(!compare(rootedWrapped, s2));
+    JSP_CHECK(compare(wrapped, s1));
+    JSP_CHECK(!compare(wrapped, s2));
 }
 
 void TestingWrappedValue::compareConstStrings(const string &s1, const string &s2)
@@ -416,9 +415,8 @@ void TestingWrappedValue::compareConstStrings(const string &s1, const string &s2
     JSP_CHECK(wrapped == s1);
     JSP_CHECK(wrapped != s2);
     
-    Rooted<WrappedValue> rootedWrapped(cx, wrapped);
-    JSP_CHECK(compare(rootedWrapped, s1));
-    JSP_CHECK(!compare(rootedWrapped, s2));
+    JSP_CHECK(compare(wrapped, s1));
+    JSP_CHECK(!compare(wrapped, s2));
 }
 
 //
