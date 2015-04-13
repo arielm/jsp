@@ -35,19 +35,16 @@ namespace jsp
         
         WrappedObject();
         ~WrappedObject();
-        
-        WrappedObject(JSObject *o);
-        WrappedObject& operator=(JSObject *newObject);
-        
-        WrappedObject(const HandleObject &handle);
-        WrappedObject& operator=(const HandleObject &handle);
-        
+
         /*
          * THESE 2 ARE NOT MANDATORY (I.E. COMPILER-GENERATED IN ANY-CASE)
-         * BUT WE WANT TO CALL dump() WHENEVER IT HAPPENS
+         * BUT WE WANT TO "DUMP" WHENEVER IT HAPPENS
          */
         WrappedObject(const WrappedObject &other);
         void operator=(const WrappedObject &other);
+        
+        WrappedObject(JSObject *o);
+        WrappedObject& operator=(JSObject *newObject);
         
         operator JSObject* () const { return object; }
         JSObject* operator->() const { return object; }
