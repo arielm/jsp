@@ -31,6 +31,19 @@ namespace jsp
         DUMP_WRAPPED_VALUE
     }
     
+    WrappedValue::WrappedValue(const WrappedValue &other)
+    :
+    value(other.value)
+    {
+        DUMP_WRAPPED_VALUE
+    }
+    
+    void WrappedValue::operator=(const WrappedValue &other)
+    {
+        value = other.value;
+        DUMP_WRAPPED_VALUE
+    }
+    
     WrappedValue::WrappedValue(const Value &v)
     :
     value(v)
@@ -44,19 +57,6 @@ namespace jsp
         DUMP_WRAPPED_VALUE
 
         return *this;
-    }
-    
-    WrappedValue::WrappedValue(const WrappedValue &other)
-    :
-    value(other.value)
-    {
-        DUMP_WRAPPED_VALUE
-    }
-    
-    void WrappedValue::operator=(const WrappedValue &other)
-    {
-        value = other.value;
-        DUMP_WRAPPED_VALUE
     }
     
     WrappedValue::operator const bool () const
@@ -83,96 +83,6 @@ namespace jsp
     }
     
     bool WrappedValue::operator!=(const Value &other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(const nullptr_t) const
-    {
-        return compare(value, nullptr);
-    }
-    
-    bool WrappedValue::operator!=(const nullptr_t) const
-    {
-        return !compare(value, nullptr);
-    }
-    
-    bool WrappedValue::operator==(const JSObject *other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(const JSObject *other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(float other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(float other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(double other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(double other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(int32_t other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(int32_t other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(uint32_t other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(uint32_t other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(bool other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(bool other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(const string &other) const
-    {
-        return compare(value, other);
-    }
-
-    bool WrappedValue::operator!=(const string &other) const
-    {
-        return !compare(value, other);
-    }
-    
-    bool WrappedValue::operator==(const char *other) const
-    {
-        return compare(value, other);
-    }
-    
-    bool WrappedValue::operator!=(const char *other) const
     {
         return !compare(value, other);
     }

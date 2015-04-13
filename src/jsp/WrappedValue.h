@@ -6,13 +6,6 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
-/*
- * BASED ON SPIDERMONKEY'S BarrieredValue CLASS: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Barrier.h#L611-697
- *
- * RELEVANT PARTS: HOW TO IMPLEMENT YOUR OWN ValueOperations<T>
- * TO BE IGNORED: THE "PRE WRITE-BARRIER" STUFF, BECAUSE WE'RE FOCUSING ONLY ON "GENERATIONAL GC"
- */
-
 #pragma once
 
 #include "jsp/Context.h"
@@ -30,16 +23,16 @@ namespace jsp
         
         WrappedValue();
         ~WrappedValue();
-        
-        WrappedValue(const Value &v);
-        WrappedValue& operator=(const Value &v);
-        
+
         /*
          * THESE 2 ARE NOT MANDATORY (I.E. COMPILER-GENERATED IN ANY-CASE)
-         * BUT WE WANT TO CALL dump() WHENEVER IT HAPPENS
+         * BUT WE WANT TO "DUMP" WHENEVER IT HAPPENS
          */
         WrappedValue(const WrappedValue &other);
         void operator=(const WrappedValue &other);
+
+        WrappedValue(const Value &v);
+        WrappedValue& operator=(const Value &v);
         
         template<typename T>
         WrappedValue(const T &newValue)
@@ -67,33 +60,18 @@ namespace jsp
 
         bool operator==(const Value &other) const;
         bool operator!=(const Value &other) const;
-
-        bool operator==(const std::nullptr_t) const;
-        bool operator!=(const std::nullptr_t) const;
         
-        bool operator==(const JSObject *other) const;
-        bool operator!=(const JSObject *other) const;
-
-        bool operator==(float other) const;
-        bool operator!=(float other) const;
+        template<typename T>
+        bool operator==(const T &other) const
+        {
+            return compare(value, other);
+        }
         
-        bool operator==(double other) const;
-        bool operator!=(double other) const;
-        
-        bool operator==(int32_t other) const;
-        bool operator!=(int32_t other) const;
-        
-        bool operator==(uint32_t other) const;
-        bool operator!=(uint32_t other) const;
-
-        bool operator==(bool other) const;
-        bool operator!=(bool other) const;
-        
-        bool operator==(const std::string &other) const;
-        bool operator!=(const std::string &other) const;
-        
-        bool operator==(const char *other) const;
-        bool operator!=(const char *other) const;
+        template<typename T>
+        bool operator!=(const T &other) const
+        {
+            return !compare(value, other);
+        }
 
         const Value& get() const { return value; }
         const Value* address() const { return &value; }
