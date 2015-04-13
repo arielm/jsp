@@ -110,7 +110,7 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     
     // ---
     
-    wrapped = toValue("assigned-to-value 1");
+    wrapped = StringValue(toJSString("assigned-to-value 1"));
     JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
     JSP::forceGC();
@@ -142,11 +142,17 @@ void TestingWrappedValue::testAutomaticConversion()
     wrapped = newPlainObject();
     JSP_CHECK(wrapped.isObject());
     
+    // ---
+    
+    RootedString s(cx);
+    
     wrapped = "from const char*";
-    JSP_CHECK(js::StringEqualsAscii(wrapped.toString()->ensureLinear(cx), "from const char*"));
+    s = wrapped.toString();
+    JSP_CHECK(stringEqualsASCII(s, "from const char*"));
     
     wrapped = string("from string");
-    JSP_CHECK(js::StringEqualsAscii(wrapped.toString()->ensureLinear(cx), "from string"));
+    s = wrapped.toString();
+    JSP_CHECK(stringEqualsASCII(s, "from string"));
 }
 
 // ---
@@ -183,7 +189,7 @@ void TestingWrappedValue::testObjectStackRooting1()
 void TestingWrappedValue::testObjectStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-WRAPPED-VALUE"));
-    JSP_CHECK(JSP::isInsideNursery(rootedWrapped.get()));
+    JSP_CHECK(JSP::isInsideNursery(rootedWrapped.get())); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
     
     JSP::forceGC();
     JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
@@ -231,17 +237,23 @@ void TestingWrappedValue::testStringStackRooting1()
 void TestingWrappedValue::testStringStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-wrapped-value");
-    JSP_CHECK(!JSP::isInsideNursery(rootedWrapped.get()));
-    
+    JSP_CHECK(!JSP::isInsideNursery(rootedWrapped.get())); // JS-STRINGS ARE ALWAYS TENURED
+
+    JSString *gcPointer = rootedWrapped->toString();
+
     JSP::forceGC();
     JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
+    JSP_CHECK(JSP::isHealthy(gcPointer)); // REASON: GC-POINTER WAS TENURED
     
     // ---
-
+    
     /*
-     * WILL CAUSE GC-THING TO BE FINALIZED DURING THE NEXT GC (NO WAY TO VERIFY...)
+     * WILL CAUSE GC-THING TO BE FINALIZED DURING THE NEXT GC
      */
     rootedWrapped = 123;
+    
+    JSP::forceGC();
+    JSP_CHECK(!JSP::isHealthy(gcPointer));
 }
 
 // ---
@@ -261,9 +273,16 @@ void TestingWrappedValue::testValueComparison()
 
 void TestingWrappedValue::testObjectComparison()
 {
+    /*
+     * WARNING: NOT GC-SAFE
+     *
+     * REASON: THE CREATION OF object2 COULD TRIGGER A GC (WHICH IN TURN WOULD CAUSE THE FINALIZATION OF object1)
+     * PROBABILITY: NULL (FORCED-GC IS TAKING PLACE BEFORE EACH TEST)
+     */
+    
     JSObject *object1 = Barker::create("BARKER 1");
     JSObject *object2 = Barker::create("BARKER 2");
-
+    
     WrappedValue wrapped1(object1);
     WrappedValue wrapped2(object2);
     
@@ -271,13 +290,20 @@ void TestingWrappedValue::testObjectComparison()
     
     JSP_CHECK(wrapped1 != object2); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(const JSObject*)
     JSP_CHECK(wrapped1 != wrapped2);
-
+    
     wrapped2 = object1;
     JSP_CHECK(wrapped1 == wrapped2);
 }
 
 void TestingWrappedValue::testAutomaticComparison()
 {
+    /*
+     * WARNING: NOT GC-SAFE
+     *
+     * REASON: THE COMPARISON OF wrapped WITH "foo" COULD TRIGGER A GC
+     * PROBABILITY: NULL (FORCED-GC IS TAKING PLACE BEFORE EACH TEST)
+     */
+    
     WrappedValue wrapped = 33.33;
     JSP_CHECK(wrapped == 33.33);
     JSP_CHECK(wrapped != 55.55);
@@ -310,6 +336,12 @@ void TestingWrappedValue::testBooleanComparison()
 
 /*
  * WrappedValue::operator const bool() IN ACTION
+ *
+ *
+ * WARNING: NOT GC-SAFE
+ *
+ * REASON: JS::Value::ToBoolean (USED BEHIND THE SCENE) COULD TRIGGER A GC
+ * PROBABILITY: NULL (FORCED-GC IS TAKING PLACE BEFORE EACH TEST)
  */
 void TestingWrappedValue::testBooleanCasting()
 {
@@ -375,6 +407,13 @@ void TestingWrappedValue::testHeapBooleanCasting()
 
 // ---
 
+/*
+ * WARNING: THE FOLLOWING 3 ARE NOT GC-SAFE
+ *
+ * REASON: SEVERAL STRING-RELATED OPERATIONS USED BEHIND THE SCENES COULD TRIGGER A GC
+ * PROBABILITY: NULL (FORCED-GC IS TAKING PLACE BEFORE EACH TEST)
+ */
+
 void TestingWrappedValue::testStringComparison1()
 {
     WrappedValue wrapped = "foo";
@@ -421,6 +460,12 @@ void TestingWrappedValue::compareConstStrings(const string &s1, const string &s2
 
 //
 
+/*
+ * WARNING: NOT GC-SAFE
+ *
+ * REASON: SEVERAL STRING-RELATED OPERATIONS USED BEHIND THE SCENES COULD TRIGGER A GC
+ * PROBABILITY: NULL (FORCED-GC IS TAKING PLACE BEFORE EACH TEST)
+ */
 void TestingWrappedValue::testStringComparison2()
 {
     WrappedValue wrapped;

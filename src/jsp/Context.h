@@ -73,22 +73,22 @@ namespace jsp
     
     // ---
 
-    inline bool equalStrings(HandleString s1, const std::string &s2)
+    inline bool stringEquals(HandleString s1, const std::string &s2)
     {
         bool result = false;
         
         if (s1 && !s2.empty())
         {
-            const jschar *c1 = s1->getChars(cx);
+            const jschar *c1 = s1->getChars(cx); // CAN ALLOCATE MEMORY (AND THEREFORE TRIGGER GC) IF s1 IS NOT LINEAR
             
             if (c1)
             {
-                size_t length;
-                jschar *c2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s2.data(), s2.size()), &length).get();
+                size_t l2;
+                jschar *c2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s2.data(), s2.size()), &l2).get();
                 
                 if (c2)
                 {
-                    result = js::CompareChars(c1, s1->length(), c2, length) == 0;
+                    result = js::CompareChars(c1, s1->length(), c2, l2) == 0;
                 }
                 
                 js_free(c2);
@@ -96,6 +96,40 @@ namespace jsp
         }
         
         return result;
+    }
+    
+    inline bool stringEqualsASCII(HandleString s1, const std::string &s2)
+    {
+        if (s1 && !s2.empty())
+        {
+            size_t l2 = s2.size();
+
+#ifdef DEBUG
+            for (auto i = 0; i != l2; ++i)
+            {
+                JS_ASSERT(unsigned(s2[i]) <= 127);
+            }
+#endif
+            if (s1->length() == l2)
+            {
+                const jschar *c1 = s1->getChars(cx); // CAN ALLOCATE MEMORY (AND THEREFORE TRIGGER GC) IF s1 IS NOT LINEAR
+                
+                if (c1)
+                {
+                    for (auto i = 0; i != l2; ++i)
+                    {
+                        if (unsigned(s2[i]) != unsigned(c1[i]))
+                        {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
     
     inline JSString* toJSString(const std::string &s)
@@ -368,7 +402,7 @@ namespace jsp
             RootedValue rooted(cx, value);
             RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
             
-            return equalStrings(s, other);
+            return stringEquals(s, other);
         }
         
         return false;
@@ -381,7 +415,7 @@ namespace jsp
             RootedValue rooted(cx, value);
             RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
             
-            return equalStrings(s, other);
+            return stringEquals(s, other);
         }
         
         return false;
