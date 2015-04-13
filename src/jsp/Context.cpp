@@ -133,7 +133,7 @@ namespace jsp
         }
     }
     
-#pragma mark ---------------------------------------- DOWNCASTING TO JS OBJECT ----------------------------------------
+#pragma mark ---------------------------------------- DOWNCASTING TO JS OBJECT (UNSAFE) ----------------------------------------
     
     template <>
     JSObject* toObject(JSObject *object)
@@ -196,18 +196,6 @@ namespace jsp
     }
     
     template <>
-    JSObject* toObject(Handle<WrappedObject> handle)
-    {
-        return handle.get();
-    }
-    
-    template <>
-    JSObject* toObject(MutableHandle<WrappedObject> handle)
-    {
-        return handle.get();
-    }
-    
-    template <>
     JSObject* toObject(Rooted<WrappedObject> *rooted)
     {
         return rooted ? rooted->get().unsafeGet() : nullptr;
@@ -241,18 +229,6 @@ namespace jsp
     JSObject* toObject(const WrappedValue &wrapped)
     {
         return wrapped.isObject() ? wrapped.toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(Handle<WrappedValue> handle)
-    {
-        return handle.get().isObject() ? handle.get().toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(MutableHandle<WrappedValue> handle)
-    {
-        return handle.get().isObject() ? handle.get().toObjectOrNull() : nullptr;
     }
     
     template <>
@@ -309,13 +285,14 @@ namespace jsp
         return toString(source);
     }
     
-#pragma mark ---------------------------------------- STRINGIFICATION ----------------------------------------
+#pragma mark ---------------------------------------- JSON ----------------------------------------
     
     /*
      * TODO:
      *
      * 1) STRINGIFICATION: HANDLE CUSTOM-REPLACER
-     * 2) HANDLE JSON PARSING
+     * 2) DO NOT DEPEND ON ICU FOR  UTF16 -> UTF8 CONVERSION
+     * 3) HANDLE JSON PARSING
      */
     
     struct intern::Stringifier
