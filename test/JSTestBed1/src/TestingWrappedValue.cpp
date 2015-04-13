@@ -30,7 +30,7 @@ void TestingWrappedValue::performShutdown()
 
 void TestingWrappedValue::performRun(bool force)
 {
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStackCreationAndAssignment);
         JSP_TEST(force || true, testAutomaticConversion);
@@ -44,34 +44,34 @@ void TestingWrappedValue::performRun(bool force)
         JSP_TEST(force || true, testStringStackRooting2);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testValueComparison);
         JSP_TEST(force || true, testObjectComparison);
         JSP_TEST(force || true, testAutomaticComparison);
     }
 
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testBooleanComparison);
         JSP_TEST(force || true, testBooleanCasting);
         JSP_TEST(force || true, testHeapBooleanCasting);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testStringComparison1);
         JSP_TEST(force || true, testStringComparison2);
         JSP_TEST(force || true, testStringCasting);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testRootedComparison);
         JSP_TEST(force || true, testHeapComparison);
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testAutoWrappedValueVector);
         JSP_TEST(force || true, testHeapWrappedToHandle1);
@@ -151,37 +151,97 @@ void TestingWrappedValue::testAutomaticConversion()
 
 // ---
 
+/*
+ * DEMONSTRATING THE WRONG-WAY TO WORK
+ */
 void TestingWrappedValue::testObjectStackRooting1()
 {
     RootedObject rootedObject(cx, Barker::create("STACK-ROOTED STANDALONE"));
+    JSP_CHECK(JSP::isInsideNursery(rootedObject)); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
+    
+    /*
+     * MISTAKE: ASSERTING THAT THE ASSIGNED GC-POINTER WILL NOT MOVE
+     * IN PRACTICE: IT WILL, BECAUSE THE GC-THING IS IN THE NURSERY
+     */
+    WrappedValue wrapped(rootedObject);
     
     JSP::forceGC();
-    JSP_CHECK(Barker::bark("STACK-ROOTED STANDALONE")); // REASON: GC-THING ROOTED
+    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-POINTER HAS MOVED FROM THE NURSERY
+    JSP_CHECK(Barker::isHealthy("STACK-ROOTED STANDALONE")); // REASON: GC-THING IS ROOTED
+    
+    // ---
+    
+    rootedObject = nullptr;
+    
+    JSP::forceGC();
+    JSP_CHECK(Barker::isFinalized("STACK-ROOTED STANDALONE"));
 }
 
+/*
+ * DEMONSTRATING THE RIGHT-WAY TO WORK
+ */
 void TestingWrappedValue::testObjectStackRooting2()
 {
-    Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-VALUE"));
+    Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-WRAPPED-VALUE"));
+    JSP_CHECK(JSP::isInsideNursery(rootedWrapped->toObjectOrNull())); // TODO: bool JSP::isInsideNursery(const Value&)
     
     JSP::forceGC();
-    JSP_CHECK(Barker::bark("STACK-ROOTED VIA-VALUE")); // REASON: GC-THING ROOTED
+    JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
+    JSP_CHECK(Barker::isHealthy("STACK-ROOTED VIA-WRAPPED-VALUE"));
+    
+    // ---
+    
+    /*
+     * WILL CAUSE GC-THING TO BE FINALIZED DURING THE NEXT GC
+     */
+    rootedWrapped = 123;
+    
+    JSP::forceGC();
+    JSP_CHECK(Barker::isFinalized("STACK-ROOTED VIA-WRAPPED-VALUE"));
 }
 
+/*
+ * DEMONSTRATING THE WRONG-WAY TO WORK
+ */
 void TestingWrappedValue::testStringStackRooting1()
 {
     RootedString rootedString(cx, toJSString("stack-rooted standalone"));
-    WrappedValue wrapped(StringValue(rootedString));
+    JSP_CHECK(!JSP::isInsideNursery(rootedString)); // JS-STRINGS ARE ALWAYS TENURED
+    
+    /*
+     * MISTAKE: ASSERTING THAT THE ASSIGNED GC-POINTER WILL NOT MOVE
+     * IN PRACTICE: IT WON'T, BUT ONLY BECAUSE THE GC-THING IS TENURED
+     */
+    WrappedValue wrapped(StringValue(rootedString)); // TODO: WrappedValue::WrappedValue(JSString*)
     
     JSP::forceGC();
-    JSP_CHECK(JSP::isHealthy(wrapped)); // REASON: GC-THING ROOTED
+    JSP_CHECK(JSP::isHealthy(wrapped)); // REASON: GC-POINTER WAS TENURED AND GC-THING IS ROOTED
+    
+    // ---
+    
+    rootedString = nullptr;
+    
+    JSP::forceGC();
+    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING IS NOT ROOTED ANYMORE
 }
 
+/*
+ * DEMONSTRATING THE RIGHT-WAY TO WORK
+ */
 void TestingWrappedValue::testStringStackRooting2()
 {
-    Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-value");
+    Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-wrapped-value");
+    JSP_CHECK(!JSP::isInsideNursery(rootedWrapped->toString())); // TODO: bool JSP::isInsideNursery(const Value&)
     
     JSP::forceGC();
-    JSP_CHECK(JSP::isHealthy(rootedWrapped.get())); // REASON: GC-THING ROOTED
+    JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
+    
+    // ---
+
+    /*
+     * WILL CAUSE GC-THING TO BE FINALIZED DURING THE NEXT GC (NO WAY TO VERIFY...)
+     */
+    rootedWrapped = 123;
 }
 
 // ---
@@ -246,15 +306,6 @@ void TestingWrappedValue::testBooleanComparison()
     WrappedValue wrapped = true;
     JSP_CHECK(wrapped == true); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(bool)
     JSP_CHECK(wrapped != false); // NO TEMPORARIES, THANKS TO WrappedValue::operator!=(bool)
-    
-    /*
-     * THE FOLLOWING 2 ARE PASSING VIA WrappedValue::operator const bool ()
-     */
-    
-    JSP_CHECK(wrapped);
-    
-    wrapped = false;
-    JSP_CHECK(!wrapped);
 }
 
 /*
