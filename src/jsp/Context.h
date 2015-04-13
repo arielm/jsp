@@ -234,9 +234,15 @@ namespace jsp
     {
         if (value.isString() && other.isString())
         {
+            /*
+             * ROOTING IS NECESSARY BECAUSE SOME "FLATTENING" CAN OCCUR
+             */
+            RootedString s1(cx, value.toString());
+            RootedString s2(cx, other.toString());
+            
             int32_t result;
             
-            if (JS_CompareStrings(cx, value.toString(), other.toString(), &result))
+            if (JS_CompareStrings(cx, s1, s2, &result))
             {
                 return (result == 0);
             }
@@ -550,6 +556,11 @@ namespace jsp
     inline void assignValue(Value &target, const char *s)
     {
         target.setString(toJSString(s));
+    }
+    
+    inline void assignValue(Value &target, JSString *s)
+    {
+        target.setString(s);
     }
     
     // ---

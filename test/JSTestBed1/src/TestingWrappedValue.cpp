@@ -212,7 +212,7 @@ void TestingWrappedValue::testStringStackRooting1()
      * MISTAKE: ASSERTING THAT THE ASSIGNED GC-POINTER WILL NOT MOVE
      * IN PRACTICE: IT WON'T, BUT ONLY BECAUSE THE GC-THING IS TENURED
      */
-    WrappedValue wrapped(StringValue(rootedString)); // TODO: WrappedValue::WrappedValue(JSString*)
+    WrappedValue wrapped(rootedString);
     
     JSP::forceGC();
     JSP_CHECK(JSP::isHealthy(wrapped)); // REASON: GC-POINTER WAS TENURED AND GC-THING IS ROOTED
