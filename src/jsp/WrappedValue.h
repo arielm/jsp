@@ -58,6 +58,8 @@ namespace jsp
         }
         
         operator const Value& () const { return value; }
+        const Value* operator->() const { return &value; }
+
         explicit operator const bool () const;
 
         bool operator==(const WrappedValue &other) const;
