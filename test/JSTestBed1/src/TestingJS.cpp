@@ -37,10 +37,10 @@ void TestingJS::performRun(bool force)
     
     // ---
     
-    if (force || false)
+    if (force || true)
     {
-        testStringify();
-        testToSource();
+        JSP_TEST(force || true, testStringify)
+        JSP_TEST(force || false, testToSource)
     }
     
     if (force || false)
@@ -90,7 +90,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testPermanentProperty2)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
@@ -1304,26 +1304,34 @@ void TestingJS::testCustomScriptExecution()
     exec(source, options);
 }
 
+// ---
+
 /*
  * WORKS BECAUSE THERE ARE NO "CYCLIC VALUES" IN OBJECT
  * OTHERWISE: RETURN A STRING WITH "cyclic object value"
  */
 void TestingJS::testStringify()
 {
-//  initComplexJSObject(InputSource::getAsset("complexObject.bin")); // TODO: CREATE complexObject.bin VIA CloneBuffer::write()
+    initComplexJSObject(InputSource::getAsset("handlebars.js"));
     
-    /*
-     * USING stringify VIA JS:
-     * POSSIBILITY TO HANDLE "CYCLIC VALUES" VIA THE "REPLACER" ARGUMENT
-     */
-    executeScript("print(JSON.stringify(complexObject, null, 2))");
+    if (false)
+    {
+        /*
+         * USING stringify VIA JS:
+         * POSSIBILITY TO HANDLE "CYCLIC VALUES" VIA THE "REPLACER" ARGUMENT
+         */
+        executeScript("print(JSON.stringify(complexObject, null, 2))");
+    }
     
-    /*
-     * USING stringify VIA C++:
-     * CURRENTLY NO WAY TO DEFINE A "REPLACER" FUNCTION (TODO)
-     */
-    JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
-    LOGI << stringify(object) << endl;
+    if (true)
+    {
+        /*
+         * USING stringify VIA C++:
+         * CURRENTLY NO WAY TO DEFINE A "REPLACER" FUNCTION (TODO)
+         */
+        JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
+        LOGI << stringify(object) << endl;
+    }
 }
 
 /*
@@ -1332,34 +1340,30 @@ void TestingJS::testStringify()
  */
 void TestingJS::testToSource()
 {
-//  initComplexJSObject(InputSource::getAsset("complexObject.bin")); // TODO: CREATE complexObject.bin VIA CloneBuffer::write()
+    initComplexJSObject(InputSource::getAsset("handlebars.js"));
     
-    /*
-     * USING toSource() VIA JS
-     */
-    executeScript("print(complexObject)");
+    if (false)
+    {
+        /*
+         * USING toSource() VIA JS
+         */
+        executeScript("print(complexObject.toSource())");
+    }
     
-    /*
-     * USING toSource() VIA C++
-     */
-    JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
-    LOGI << toSource(object) << endl;
+    if (true)
+    {
+        /*
+         * USING toSource() VIA C++
+         */
+        JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
+        LOGI << toSource(object) << endl;
+    }
 }
 
 void TestingJS::initComplexJSObject(InputSource::Ref inputSource)
 {
-    try
-    {
-        if (hasProperty(globalHandle(), "complexObject"))
-        {
-            deleteProperty(globalHandle(), "complexObject");
-        }
-        
-        JSObject *complexObject = CloneBuffer::read(inputSource->loadDataSource());
-        set(globalHandle(), "complexObject", complexObject);
-    }
-    catch (exception &e)
-    {
-        LOGI << e.what() << endl;
-    }
+    executeScript(inputSource);
+    
+    JSObject *complexObject = get<OBJECT>(globalHandle(), "Handlebars");
+    set(globalHandle(), "complexObject", complexObject);
 }

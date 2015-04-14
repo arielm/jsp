@@ -301,7 +301,7 @@ namespace jsp
         RootedString source(cx);
         source.set(JS_ValueToSource(cx, value));
         
-        JS_ReportPendingException(cx); // E.G. FOR REPORTING SOME "OUT OF MEMORY" ERROR
+        JS_ReportPendingException(cx); // E.G. FOR REPORTING POTENTIAL OUT-OF-MEMORY ERRORS
         JS_ClearPendingException(cx);
         
         return toString(source);
@@ -343,7 +343,7 @@ namespace jsp
         
         if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &stringifier))
         {
-            JS_ReportPendingException(cx); // E.G. FOR REPORTING SOME "OUT OF MEMORY" ERROR
+            JS_ReportPendingException(cx); // E.G. FOR REPORTING POTENTIAL OUT-OF-MEMORY ERRORS
             JS_ClearPendingException(cx);
             
             return ""; // TODO: MIMICK JSON.stringify() BEHAVIOR (I.E. SHALL WE RETURN THE ACCUMULATED BUFFER UPON ERROR?)
