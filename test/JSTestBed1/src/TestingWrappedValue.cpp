@@ -616,7 +616,7 @@ void TestingWrappedValue::testHeapWrappedToHandle1()
 
 void TestingWrappedValue::testHandleValue1(HandleValue value)
 {
-    JSP_CHECK(Barker::bark(value.toObjectOrNull()));
+    JSP_CHECK(Barker::bark(value));
 }
 
 /*

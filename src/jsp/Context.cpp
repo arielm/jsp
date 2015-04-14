@@ -162,13 +162,13 @@ namespace jsp
     template <>
     JSObject* toObject(HandleObject handle)
     {
-        return handle.get();
+        return handle ? handle.get() : nullptr;
     }
     
     template <>
     JSObject* toObject(MutableHandleObject handle)
     {
-        return handle.get();
+        return handle ? handle.get() : nullptr;
     }
     
     template <>
@@ -217,6 +217,28 @@ namespace jsp
     JSObject* toObject(const Value &value)
     {
         return value.isObject() ? value.toObjectOrNull() : nullptr;
+    }
+    
+    template <>
+    JSObject* toObject(HandleValue handle)
+    {
+        if (handle.get().isObject())
+        {
+            return handle.get().toObjectOrNull();
+        }
+        
+        return nullptr;
+    }
+    
+    template <>
+    JSObject* toObject(MutableHandleValue handle)
+    {
+        if (handle.get().isObject())
+        {
+            return handle.get().toObjectOrNull();
+        }
+        
+        return nullptr;
     }
     
     template <>
