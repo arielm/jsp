@@ -72,13 +72,22 @@ namespace jsp
          * ONLY HEALTHY BARKERS CAN BARK
          */
         
-        static bool bark(const char *name);
-        
-        template <typename T>
-        static bool bark(T&& thing)
+        static inline bool bark(JSObject *object)
         {
-            return maybeBark(toObject(std::forward<T>(thing)));
+            return maybeBark(object);
         }
+        
+        static inline bool bark(const Value &value)
+        {
+            if (value.isObject())
+            {
+                return maybeBark(value.toObjectOrNull());
+            }
+            
+            return false;
+        }
+        
+        static bool bark(const char *name);
         
         // ---
 

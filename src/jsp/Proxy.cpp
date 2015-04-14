@@ -87,7 +87,7 @@ namespace jsp
                     }
                     
                     instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-                    JS_DefineElement(cx, peerArray, peerCount, instance->peer.get(), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT); // XXX
+                    JS_DefineElement(cx, peerArray, peerCount, ObjectOrNullValue(instance->peer.get()), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT); // XXX
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);

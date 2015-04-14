@@ -663,13 +663,6 @@ namespace jsp
     
     // ---
     
-    /*
-     * TODO: CONSIDER USING toObject TEMPLATE FOR toSource(), stringify(), isFunction(), ETC.
-     */
-    
-    template <typename T>
-    JSObject* toObject(T); // CAN RETURN A NULL POINTER
-    
     bool isFunction(const Value &value);
     bool isArray(JSObject *object);
     
@@ -678,8 +671,8 @@ namespace jsp
     const std::string toSource(JSObject *object);
     const std::string toSource(HandleValue value);
     
-    std::string stringify(JSObject *object, int indent = 2);
-    std::string stringify(MutableHandleValue value, int indent = 2);
+    const std::string stringify(JSObject *object, int indent = 2);
+    const std::string stringify(MutableHandleValue value, int indent = 2);
 }
 
 namespace js

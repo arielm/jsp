@@ -295,7 +295,7 @@ void TestingRooting2::testWrappedObjectAssignment1()
         Rooted<WrappedObject> rootedWrapped(cx, wrapped); // WILL PROTECT wrapped (AND THEREFORE barkerA) FROM GC
         
         JSP::forceGC();
-        JSP_CHECK(Barker::bark(&rootedWrapped)); // REASON: BARKER ROOTED
+        JSP_CHECK(Barker::bark(rootedWrapped.get())); // REASON: BARKER ROOTED
     }
     
     JSP::forceGC();
@@ -305,7 +305,7 @@ void TestingRooting2::testWrappedObjectAssignment1()
 void TestingRooting2::testWrappedBarker1()
 {
     WrappedObject wrapped(Barker::create("WRAPPED 1"));
-    JSP_CHECK(Barker::bark(&wrapped));
+    JSP_CHECK(Barker::bark(wrapped));
     
     JSP::forceGC();
     JSP_CHECK(Barker::isFinalized("WRAPPED 1"));
@@ -411,7 +411,7 @@ void TestingRooting2::testHeapWrappedJSBarker1()
         JSP::forceGC();
         
         JSP_CHECK(!JSP::isHealthy(object)); // ACCESSING THE BARKER VIA object WOULD BE A GC-HAZARD
-        JSP_CHECK(Barker::bark(&heapWrapped)); // PASSING THROUGH Heap<WrappedObject> LEADS TO THE MOVED BARKER
+        JSP_CHECK(Barker::bark(heapWrapped.get())); // PASSING THROUGH Heap<WrappedObject> LEADS TO THE MOVED BARKER
     }
     
     JSP::forceGC();
@@ -450,7 +450,7 @@ void TestingRooting2::testHeapWrappedJSBarker2()
         Heap<WrappedValue> heapWrapped(Barker::getInstance("HEAP-WRAPPED 2"));
         
         JSP::forceGC();
-        JSP_CHECK(Barker::bark(&heapWrapped));
+        JSP_CHECK(Barker::bark(heapWrapped.get()));
     }
     
     JSP::forceGC();

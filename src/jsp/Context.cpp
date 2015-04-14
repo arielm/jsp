@@ -132,149 +132,7 @@ namespace jsp
             element.second(rt, status);
         }
     }
-    
-#pragma mark ---------------------------------------- DOWNCASTING TO JS OBJECT (UNSAFE) ----------------------------------------
-    
-    template <>
-    JSObject* toObject(JSObject *object)
-    {
-        return object;
-    }
-    
-    template <>
-    JSObject* toObject(const JSObject *object)
-    {
-        return const_cast<JSObject*>(object);
-    }
-    
-    template <>
-    JSObject* toObject(JSObject &object)
-    {
-        return &object;
-    }
-    
-    template <>
-    JSObject* toObject(const JSObject &object)
-    {
-        return const_cast<JSObject*>(&object);
-    }
-    
-    template <>
-    JSObject* toObject(HandleObject handle)
-    {
-        return handle ? handle.get() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(MutableHandleObject handle)
-    {
-        return handle ? handle.get() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(WrappedObject *wrapped)
-    {
-        return wrapped ? wrapped->unsafeGet() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(const WrappedObject *wrapped)
-    {
-        return wrapped ? const_cast<JSObject*>(wrapped->address()) : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(WrappedObject &wrapped)
-    {
-        return wrapped.unsafeGet();
-    }
-    
-    template <>
-    JSObject* toObject(const WrappedObject &wrapped)
-    {
-        return const_cast<JSObject*>(wrapped.address());
-    }
-    
-    template <>
-    JSObject* toObject(Rooted<WrappedObject> *rooted)
-    {
-        return rooted ? rooted->get().unsafeGet() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(Heap<WrappedObject> *heap)
-    {
-        return heap ? const_cast<JSObject*>(heap->get().address()) : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(Value &value)
-    {
-        return value.isObject() ? value.toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(const Value &value)
-    {
-        return value.isObject() ? value.toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(HandleValue handle)
-    {
-        if (handle.get().isObject())
-        {
-            return handle.get().toObjectOrNull();
-        }
-        
-        return nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(MutableHandleValue handle)
-    {
-        if (handle.get().isObject())
-        {
-            return handle.get().toObjectOrNull();
-        }
-        
-        return nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(WrappedValue &wrapped)
-    {
-        return wrapped.isObject() ? wrapped.toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(const WrappedValue &wrapped)
-    {
-        return wrapped.isObject() ? wrapped.toObjectOrNull() : nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(Rooted<WrappedValue> *rooted)
-    {
-        if (rooted && rooted->get().isObject())
-        {
-            return rooted->get().toObjectOrNull();
-        }
-        
-        return nullptr;
-    }
-    
-    template <>
-    JSObject* toObject(Heap<WrappedValue> *heap)
-    {
-        if (heap && heap->get().isObject())
-        {
-            return heap->get().toObjectOrNull();
-        }
-        
-        return nullptr;
-    }
-    
+
 #pragma mark ---------------------------------------- MISC ----------------------------------------
     
     bool isFunction(const Value &value)
@@ -329,13 +187,13 @@ namespace jsp
         }
     };
     
-    string stringify(JSObject *object, int indent)
+    const string stringify(JSObject *object, int indent)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
         return stringify(&value, indent);
     }
     
-    string stringify(MutableHandleValue value, int indent)
+    const string stringify(MutableHandleValue value, int indent)
     {
         intern::Stringifier stringifier;
         

@@ -49,8 +49,6 @@ namespace jsp
         operator JSObject* () const { return object; }
         JSObject* operator->() const { return object; }
         
-        operator const Value () const { return ObjectOrNullValue(object); }
-        
         const JSObject& get() const { return *object; }
         const JSObject* address() const { return object; }
         JSObject* unsafeGet() { return object; }
