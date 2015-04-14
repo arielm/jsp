@@ -405,6 +405,9 @@ namespace jsp
         return false;
     }
     
+    /*
+     * WARNING: THIS MAY BE PICKED BY DEFAULT IF NO METHOD IS DEFINED FOR A PARTICULAR TYPE
+     */
     inline bool compare(const Value &value, bool other)
     {
         RootedValue rooted(cx, value);
