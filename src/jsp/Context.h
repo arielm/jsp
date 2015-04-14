@@ -663,16 +663,51 @@ namespace jsp
     
     // ---
     
-    bool isFunction(const Value &value);
+    bool isFunction(JSObject *object);
+
+    inline bool isFunction(const Value &value)
+    {
+        if (value.isObject())
+        {
+            return isFunction(value.toObjectOrNull());
+        }
+        
+        return false;
+    }
+
+    //
+    
     bool isArray(JSObject *object);
+
+    inline bool isArray(const Value &value)
+    {
+        if (value.isObject())
+        {
+            return isArray(value.toObjectOrNull());
+        }
+        
+        return false;
+    }
+
+    // ---
+    
+    const std::string toSource(HandleValue value);
+    
+    inline const std::string toSource(JSObject *object)
+    {
+        RootedValue value(cx, ObjectOrNullValue(object));
+        return toSource(value);
+    }
     
     // ---
     
-    const std::string toSource(JSObject *object);
-    const std::string toSource(HandleValue value);
-    
-    const std::string stringify(JSObject *object, int indent = 2);
     const std::string stringify(MutableHandleValue value, int indent = 2);
+    
+    inline const std::string stringify(JSObject *object, int indent = 2)
+    {
+        RootedValue value(cx, ObjectOrNullValue(object));
+        return stringify(&value, indent);
+    }
 }
 
 namespace js

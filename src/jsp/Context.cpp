@@ -133,26 +133,30 @@ namespace jsp
         }
     }
 
-#pragma mark ---------------------------------------- MISC ----------------------------------------
+#pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
     
-    bool isFunction(const Value &value)
+    bool isFunction(JSObject *object)
     {
-        return value.isObject() && JS_ObjectIsFunction(cx, &value.toObject());
+        if (object)
+        {
+            return JS_ObjectIsFunction(cx, object);
+        }
+        
+        return false;
     }
     
     bool isArray(JSObject *object)
     {
-        RootedObject tmp(cx, object);
-        return JS_IsArrayObject(cx, tmp);
+        if (object)
+        {
+            RootedObject rooted(cx, object);
+            return JS_IsArrayObject(cx, rooted);
+        }
+        
+        return false;
     }
     
 #pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
-    
-    const string toSource(JSObject *object)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return toSource(value);
-    }
     
     const string toSource(HandleValue value)
     {
@@ -186,12 +190,6 @@ namespace jsp
             return true;
         }
     };
-    
-    const string stringify(JSObject *object, int indent)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return stringify(&value, indent);
-    }
     
     const string stringify(MutableHandleValue value, int indent)
     {

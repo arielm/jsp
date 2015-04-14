@@ -40,7 +40,7 @@ void TestingJS::performRun(bool force)
     if (force || true)
     {
         JSP_TEST(force || true, testStringify)
-        JSP_TEST(force || false, testToSource)
+        JSP_TEST(force || true, testToSource)
     }
     
     if (force || false)
@@ -1308,7 +1308,7 @@ void TestingJS::testCustomScriptExecution()
 
 /*
  * WORKS BECAUSE THERE ARE NO "CYCLIC VALUES" IN OBJECT
- * OTHERWISE: RETURN A STRING WITH "cyclic object value"
+ * OTHERWISE: RETURNS A STRING WITH "cyclic object value" (TODO: REPRODUCE)
  */
 void TestingJS::testStringify()
 {
@@ -1336,7 +1336,7 @@ void TestingJS::testStringify()
 
 /*
  * WORKS BECAUSE OBJECT IS NOT "HUGE"
- * OTHERWISE: OUT-OF-MEMORY JS-ERROR
+ * OTHERWISE: FAILS OUT-OF-MEMORY JS-ERROR (TODO: REPRODUCE)
  */
 void TestingJS::testToSource()
 {
