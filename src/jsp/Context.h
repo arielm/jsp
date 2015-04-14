@@ -30,8 +30,6 @@
 #include <sstream>
 #include <vector>
 
-#include "unicode/unistr.h" // TODO: CONSIDER REMOVING THIS DEPENDENCY (CURRENTLY USED FOR UTF8 <-> UTF16 CONVERSION)
-
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
 #define BIND_STATIC3(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
@@ -155,11 +153,16 @@ namespace jsp
         return cx->emptyString();
     }
 
-    inline const std::string toString(const jschar *s)
+    inline const std::string toString(const jschar *c, size_t length = std::numeric_limits<uint32_t>::max())
     {
-        if (s)
+        if (c && (length > 0))
         {
-            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(s, js_strlen(s))).c_str();
+            if (length == std::numeric_limits<uint32_t>::max())
+            {
+                length = js_strlen(c);
+            }
+            
+            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(c, length)).c_str();
         }
         
         return "";
@@ -173,7 +176,7 @@ namespace jsp
             
             if (c)
             {
-                return toString(c);
+                return toString(c, s->length());
             }
         }
         

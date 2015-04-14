@@ -313,8 +313,7 @@ namespace jsp
      * TODO:
      *
      * 1) STRINGIFICATION: HANDLE CUSTOM-REPLACER
-     * 2) DO NOT DEPEND ON ICU FOR  UTF16 -> UTF8 CONVERSION
-     * 3) HANDLE JSON PARSING
+     * 2) HANDLE JSON PARSING
      */
     
     struct intern::Stringifier
@@ -324,7 +323,8 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto self = reinterpret_cast<Stringifier*>(data);
-            UnicodeString(reinterpret_cast<const UChar*>(buf), len).toUTF8String(self->buffer);
+            self->buffer += toString(buf, len);
+            
             return true;
         }
     };
@@ -339,14 +339,18 @@ namespace jsp
     {
         intern::Stringifier stringifier;
         
-        RootedValue indentValue(cx, indent ? Int32Value(indent) : UndefinedHandleValue);
+        RootedValue indentValue(cx, (indent > 0) ? Int32Value(indent) : UndefinedHandleValue);
         
         if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &stringifier))
         {
             JS_ReportPendingException(cx); // E.G. FOR REPORTING POTENTIAL OUT-OF-MEMORY ERRORS
             JS_ClearPendingException(cx);
             
-            return ""; // TODO: MIMICK JSON.stringify() BEHAVIOR (I.E. SHALL WE RETURN THE ACCUMULATED BUFFER UPON ERROR?)
+            /*
+             * INTENTIONAL FALLBACK (I.E. RETURNING THE ACCUMULATED BUFFER UPON ERROR...)
+             *
+             * TODO: VERIFY THAT IT'S INDEED ON-PAR WITH JSON.stringify()
+             */
         }
         
         return stringifier.buffer;
