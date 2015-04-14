@@ -523,32 +523,58 @@ void TestingWrappedValue::testRootedComparison()
 {
     Rooted<WrappedValue> rootedWrapped1A(cx, 123);
     Rooted<WrappedValue> rootedWrapped1B(cx, 123);
-    JSP_CHECK(rootedWrapped1A == rootedWrapped1B);
+    
+    JSP_CHECK(rootedWrapped1A == rootedWrapped1B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(rootedWrapped1A == 123); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(rootedWrapped1A != 0); // CREATES A TEMPORARY WrappedValue
 
+    // ---
+    
     Rooted<WrappedValue> rootedWrapped2A(cx, "hello");
     Rooted<WrappedValue> rootedWrapped2B(cx, "hello");
-    JSP_CHECK(rootedWrapped2A == rootedWrapped2B);
+    
+    JSP_CHECK(rootedWrapped2A == rootedWrapped2B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(rootedWrapped2A == "hello"); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(rootedWrapped2A != ""); // CREATES A TEMPORARY WrappedValue
+    
+    // ---
     
     JSObject *barker = Barker::create("BARKER 3");
     Rooted<WrappedValue> rootedWrapped3A(cx, barker);
     Rooted<WrappedValue> rootedWrapped3B(cx, barker);
-    JSP_CHECK(rootedWrapped3A == rootedWrapped3B);
+    
+    JSP_CHECK(rootedWrapped3A == rootedWrapped3B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(rootedWrapped3A == barker); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(rootedWrapped3A != nullptr); // CREATES A TEMPORARY WrappedValue
 }
 
 void TestingWrappedValue::testHeapComparison()
 {
     Heap<WrappedValue> heapWrapped1A(123);
     Heap<WrappedValue> heapWrapped1B(123);
-    JSP_CHECK(heapWrapped1A == heapWrapped1B);
+    
+    JSP_CHECK(heapWrapped1A == heapWrapped1B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(heapWrapped1A == 123); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(heapWrapped1A != 0); // CREATES A TEMPORARY WrappedValue
+    
+    // ---
     
     Heap<WrappedValue> heapWrapped2A("hello");
     Heap<WrappedValue> heapWrapped2B("hello");
-    JSP_CHECK(heapWrapped2A == heapWrapped2B);
+    
+    JSP_CHECK(heapWrapped2A == heapWrapped2B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(heapWrapped2A == "hello"); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(heapWrapped2A != ""); // CREATES A TEMPORARY WrappedValue
+
+    // ---
     
     JSObject *barker = Barker::create("BARKER 4");
     Heap<WrappedValue> heapWrapped3A(barker);
     Heap<WrappedValue> heapWrapped3B(barker);
-    JSP_CHECK(heapWrapped3A == heapWrapped3B);
+    
+    JSP_CHECK(heapWrapped3A == heapWrapped3B); // NO TEMPORARIES, THANKS TO WrappedValue::operator==(const Value&)
+    JSP_CHECK(heapWrapped3A == barker); // CREATES A TEMPORARY WrappedValue
+    JSP_CHECK(heapWrapped3A != nullptr); // CREATES A TEMPORARY WrappedValue
 }
 
 // ---
@@ -563,7 +589,7 @@ void TestingWrappedValue::testAutoWrappedValueVector()
     args.append(33.33);
     
     /*
-     * STRING AND BARKER ARE ROOTED VIA THE AutoWrappedValueVector
+     * JS-STRING AND BARKER ARE ROOTED VIA THE AutoWrappedValueVector
      */
     JSP::forceGC();
     
