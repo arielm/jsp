@@ -79,7 +79,7 @@ namespace jsp
         
         if (s1 && !s2.empty())
         {
-            const jschar *c1 = s1->getChars(cx); // CAN ALLOCATE MEMORY (AND THEREFORE TRIGGER GC) IF s1 IS NOT LINEAR
+            const jschar *c1 = s1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
             
             if (c1)
             {
@@ -112,7 +112,7 @@ namespace jsp
 #endif
             if (s1->length() == l2)
             {
-                const jschar *c1 = s1->getChars(cx); // CAN ALLOCATE MEMORY (AND THEREFORE TRIGGER GC) IF s1 IS NOT LINEAR
+                const jschar *c1 = s1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
                 
                 if (c1)
                 {
@@ -157,14 +157,27 @@ namespace jsp
 
     inline const std::string toString(const jschar *s)
     {
-        std::string tmp;
-        return UnicodeString(reinterpret_cast<const UChar*>(s)).toUTF8String(tmp);
+        if (s)
+        {
+            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(s, js_strlen(s))).c_str();
+        }
+        
+        return "";
     }
 
     inline const std::string toString(HandleString s)
     {
-        JSAutoByteString tmp;
-        return tmp.encodeUtf8(cx, s) ? tmp.ptr() : "";
+        if (s)
+        {
+            const jschar *c = s->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            
+            if (c)
+            {
+                return toString(c);
+            }
+        }
+        
+        return "";
     }
     
     inline const std::string toString(HandleValue value)
