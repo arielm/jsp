@@ -6,6 +6,10 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
+/*
+ * ROOTING STRATEGY BASED ON http://trac.wildfiregames.com/wiki/JSRootingGuide#UsingHeapTincombinationwithcustomtracers
+ */
+
 #pragma once
 
 #include "jsp/Context.h"
@@ -32,12 +36,12 @@ namespace jsp
         void operator=(const WrappedValue &other);
 
         WrappedValue(const Value &v);
-        WrappedValue& operator=(const Value &v);
+        WrappedValue& operator=(const Value &newValue);
         
         template<typename T>
-        WrappedValue(const T &newValue)
+        WrappedValue(const T &v)
         {
-            assignValue(value, newValue);
+            assignValue(value, v);
             DUMP_WRAPPED_VALUE
         }
     

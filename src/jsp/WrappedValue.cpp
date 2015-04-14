@@ -51,9 +51,9 @@ namespace jsp
         DUMP_WRAPPED_VALUE
     }
     
-    WrappedValue& WrappedValue::operator=(const Value &v)
+    WrappedValue& WrappedValue::operator=(const Value &newValue)
     {
-        value = v;
+        value = newValue;
         DUMP_WRAPPED_VALUE
 
         return *this;
