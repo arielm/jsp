@@ -141,19 +141,18 @@ namespace jsp
         
         if (str1 && !str2.empty())
         {
-            const jschar *chars1 = str1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            JSLinearString *linear1 = str1->ensureLinear(cx); // CAN TRIGGER GC
             
-            if (chars1)
+            if (linear1)
             {
                 size_t len2;
                 jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get();
                 
                 if (chars2)
                 {
-                    result = js::CompareChars(chars1, str1->length(), chars2, len2) == 0;
+                    result = js::CompareChars(linear1->chars(), linear1->length(), chars2, len2) == 0;
+                    js_free(chars2);
                 }
-                
-                js_free(chars2);
             }
         }
         
@@ -166,28 +165,28 @@ namespace jsp
         {
             size_t len2 = str2.size();
             
-#ifdef DEBUG
+#if defined(DEBUG)
             for (auto i = 0; i != len2; ++i)
             {
                 JS_ASSERT(unsigned(str2[i]) <= 127);
             }
 #endif
-            if (str1->length() == len2)
+            
+            JSLinearString *linear = str1->ensureLinear(cx); // CAN TRIGGER GC
+            
+            if (linear && (linear->length() == len2))
             {
-                const jschar *chars = str1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+                const jschar *chars = linear->chars();
                 
-                if (chars)
+                for (auto i = 0; i != len2; ++i)
                 {
-                    for (auto i = 0; i != len2; ++i)
+                    if (unsigned(str2[i]) != unsigned(chars[i]))
                     {
-                        if (unsigned(str2[i]) != unsigned(chars[i]))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
-                    
-                    return true;
                 }
+                
+                return true;
             }
         }
         
@@ -217,40 +216,18 @@ namespace jsp
         return cx->emptyString();
     }
     
-    const string toString(const jschar *chars, size_t len)
+    string& appendToString(string &dst, const jschar *chars, size_t len)
     {
         if (chars && (len > 0))
         {
-            if (len == numeric_limits<uint32_t>::max())
-            {
-                len = js_strlen(chars);
-            }
-            
             UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len));
-            const string result = utf8.c_str(); // XXX: COPY IS UNAVOIDABLE
-            JS_free(utf8);
-            
-            return result;
+            dst.append(utf8.c_str()); // TODO: TRY TO AVOID COPY
+            JS_free(utf8); // TODO: TRY TO BRING-BACK RVO
         }
         
-        return "";
+        return dst;
     }
     
-    const string toString(HandleString str)
-    {
-        if (str)
-        {
-            const jschar *chars = str->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
-            
-            if (chars)
-            {
-                return toString(chars, str->length());
-            }
-        }
-        
-        return "";
-    }
-
 #pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
     
     bool isFunction(JSObject *object)
@@ -333,10 +310,7 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto self = reinterpret_cast<Stringifier*>(data);
-            
-            UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(buf, len));
-            self->buffer.append(utf8.c_str()); // XXX: COPY IS UNAVOIDABLE
-            JS_free(utf8);
+            appendToString(self->buffer, buf, len);
             
             return true;
         }
@@ -387,11 +361,11 @@ namespace jsp
     {
         if (str)
         {
-            const jschar *chars = str->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            JSLinearString *linear = str->ensureLinear(cx); // CAN TRIGGER GC
             
-            if (chars)
+            if (linear)
             {
-                return parse(chars, str->length());
+                return parse(linear->chars(), linear->length());
             }
         }
         

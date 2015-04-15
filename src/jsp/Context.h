@@ -75,13 +75,41 @@ namespace jsp
     bool stringEqualsASCII(HandleString str1, const std::string &str2);
     
     JSString* toJSString(const std::string &str);
-    const std::string toString(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
-    const std::string toString(HandleString str);
+    std::string& appendToString(std::string &dst, const jschar *chars, size_t len);
+
+    inline std::string& appendToString(std::string &dst, HandleString str)
+    {
+        if (str)
+        {
+            JSLinearString *linear = str->ensureLinear(cx); // CAN TRIGGER GC
+            
+            if (linear)
+            {
+                return appendToString(dst, linear->chars(), linear->length());
+            }
+        }
+        
+        return dst;
+    }
+
+    inline const std::string toString(const jschar *chars, size_t len)
+    {
+        std::string dst;
+        return appendToString(dst, chars, len);
+    }
+    
+    inline const std::string toString(HandleString str)
+    {
+        std::string dst;
+        return appendToString(dst, str);
+    }
     
     inline const std::string toString(HandleValue value)
     {
-        RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-        return toString(rooted);
+        RootedString str(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
+
+        std::string dst;
+        return appendToString(dst, str);
     }
     
     // ---

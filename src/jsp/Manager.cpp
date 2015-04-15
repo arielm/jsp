@@ -107,7 +107,8 @@ namespace jsp
         
         string errorBody;
         
-        auto typeName = jsp::toString(js::GetErrorTypeName(JS_GetRuntime(cx), report->exnType));
+        RootedString tmp(cx, JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(JS_GetRuntime(cx), report->exnType)));
+        auto typeName = jsp::toString(tmp);
         
         if (!typeName.empty())
         {
@@ -135,12 +136,11 @@ namespace jsp
         for (auto i = 0; i < args.length(); i++)
         {
             rooted = ToString(cx, args[i]);
-            JSAutoByteString tmp;
             
-            if (tmp.encodeUtf8(cx, rooted))
+            if (rooted)
             {
                 if (i > 0) buffer += ' ';
-                buffer += tmp.ptr();
+                appendToString(buffer, rooted);
             }
             else
             {

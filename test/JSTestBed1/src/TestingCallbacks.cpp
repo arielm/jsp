@@ -43,11 +43,12 @@ void TestingCallbacks::performRun(bool force)
 static bool methodDispatch(JSContext *cx, unsigned argc, Value *vp)
 {
     auto args = CallArgsFromVp(argc, vp);
-    
     JSObject &callee = args.callee();
-    JSFunction *function = &callee.as<JSFunction>();
     
-    LOGI << &callee << " | " << toString(function->atom()->chars()) << endl;
+    JSFunction *function = &callee.as<JSFunction>();
+    JSAtom *atom = function->atom();
+    
+    LOGI << &callee << " | " << toString(atom->chars(), atom->length()) << endl;
     
     args.rval().setUndefined();
     return true;
@@ -91,11 +92,12 @@ void TestingCallbacks::testMethodDispatch2()
 static bool methodDispatchExtended(JSContext *cx, unsigned argc, Value *vp)
 {
     auto args = CallArgsFromVp(argc, vp);
-    
     JSObject &callee = args.callee();
-    JSFunction *function = &callee.as<JSFunction>();
     
-    LOGI << &callee << " | " << toString(function->atom()->chars()) << " | " << JSP::write(GetFunctionNativeReserved(function, 0)) << endl;
+    JSFunction *function = &callee.as<JSFunction>();
+    JSAtom *atom = function->atom();
+    
+    LOGI << &callee << " | " << toString(atom->chars(), atom->length()) << " | " << JSP::write(GetFunctionNativeReserved(function, 0)) << endl;
     
     args.rval().setUndefined();
     return true;
