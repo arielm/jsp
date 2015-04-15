@@ -74,7 +74,7 @@ namespace jsp
     bool stringEquals(HandleString str1, const std::string &str2);
     bool stringEqualsASCII(HandleString str1, const std::string &str2);
     
-    JSString* toJSString(const std::string &str);
+    JSFlatString* toJSString(const std::string &str);
     
     /*
      * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING

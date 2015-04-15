@@ -137,10 +137,15 @@ namespace jsp
 
     bool stringEquals(HandleString str1, const string &str2)
     {
-        bool result = false;
-        
-        if (str1 && !str2.empty())
+        if (str1)
         {
+            size_t len1 = str1->length();
+            
+            if (!len1 && str2.empty())
+            {
+                return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY
+            }
+            
             js::RootedLinearString linear1(cx, str1->ensureLinear(cx)); // PROTECTING FROM GC
             
             if (linear1)
@@ -150,50 +155,64 @@ namespace jsp
                 
                 if (chars2)
                 {
-                    result = js::CompareChars(linear1->chars(), linear1->length(), chars2, len2) == 0;
+                    bool result = (len1 == len2) && (js::CompareChars(linear1->chars(), len1, chars2, len2) == 0);
                     js_free(chars2);
+                    
+                    return result;
                 }
-            }
-        }
-        
-        return result;
-    }
-    
-    bool stringEqualsASCII(HandleString str1, const string &str2)
-    {
-        if (str1 && !str2.empty())
-        {
-            size_t len2 = str2.size();
-            
-#if defined(DEBUG)
-            for (auto i = 0; i != len2; ++i)
-            {
-                JS_ASSERT(unsigned(str2[i]) <= 127);
-            }
-#endif
-            
-            JSLinearString *linear1 = str1->ensureLinear(cx);
-            
-            if (linear1 && (linear1->length() == len2))
-            {
-                const jschar *chars1 = linear1->chars();
-                
-                for (auto i = 0; i != len2; ++i)
-                {
-                    if (unsigned(str2[i]) != unsigned(chars1[i]))
-                    {
-                        return false;
-                    }
-                }
-                
-                return true;
             }
         }
         
         return false;
     }
     
-    JSString* toJSString(const string &str)
+    bool stringEqualsASCII(HandleString str1, const string &str2)
+    {
+        if (str1)
+        {
+            size_t len1 = str1->length();
+            size_t len2 = str2.size();
+
+            if (len1 == len2)
+            {
+                if (!len1)
+                {
+                    return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY
+                }
+                
+#if defined(DEBUG)
+                for (auto i = 0; i != len2; ++i)
+                {
+                    JS_ASSERT(unsigned(str2[i]) <= 127);
+                }
+#endif
+                
+                JSLinearString *linear1 = str1->ensureLinear(cx);
+                
+                if (linear1)
+                {
+                    const jschar *chars1 = linear1->chars();
+                    
+                    for (auto i = 0; i != len2; ++i)
+                    {
+                        if (unsigned(str2[i]) != unsigned(chars1[i]))
+                        {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /*
+     * WE CAN SAFELY THAT RESULT IS "FLAT" UPON SUCCESS (I.E. LINEAR AND NULL-TERMINATED)
+     */
+    JSFlatString* toJSString(const string &str)
     {
         if (!str.empty())
         {
@@ -202,23 +221,23 @@ namespace jsp
             
             if (chars)
             {
-                JSString *result = JS_NewUCString(cx, chars, len);
+                JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
                 
                 if (result)
                 {
-                    return result; // JS-STORE IS NOW IN CHARGE OF THE (NON-COPIED) MEMORY...
+                    return result; // JS-STORE IS NOW IN CHARGE OF THE (TRANSFERRED) MEMORY...
                 }
                 
                 js_free(chars); // OTHERWISE: WE'RE ON CHARGE
             }
         }
         
-        return cx->emptyString();
+        return cx->emptyString(); // ATOMS ARE "FLAT"
     }
     
     string& appendToString(string &dst, const jschar *chars, size_t len)
     {
-        if (chars && (len > 0))
+        if (chars && len)
         {
             UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len));
             dst.append(utf8.c_str()); // TODO: TRY TO AVOID COPY
@@ -340,8 +359,6 @@ namespace jsp
     
     JSObject* parse(const string &str)
     {
-        JSObject *result = nullptr;
-        
         if (!str.empty())
         {
             size_t len;
@@ -349,12 +366,14 @@ namespace jsp
             
             if (chars)
             {
-                result = parse(chars, len);
+                JSObject *result = parse(chars, len);
                 js_free(chars);
+                
+                return result;
             }
         }
         
-        return result;
+        return nullptr;
     }
     
     JSObject* parse(HandleString str)
@@ -385,7 +404,7 @@ namespace jsp
     
     JSObject* parse(const jschar *chars, size_t len)
     {
-        if (chars && (len > 0))
+        if (chars && len)
         {
             RootedValue result(cx);
             
@@ -656,7 +675,7 @@ bool JSP::isInsideNursery(const Value &value)
         
         if (value.isString())
         {
-            return isInsideNursery((JSString*)thing);
+            return isInsideNursery((JSString*)thing); // XXX: MOST LIKELY ALWAYS FALSE
         }
         
         if (value.isObject())
