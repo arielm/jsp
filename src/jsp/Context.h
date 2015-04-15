@@ -71,117 +71,12 @@ namespace jsp
     
     // ---
 
-    inline bool stringEquals(HandleString s1, const std::string &s2)
-    {
-        bool result = false;
-        
-        if (s1 && !s2.empty())
-        {
-            const jschar *c1 = s1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
-            
-            if (c1)
-            {
-                size_t l2;
-                jschar *c2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s2.data(), s2.size()), &l2).get();
-                
-                if (c2)
-                {
-                    result = js::CompareChars(c1, s1->length(), c2, l2) == 0;
-                }
-                
-                js_free(c2);
-            }
-        }
-        
-        return result;
-    }
+    bool stringEquals(HandleString str1, const std::string &str2);
+    bool stringEqualsASCII(HandleString str1, const std::string &str2);
     
-    inline bool stringEqualsASCII(HandleString s1, const std::string &s2)
-    {
-        if (s1 && !s2.empty())
-        {
-            size_t l2 = s2.size();
-
-#ifdef DEBUG
-            for (auto i = 0; i != l2; ++i)
-            {
-                JS_ASSERT(unsigned(s2[i]) <= 127);
-            }
-#endif
-            if (s1->length() == l2)
-            {
-                const jschar *c1 = s1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
-                
-                if (c1)
-                {
-                    for (auto i = 0; i != l2; ++i)
-                    {
-                        if (unsigned(s2[i]) != unsigned(c1[i]))
-                        {
-                            return false;
-                        }
-                    }
-                    
-                    return true;
-                }
-            }
-        }
-        
-        return false;
-    }
-    
-    inline JSString* toJSString(const std::string &str)
-    {
-        if (!str.empty())
-        {
-            size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
-            
-            if (chars)
-            {
-                JSString *result = JS_NewUCString(cx, chars, len);
-                
-                if (result)
-                {
-                    return result;
-                }
-                
-                js_free(chars);
-            }
-        }
-        
-        return cx->emptyString();
-    }
-
-    inline const std::string toString(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max())
-    {
-        if (chars && (len > 0))
-        {
-            if (len == std::numeric_limits<uint32_t>::max())
-            {
-                len = js_strlen(chars);
-            }
-            
-            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
-        }
-        
-        return "";
-    }
-
-    inline const std::string toString(HandleString s)
-    {
-        if (s)
-        {
-            const jschar *c = s->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
-            
-            if (c)
-            {
-                return toString(c, s->length());
-            }
-        }
-        
-        return "";
-    }
+    JSString* toJSString(const std::string &str);
+    const std::string toString(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
+    const std::string toString(HandleString str);
     
     inline const std::string toString(HandleValue value)
     {
@@ -664,53 +559,24 @@ namespace jsp
     // ---
     
     bool isFunction(JSObject *object);
-
-    inline bool isFunction(const Value &value)
-    {
-        if (value.isObject())
-        {
-            return isFunction(value.toObjectOrNull());
-        }
-        
-        return false;
-    }
+    bool isFunction(const Value &value);
 
     bool isArray(JSObject *object);
-
-    inline bool isArray(const Value &value)
-    {
-        if (value.isObject())
-        {
-            return isArray(value.toObjectOrNull());
-        }
-        
-        return false;
-    }
+    bool isArray(const Value &value);
 
     // ---
     
+    const std::string toSource(JSObject *object);
     const std::string toSource(HandleValue value);
-    
-    inline const std::string toSource(JSObject *object)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return toSource(value);
-    }
-    
+
     // ---
     
+    const std::string stringify(JSObject *object, int indent = 2);
     const std::string stringify(MutableHandleValue value, int indent = 2);
-    
-    inline const std::string stringify(JSObject *object, int indent = 2)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return stringify(&value, indent);
-    }
-    
+
     JSObject* parse(const std::string &s);
     JSObject* parse(HandleString s);
     JSObject* parse(const Value &value);
-    
     JSObject* parse(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
 }
 

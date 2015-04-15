@@ -132,6 +132,120 @@ namespace jsp
             element.second(rt, status);
         }
     }
+    
+#pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
+
+    bool stringEquals(HandleString str1, const string &str2)
+    {
+        bool result = false;
+        
+        if (str1 && !str2.empty())
+        {
+            const jschar *chars1 = str1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            
+            if (chars1)
+            {
+                size_t len2;
+                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get();
+                
+                if (chars2)
+                {
+                    result = js::CompareChars(chars1, str1->length(), chars2, len2) == 0;
+                }
+                
+                js_free(chars2);
+            }
+        }
+        
+        return result;
+    }
+    
+    bool stringEqualsASCII(HandleString str1, const string &str2)
+    {
+        if (str1 && !str2.empty())
+        {
+            size_t len2 = str2.size();
+            
+#ifdef DEBUG
+            for (auto i = 0; i != len2; ++i)
+            {
+                JS_ASSERT(unsigned(str2[i]) <= 127);
+            }
+#endif
+            if (str1->length() == len2)
+            {
+                const jschar *chars = str1->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+                
+                if (chars)
+                {
+                    for (auto i = 0; i != len2; ++i)
+                    {
+                        if (unsigned(str2[i]) != unsigned(chars[i]))
+                        {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    JSString* toJSString(const string &str)
+    {
+        if (!str.empty())
+        {
+            size_t len;
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            
+            if (chars)
+            {
+                JSString *result = JS_NewUCString(cx, chars, len);
+                
+                if (result)
+                {
+                    return result;
+                }
+                
+                js_free(chars);
+            }
+        }
+        
+        return cx->emptyString();
+    }
+    
+    const string toString(const jschar *chars, size_t len)
+    {
+        if (chars && (len > 0))
+        {
+            if (len == numeric_limits<uint32_t>::max())
+            {
+                len = js_strlen(chars);
+            }
+            
+            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
+        }
+        
+        return "";
+    }
+    
+    const string toString(HandleString str)
+    {
+        if (str)
+        {
+            const jschar *chars = str->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            
+            if (chars)
+            {
+                return toString(chars, str->length());
+            }
+        }
+        
+        return "";
+    }
 
 #pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
     
@@ -145,6 +259,18 @@ namespace jsp
         return false;
     }
     
+    bool isFunction(const Value &value)
+    {
+        if (value.isObject())
+        {
+            return isFunction(value.toObjectOrNull());
+        }
+        
+        return false;
+    }
+
+    // ---
+    
     bool isArray(JSObject *object)
     {
         if (object)
@@ -156,8 +282,24 @@ namespace jsp
         return false;
     }
     
+    bool isArray(const Value &value)
+    {
+        if (value.isObject())
+        {
+            return isArray(value.toObjectOrNull());
+        }
+        
+        return false;
+    }
+    
 #pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
     
+    const string toSource(JSObject *object)
+    {
+        RootedValue value(cx, ObjectOrNullValue(object));
+        return toSource(value);
+    }
+
     const string toSource(HandleValue value)
     {
         RootedString source(cx);
@@ -192,6 +334,12 @@ namespace jsp
             return true;
         }
     };
+    
+    const string stringify(JSObject *object, int indent)
+    {
+        RootedValue value(cx, ObjectOrNullValue(object));
+        return stringify(&value, indent);
+    }
     
     const string stringify(MutableHandleValue value, int indent)
     {
@@ -234,39 +382,35 @@ namespace jsp
     
     JSObject* parse(HandleString str)
     {
-        JSObject *result = nullptr;
-        
         if (str)
         {
             const jschar *chars = str->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
             
             if (chars)
             {
-                result = parse(chars, str->length());
+                return parse(chars, str->length());
             }
         }
         
-        return result;
+        return nullptr;
     }
 
     JSObject* parse(const Value &value)
     {
-        JSObject *result = nullptr;
-
         if (value.isString())
         {
             RootedString str(cx, value.toString());
-            result = parse(str);
+            return parse(str);
         }
         
-        return result;
+        return nullptr;
     }
     
     JSObject* parse(const jschar *chars, size_t len)
     {
         if (chars && (len > 0))
         {
-            if (len == std::numeric_limits<uint32_t>::max())
+            if (len == numeric_limits<uint32_t>::max())
             {
                 len = js_strlen(chars);
             }
