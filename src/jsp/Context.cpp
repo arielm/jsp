@@ -175,7 +175,7 @@ namespace jsp
      * TODO:
      *
      * 1) STRINGIFICATION: HANDLE CUSTOM-REPLACER
-     * 2) HANDLE JSON PARSING
+     * 2) PARSING: HANDLE CUSTOM-REVIVER
      */
     
     struct intern::Stringifier
@@ -210,6 +210,84 @@ namespace jsp
         }
         
         return stringifier.buffer;
+    }
+    
+    // ---
+    
+    JSObject* parse(const string &str)
+    {
+        JSObject *result = nullptr;
+        
+        if (!str.empty())
+        {
+            size_t len;
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            
+            if (chars)
+            {
+                result = parse(chars, len);
+                js_free(chars);
+            }
+        }
+        
+        return result;
+    }
+    
+    JSObject* parse(HandleString str)
+    {
+        JSObject *result = nullptr;
+        
+        if (str)
+        {
+            const jschar *chars = str->getChars(cx); // CAN "ENSURE LINEARITY" (AND THEREFORE TRIGGER GC)
+            
+            if (chars)
+            {
+                result = parse(chars, str->length());
+            }
+        }
+        
+        return result;
+    }
+
+    JSObject* parse(const Value &value)
+    {
+        JSObject *result = nullptr;
+
+        if (value.isString())
+        {
+            RootedString str(cx, value.toString());
+            result = parse(str);
+        }
+        
+        return result;
+    }
+    
+    JSObject *parse(const jschar *chars, size_t len)
+    {
+        if (chars && (len > 0))
+        {
+            if (len == std::numeric_limits<uint32_t>::max())
+            {
+                len = js_strlen(chars);
+            }
+            
+            RootedValue result(cx);
+            
+            if (JS_ParseJSON(cx, chars, len, &result))
+            {
+                if (result.isObject())
+                {
+                    return result.toObjectOrNull();
+                }
+            }
+            else
+            {
+                // TODO: HANDLE ERROR
+            }
+        }
+        
+        return nullptr;
     }
 }
 

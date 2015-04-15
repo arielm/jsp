@@ -34,33 +34,6 @@ void TestingJSBase::run(bool force)
 // ---
 
 /*
- * SIMILAR TO Manager::function_print
- */
-const string TestingJSBase::write(const HandleValueArray& args)
-{
-    string buffer;
-    RootedString rooted(cx);
-    
-    for (auto i = 0; i < args.length(); i++)
-    {
-        rooted = ToString(cx, args[i]);
-        JSAutoByteString tmp;
-        
-        if (tmp.encodeUtf8(cx, rooted))
-        {
-            if (i > 0) buffer += ' ';
-            buffer += tmp.ptr();
-        }
-        else
-        {
-            break;
-        }
-    }
-    
-    return buffer;
-}
-
-/*
  * QUICK AND DIRTY IMPLEMENTATION
  *
  * TODO: CONSIDER IMPLEMENTING "TRUE" FUNCTION CREATION AND COMPILATION, ETC.
@@ -87,6 +60,60 @@ bool TestingJSBase::evaluateBoolean(const string &source)
     }
     
     throw EXCEPTION(TestingJSBase, "EVALUATION FAILED");
+}
+
+/*
+ * QUICK AND DIRTY IMPLEMENTATION
+ *
+ * TODO: SHOULD BE DONE VIA THE Proto API
+ */
+const string TestingJSBase::evaluateString(const string &source)
+{
+    OwningCompileOptions options(cx);
+    options.setForEval(true);
+    options.setVersion(JSVersion::JSVERSION_LATEST);
+    options.setUTF8(true);
+    options.setFileAndLine(cx, "", 1);
+    
+    // ---
+    
+    RootedValue result(cx);
+    
+    if (eval(source, options, &result))
+    {
+        return jsp::toString(result);
+    }
+    
+    throw EXCEPTION(TestingJSBase, "EVALUATION FAILED");
+}
+
+// ---
+
+/*
+ * SIMILAR TO Manager::function_print
+ */
+const string TestingJSBase::write(const HandleValueArray& args)
+{
+    string buffer;
+    RootedString rooted(cx);
+    
+    for (auto i = 0; i < args.length(); i++)
+    {
+        rooted = ToString(cx, args[i]);
+        JSAutoByteString tmp;
+        
+        if (tmp.encodeUtf8(cx, rooted))
+        {
+            if (i > 0) buffer += ' ';
+            buffer += tmp.ptr();
+        }
+        else
+        {
+            break;
+        }
+    }
+    
+    return buffer;
 }
 
 // ---

@@ -130,39 +130,39 @@ namespace jsp
         return false;
     }
     
-    inline JSString* toJSString(const std::string &s)
+    inline JSString* toJSString(const std::string &str)
     {
-        if (!s.empty())
+        if (!str.empty())
         {
-            size_t length;
-            jschar *c = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s.data(), s.size()), &length).get();
+            size_t len;
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
             
-            if (c)
+            if (chars)
             {
-                JSString *result = JS_NewUCString(cx, c, length);
+                JSString *result = JS_NewUCString(cx, chars, len);
                 
                 if (result)
                 {
                     return result;
                 }
                 
-                js_free(c);
+                js_free(chars);
             }
         }
         
         return cx->emptyString();
     }
 
-    inline const std::string toString(const jschar *c, size_t length = std::numeric_limits<uint32_t>::max())
+    inline const std::string toString(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max())
     {
-        if (c && (length > 0))
+        if (chars && (len > 0))
         {
-            if (length == std::numeric_limits<uint32_t>::max())
+            if (len == std::numeric_limits<uint32_t>::max())
             {
-                length = js_strlen(c);
+                len = js_strlen(chars);
             }
             
-            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(c, length)).c_str();
+            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
         }
         
         return "";
@@ -675,8 +675,6 @@ namespace jsp
         return false;
     }
 
-    //
-    
     bool isArray(JSObject *object);
 
     inline bool isArray(const Value &value)
@@ -708,6 +706,12 @@ namespace jsp
         RootedValue value(cx, ObjectOrNullValue(object));
         return stringify(&value, indent);
     }
+    
+    JSObject* parse(const std::string &s);
+    JSObject* parse(HandleString s);
+    JSObject* parse(const Value &value);
+    
+    JSObject* parse(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
 }
 
 namespace js

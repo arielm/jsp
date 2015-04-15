@@ -39,8 +39,9 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testStringify)
-        JSP_TEST(force || true, testToSource)
+        JSP_TEST(force || true, testParsing)
+        JSP_TEST(force || false, testStringify)
+        JSP_TEST(force || false, testToSource)
     }
     
     if (force || false)
@@ -1306,64 +1307,76 @@ void TestingJS::testCustomScriptExecution()
 
 // ---
 
+void TestingJS::testParsing()
+{
+    const string source = utils::readText<string>(InputSource::getAsset("config.json"));
+    
+    initComplexJSON(source);
+    const string js = evaluateString("JSON.stringify(JSON.parse(complexJSON), null, 2)");
+    
+    JSObject *parsed = parse(source);
+    const string cpp = stringify(parsed);
+    
+    JSP_CHECK(js == cpp);
+}
+
 /*
  * WORKS BECAUSE THERE ARE NO "CYCLIC VALUES" IN OBJECT
  * OTHERWISE: RETURNS A STRING WITH "cyclic object value" (TODO: REPRODUCE)
  */
 void TestingJS::testStringify()
 {
-    initComplexJSObject(InputSource::getAsset("handlebars.js"));
+    initComplexJSObject();
     
-    if (false)
-    {
-        /*
-         * USING stringify VIA JS:
-         * POSSIBILITY TO HANDLE "CYCLIC VALUES" VIA THE "REPLACER" ARGUMENT
-         */
-        executeScript("print(JSON.stringify(complexObject, null, 2))");
-    }
+    /*
+     * USING stringify VIA JS:
+     * POSSIBILITY TO HANDLE "CYCLIC VALUES" VIA THE "REPLACER" ARGUMENT
+     */
+    const string js = evaluateString("JSON.stringify(complexObject, null, 2)");
     
-    if (true)
-    {
-        /*
-         * USING stringify VIA C++:
-         * CURRENTLY NO WAY TO DEFINE A "REPLACER" FUNCTION (TODO)
-         */
-        JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
-        LOGI << stringify(object) << endl;
-    }
+    /*
+     * USING stringify VIA C++:
+     * CURRENTLY NO WAY TO DEFINE A "REPLACER" FUNCTION (TODO)
+     */
+    const string cpp = stringify(get<OBJECT>(globalHandle(), "complexObject"));
+    
+    JSP_CHECK(js == cpp);
 }
 
 /*
  * WORKS BECAUSE OBJECT IS NOT "HUGE"
- * OTHERWISE: FAILS OUT-OF-MEMORY JS-ERROR (TODO: REPRODUCE)
+ * OTHERWISE: FAILS WITH OUT-OF-MEMORY JS-ERROR (TODO: REPRODUCE)
  */
 void TestingJS::testToSource()
 {
-    initComplexJSObject(InputSource::getAsset("handlebars.js"));
+    initComplexJSObject();
     
-    if (false)
-    {
-        /*
-         * USING toSource() VIA JS
-         */
-        executeScript("print(complexObject.toSource())");
-    }
+    /*
+     * USING toSource() VIA JS
+     */
+    const string js = evaluateString("complexObject.toSource()");
     
-    if (true)
-    {
-        /*
-         * USING toSource() VIA C++
-         */
-        JSObject *object = get<OBJECT>(globalHandle(), "complexObject");
-        LOGI << toSource(object) << endl;
-    }
+    /*
+     * USING toSource() VIA C++
+     */
+    const string cpp = toSource(get<OBJECT>(globalHandle(), "complexObject"));
+    
+    JSP_CHECK(js == cpp);
 }
 
-void TestingJS::initComplexJSObject(InputSource::Ref inputSource)
+void TestingJS::initComplexJSON(const string &source)
 {
-    executeScript(inputSource);
-    
-    JSObject *complexObject = get<OBJECT>(globalHandle(), "Handlebars");
-    set(globalHandle(), "complexObject", complexObject);
+    RootedValue value(cx, toValue(source));
+    setProperty(globalHandle(), "complexJSON", value);
+}
+
+void TestingJS::initComplexJSObject()
+{
+    if (!hasOwnProperty(globalHandle(), "complexObject"))
+    {
+        executeScript(InputSource::getAsset("handlebars.js"));
+        
+        JSObject *complexObject = get<OBJECT>(globalHandle(), "Handlebars");
+        set(globalHandle(), "complexObject", complexObject);
+    }
 }

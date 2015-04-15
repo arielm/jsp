@@ -28,6 +28,7 @@ public:
     virtual void performRun(bool force) = 0;
 
     bool evaluateBoolean(const std::string &source);
+    const std::string evaluateString(const std::string &source);
     
     const std::string write(const JS::HandleValueArray& args);
 

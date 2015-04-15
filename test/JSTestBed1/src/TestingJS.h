@@ -37,9 +37,14 @@ public:
     void testFunctionScope();
     void testCustomScriptExecution();
     
+    // ---
+    
+    void testParsing();
     void testStringify();
     void testToSource();
-    void initComplexJSObject(chr::InputSource::Ref inputSource);
+    
+    void initComplexJSON(const std::string &source);
+    void initComplexJSObject();
     
     // ---
     
