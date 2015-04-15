@@ -578,7 +578,7 @@ namespace jsp
     JSObject* parse(HandleString str);
     JSObject* parse(const Value &value);
     
-    JSObject* parse(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
+    JSObject* parse(const jschar *chars, size_t len);
 }
 
 namespace js

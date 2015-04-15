@@ -207,10 +207,10 @@ namespace jsp
                 
                 if (result)
                 {
-                    return result;
+                    return result; // JS-STORE IS NOW IN CHARGE OF THE (NON-COPIED) ALLOCATED MEMORY...
                 }
                 
-                js_free(chars);
+                js_free(chars); // OTHERWISE: WE'RE ON CHARGE
             }
         }
         
@@ -226,7 +226,11 @@ namespace jsp
                 len = js_strlen(chars);
             }
             
-            return TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
+            UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len));
+            const string result = utf8.c_str(); // XXX: COPY IS UNAVOIDABLE
+            JS_free(utf8);
+            
+            return result;
         }
         
         return "";
@@ -318,7 +322,7 @@ namespace jsp
     /*
      * TODO:
      *
-     * 1) IMPLEMENT JSString* stringify() WITH jschar ACCUMULATION BUFFER
+     * 1) CONSIDER IMPLEMENTING JSString* stringify() WITH jschar ACCUMULATION BUFFER
      * 2) HANDLE CUSTOM "REPLACER" (IN ORDER TO COPE WITH "CYCLIC VALUES")
      */
     
@@ -329,7 +333,10 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto self = reinterpret_cast<Stringifier*>(data);
-            self->buffer += toString(buf, len);
+            
+            UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(buf, len));
+            self->buffer.append(utf8.c_str()); // XXX: COPY IS UNAVOIDABLE
+            JS_free(utf8);
             
             return true;
         }
@@ -349,11 +356,7 @@ namespace jsp
         
         if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &stringifier))
         {
-            /*
-             * INTENTIONAL FALLBACK (I.E. RETURNING THE ACCUMULATED BUFFER UPON ERROR...)
-             *
-             * TODO: VERIFY IF THIS IS ON-PAR WITH JSON.stringify()
-             */
+            return ""; // ON-PAR WITH JSON.stringify()
         }
         
         return stringifier.buffer;
@@ -368,7 +371,7 @@ namespace jsp
         if (!str.empty())
         {
             size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get(); // WE'RE ON CHARGE OF THE ALLOCATED MEMORY...
             
             if (chars)
             {
@@ -410,11 +413,6 @@ namespace jsp
     {
         if (chars && (len > 0))
         {
-            if (len == numeric_limits<uint32_t>::max())
-            {
-                len = js_strlen(chars);
-            }
-            
             RootedValue result(cx);
             
             if (JS_ParseJSON(cx, chars, len, &result))
