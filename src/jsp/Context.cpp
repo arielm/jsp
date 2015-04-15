@@ -163,10 +163,12 @@ namespace jsp
         RootedString source(cx);
         source.set(JS_ValueToSource(cx, value));
         
-        JS_ReportPendingException(cx); // E.G. FOR REPORTING POTENTIAL OUT-OF-MEMORY ERRORS
-        JS_ClearPendingException(cx);
+        if (source)
+        {
+            return toString(source);
+        }
         
-        return toString(source);
+        return "";
     }
     
 #pragma mark ---------------------------------------- JSON ----------------------------------------
@@ -174,8 +176,8 @@ namespace jsp
     /*
      * TODO:
      *
-     * 1) STRINGIFICATION: HANDLE CUSTOM-REPLACER
-     * 2) PARSING: HANDLE CUSTOM-REVIVER
+     * 1) IMPLEMENT JSString* stringify() WITH jschar ACCUMULATION BUFFER
+     * 2) HANDLE CUSTOM "REPLACER" (IN ORDER TO COPE WITH "CYCLIC VALUES")
      */
     
     struct intern::Stringifier
@@ -199,13 +201,10 @@ namespace jsp
         
         if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &stringifier))
         {
-            JS_ReportPendingException(cx); // E.G. FOR REPORTING POTENTIAL OUT-OF-MEMORY ERRORS
-            JS_ClearPendingException(cx);
-            
             /*
              * INTENTIONAL FALLBACK (I.E. RETURNING THE ACCUMULATED BUFFER UPON ERROR...)
              *
-             * TODO: VERIFY THAT IT'S INDEED ON-PAR WITH JSON.stringify()
+             * TODO: VERIFY IF THIS IS ON-PAR WITH JSON.stringify()
              */
         }
         

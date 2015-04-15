@@ -39,10 +39,10 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || false, testParsing1)
+        JSP_TEST(force || true, testParsing1)
         JSP_TEST(force || true, testParsing2)
-        JSP_TEST(force || false, testStringify)
-        JSP_TEST(force || false, testToSource)
+        JSP_TEST(force || true, testStringify)
+        JSP_TEST(force || true, testToSource)
     }
     
     if (force || false)
@@ -1352,21 +1352,19 @@ void TestingJS::initComplexJSON(const string &source)
 
 /*
  * WORKS BECAUSE THERE ARE NO "CYCLIC VALUES" IN OBJECT
- * OTHERWISE: RETURNS A STRING WITH "cyclic object value" (TODO: REPRODUCE)
+ * OTHERWISE: RETURNS EMPTY-STRING AND REPORTS JS-EXCEPTION ("TypeError: cyclic object value")
  */
 void TestingJS::testStringify()
 {
     initComplexJSObject();
     
     /*
-     * USING stringify VIA JS:
-     * POSSIBILITY TO HANDLE "CYCLIC VALUES" VIA THE "REPLACER" ARGUMENT
+     * USING stringify VIA JS
      */
     const string js = evaluateString("JSON.stringify(complexObject, null, 2)");
     
     /*
-     * USING stringify VIA C++:
-     * CURRENTLY NO WAY TO DEFINE A "REPLACER" FUNCTION (TODO)
+     * USING stringify VIA C++
      */
     const string cpp = stringify(get<OBJECT>(globalHandle(), "complexObject"));
     
@@ -1375,7 +1373,7 @@ void TestingJS::testStringify()
 
 /*
  * WORKS BECAUSE OBJECT IS NOT "HUGE"
- * OTHERWISE: FAILS WITH OUT-OF-MEMORY JS-ERROR (TODO: REPRODUCE)
+ * OTHERWISE: RETURNS EMPTY-STRING AND REPORTS JS-EXCEPTION ("InternalError: allocation size overflow")
  */
 void TestingJS::testToSource()
 {
@@ -1399,8 +1397,8 @@ void TestingJS::initComplexJSObject()
     if (!hasOwnProperty(globalHandle(), "complexObject"))
     {
         executeScript(InputSource::getAsset("handlebars.js"));
-        
         JSObject *complexObject = get<OBJECT>(globalHandle(), "Handlebars");
+        
         set(globalHandle(), "complexObject", complexObject);
     }
 }
