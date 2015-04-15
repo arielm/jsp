@@ -27,9 +27,11 @@
  *
  * 2) COMPLETE UN-INITIALIZATION
  *
- * 3) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
+ * 3) ALLOW TO ENABLE/DISABLE LOGGING
  *
- * 4) CONSIDER USING A CUSTOM NATIVE OBJECT EXTENDING JSObject:
+ * 4) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
+ *
+ * 5) CONSIDER USING A CUSTOM NATIVE OBJECT EXTENDING JSObject:
  *    - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/builtin/TestingFunctions.cpp#L1262-1421
  *    - ALTERNATIVELY:
  *      - CHECK THE "Helper Macros for creating JSClasses that function as proxies" (EG. "PROXY_CLASS_WITH_EXT") IN jsfriendapi.h
@@ -61,10 +63,10 @@ namespace jsp
         
         static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
         static std::string getName(JSObject *instance); // RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
-        static JSObject* getInstance(const char *name); // RETURNS NULL IF THERE IS NO SUCH A LIVING BARKER
+        static JSObject* getInstance(const std::string &name); // RETURNS NULL IF THERE IS NO SUCH A LIVING BARKER
         
-        static bool isFinalized(const char *name); // I.E. ONCE A BARKER, NOW DEAD
-        static bool isHealthy(const char *name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
+        static bool isFinalized(const std::string &name); // I.E. ONCE A BARKER, NOW DEAD
+        static bool isHealthy(const std::string &name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
         
         // ---
         
@@ -72,22 +74,9 @@ namespace jsp
          * ONLY HEALTHY BARKERS CAN BARK
          */
         
-        static inline bool bark(JSObject *object)
-        {
-            return maybeBark(object);
-        }
-        
-        static inline bool bark(const Value &value)
-        {
-            if (value.isObject())
-            {
-                return maybeBark(value.toObjectOrNull());
-            }
-            
-            return false;
-        }
-        
-        static bool bark(const char *name);
+        static bool bark(JSObject *object);
+        static bool bark(const Value &value);
+        static bool bark(const std::string &name);
         
         // ---
 

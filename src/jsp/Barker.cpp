@@ -283,7 +283,7 @@ namespace jsp
         return barker::getName(getId(instance));
     }
     
-    JSObject* Barker::getInstance(const char *name)
+    JSObject* Barker::getInstance(const string &name)
     {
         bool found;
         JSObject *instance;
@@ -300,7 +300,7 @@ namespace jsp
         return nullptr; // I.E. THERE IS NO SUCH A LIVING BARKER
     }
     
-    bool Barker::isFinalized(const char *name)
+    bool Barker::isFinalized(const string &name)
     {
         bool found;
         JSObject *instance;
@@ -314,7 +314,7 @@ namespace jsp
         return false;
     }
     
-    bool Barker::isHealthy(const char *name)
+    bool Barker::isHealthy(const string &name)
     {
         bool found;
         JSObject *instance;
@@ -328,7 +328,24 @@ namespace jsp
         return false;
     }
     
-    bool Barker::bark(const char *name)
+    // ---
+    
+    bool Barker::bark(JSObject *object)
+    {
+        return maybeBark(object);
+    }
+    
+    bool Barker::bark(const Value &value)
+    {
+        if (value.isObject())
+        {
+            return maybeBark(value.toObjectOrNull());
+        }
+        
+        return false;
+    }
+    
+    bool Barker::bark(const string &name)
     {
         bool found;
         JSObject *instance;
@@ -408,11 +425,11 @@ namespace jsp
         
         if (barkerId >= 0)
         {
-            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << barker::getName(barkerId) << endl;
+            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
             return true;
         }
         
-        LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl;
+        LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl; // LOG: VERBOSE
         return false;
     }
     
@@ -444,7 +461,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(isFinalized(toString(args[0]).data()));
+            args.rval().setBoolean(isFinalized(toString(args[0])));
             return true;
         }
         
@@ -457,7 +474,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(isHealthy(toString(args[0]).data()));
+            args.rval().setBoolean(isHealthy(toString(args[0])));
             return true;
         }
         
@@ -470,7 +487,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(bark(toString(args[0]).data()));
+            args.rval().setBoolean(bark(toString(args[0])));
             return true;
         }
         

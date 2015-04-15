@@ -386,9 +386,9 @@ namespace jsp
     }
 
     template<typename T>
-    inline const Value toValue(const char *s)
+    inline const Value toValue(const char *c)
     {
-        return StringValue(toJSString(s));
+        return StringValue(toJSString(c));
     }
     
     //
@@ -493,15 +493,15 @@ namespace jsp
     }
     
     template <>
-    inline const Value toValue(const char *&s)
+    inline const Value toValue(const char *&c)
     {
-        return StringValue(toJSString(s));
+        return StringValue(toJSString(c));
     }
     
     template <size_t N>
-    inline const Value toValue(const char (&s)[N])
+    inline const Value toValue(const char (&c)[N])
     {
-        return StringValue(toJSString(s));
+        return StringValue(toJSString(c));
     }
     
     // ---
@@ -546,9 +546,9 @@ namespace jsp
         target.setString(toJSString(s));
     }
     
-    inline void assignValue(Value &target, const char *s)
+    inline void assignValue(Value &target, const char *c)
     {
-        target.setString(toJSString(s));
+        target.setString(toJSString(c));
     }
     
     inline void assignValue(Value &target, JSString *s)
@@ -574,9 +574,10 @@ namespace jsp
     const std::string stringify(JSObject *object, int indent = 2);
     const std::string stringify(MutableHandleValue value, int indent = 2);
 
-    JSObject* parse(const std::string &s);
-    JSObject* parse(HandleString s);
+    JSObject* parse(const std::string &str);
+    JSObject* parse(HandleString str);
     JSObject* parse(const Value &value);
+    
     JSObject* parse(const jschar *chars, size_t len = std::numeric_limits<uint32_t>::max());
 }
 
