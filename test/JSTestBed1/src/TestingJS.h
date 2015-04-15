@@ -39,11 +39,12 @@ public:
     
     // ---
     
-    void testParsing();
+    void testParsing1();
+    void testParsing2();
+    void initComplexJSON(const std::string &source);
+
     void testStringify();
     void testToSource();
-    
-    void initComplexJSON(const std::string &source);
     void initComplexJSObject();
     
     // ---

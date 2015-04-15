@@ -39,7 +39,8 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testParsing)
+        JSP_TEST(force || false, testParsing1)
+        JSP_TEST(force || true, testParsing2)
         JSP_TEST(force || false, testStringify)
         JSP_TEST(force || false, testToSource)
     }
@@ -1307,7 +1308,7 @@ void TestingJS::testCustomScriptExecution()
 
 // ---
 
-void TestingJS::testParsing()
+void TestingJS::testParsing1()
 {
     const string source = utils::readText<string>(InputSource::getAsset("config.json"));
     
@@ -1319,6 +1320,35 @@ void TestingJS::testParsing()
     
     JSP_CHECK(js == cpp);
 }
+
+/*
+ * "JSON.parse() does not allow trailing commas"
+ *
+ * REFERENCE: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
+ */
+void TestingJS::testParsing2()
+{
+    try
+    {
+        executeScript("JSON.parse('[1, 2, 3,]')");
+        JSP_CHECK(false); // UNREACHABLE DUE TO SyntaxError
+    }
+    catch (exception &e)
+    {}
+    
+    // ---
+
+    JSObject *parsed = parse("[1, 2, 3,]");
+    JSP_CHECK(!parsed); // NULL RESULT DUE TO SyntaxError
+}
+
+void TestingJS::initComplexJSON(const string &source)
+{
+    RootedValue value(cx, toValue(source));
+    setProperty(globalHandle(), "complexJSON", value);
+}
+
+//
 
 /*
  * WORKS BECAUSE THERE ARE NO "CYCLIC VALUES" IN OBJECT
@@ -1362,12 +1392,6 @@ void TestingJS::testToSource()
     const string cpp = toSource(get<OBJECT>(globalHandle(), "complexObject"));
     
     JSP_CHECK(js == cpp);
-}
-
-void TestingJS::initComplexJSON(const string &source)
-{
-    RootedValue value(cx, toValue(source));
-    setProperty(globalHandle(), "complexJSON", value);
 }
 
 void TestingJS::initComplexJSObject()

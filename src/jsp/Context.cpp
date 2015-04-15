@@ -263,7 +263,7 @@ namespace jsp
         return result;
     }
     
-    JSObject *parse(const jschar *chars, size_t len)
+    JSObject* parse(const jschar *chars, size_t len)
     {
         if (chars && (len > 0))
         {
@@ -280,10 +280,6 @@ namespace jsp
                 {
                     return result.toObjectOrNull();
                 }
-            }
-            else
-            {
-                // TODO: HANDLE ERROR
             }
         }
         
