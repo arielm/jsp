@@ -141,12 +141,12 @@ namespace jsp
         
         if (str1 && !str2.empty())
         {
-            JSLinearString *linear1 = str1->ensureLinear(cx); // CAN TRIGGER GC
+            js::RootedLinearString linear1(cx, str1->ensureLinear(cx)); // PROTECTING FROM GC
             
             if (linear1)
             {
                 size_t len2;
-                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get();
+                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get(); // CAN TRIGGER GC
                 
                 if (chars2)
                 {
@@ -172,15 +172,15 @@ namespace jsp
             }
 #endif
             
-            JSLinearString *linear = str1->ensureLinear(cx); // CAN TRIGGER GC
+            JSLinearString *linear1 = str1->ensureLinear(cx);
             
-            if (linear && (linear->length() == len2))
+            if (linear1 && (linear1->length() == len2))
             {
-                const jschar *chars = linear->chars();
+                const jschar *chars1 = linear1->chars();
                 
                 for (auto i = 0; i != len2; ++i)
                 {
-                    if (unsigned(str2[i]) != unsigned(chars[i]))
+                    if (unsigned(str2[i]) != unsigned(chars1[i]))
                     {
                         return false;
                     }
@@ -206,7 +206,7 @@ namespace jsp
                 
                 if (result)
                 {
-                    return result; // JS-STORE IS NOW IN CHARGE OF THE (NON-COPIED) ALLOCATED MEMORY...
+                    return result; // JS-STORE IS NOW IN CHARGE OF THE (NON-COPIED) MEMORY...
                 }
                 
                 js_free(chars); // OTHERWISE: WE'RE ON CHARGE
@@ -222,7 +222,7 @@ namespace jsp
         {
             UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len));
             dst.append(utf8.c_str()); // TODO: TRY TO AVOID COPY
-            JS_free(utf8); // TODO: TRY TO BRING-BACK RVO
+            JS_free(utf8);
         }
         
         return dst;
@@ -345,7 +345,7 @@ namespace jsp
         if (!str.empty())
         {
             size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get(); // WE'RE ON CHARGE OF THE ALLOCATED MEMORY...
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get(); // WE'RE ON CHARGE OF THE MEMORY...
             
             if (chars)
             {
@@ -361,11 +361,11 @@ namespace jsp
     {
         if (str)
         {
-            JSLinearString *linear = str->ensureLinear(cx); // CAN TRIGGER GC
+            js::RootedLinearString linear(cx, str->ensureLinear(cx)); // PROTECTING FROM GC
             
             if (linear)
             {
-                return parse(linear->chars(), linear->length());
+                return parse(linear->chars(), linear->length()); // CAN TRIGGER GC
             }
         }
         

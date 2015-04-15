@@ -75,32 +75,39 @@ namespace jsp
     bool stringEqualsASCII(HandleString str1, const std::string &str2);
     
     JSString* toJSString(const std::string &str);
+    
+    /*
+     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
+     */
     std::string& appendToString(std::string &dst, const jschar *chars, size_t len);
 
     inline std::string& appendToString(std::string &dst, HandleString str)
     {
         if (str)
         {
-            JSLinearString *linear = str->ensureLinear(cx); // CAN TRIGGER GC
+            js::RootedLinearString linear(cx, str->ensureLinear(cx)); // PROTECTING FROM GC
             
             if (linear)
             {
-                return appendToString(dst, linear->chars(), linear->length());
+                return appendToString(dst, linear->chars(), linear->length()); // CAN TRIGGER GC
             }
         }
         
         return dst;
     }
 
+    /*
+     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
+     */
     inline const std::string toString(const jschar *chars, size_t len)
     {
-        std::string dst;
+        std::string dst; // TODO: TRY ACHIEVE RVO
         return appendToString(dst, chars, len);
     }
     
     inline const std::string toString(HandleString str)
     {
-        std::string dst;
+        std::string dst; // TODO: TRY ACHIEVE RVO
         return appendToString(dst, str);
     }
     
@@ -108,7 +115,7 @@ namespace jsp
     {
         RootedString str(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
 
-        std::string dst;
+        std::string dst; // TODO: TRY ACHIEVE RVO
         return appendToString(dst, str);
     }
     
@@ -606,6 +613,9 @@ namespace jsp
     JSObject* parse(HandleString str);
     JSObject* parse(const Value &value);
     
+    /*
+     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
+     */
     JSObject* parse(const jschar *chars, size_t len);
 }
 
