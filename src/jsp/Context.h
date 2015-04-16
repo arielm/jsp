@@ -76,9 +76,11 @@ namespace jsp
     public:
         UTF8String(const jschar *chars, size_t len);
         UTF8String(JSString *str);
+        
+        UTF8String(UTF8String &&other);
         ~UTF8String();
         
-        operator const std::string () const;
+        operator const char* ();
         const char* data() const;
         
     protected:
@@ -90,7 +92,7 @@ namespace jsp
     
     inline const std::string toString(HandleValue value)
     {
-        return UTF8String(ToString(cx, value)); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+        return UTF8String(ToString(cx, value)).data(); // ToString() IS INFAILIBLE, POSSIBLY SLOW
     }
 
     JSFlatString* toJSString(const char *c);
@@ -190,7 +192,7 @@ namespace jsp
     {
         if (!value.isUndefined())
         {
-            *result = UTF8String(ToString(cx, value)).data(); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+            *result = UTF8String(ToString(cx, value)); // ToString() IS INFAILIBLE, POSSIBLY SLOW
             return true;
         }
         

@@ -156,6 +156,13 @@ namespace jsp
         }
     }
     
+    UTF8String::UTF8String(UTF8String &&other)
+    :
+    bytes(other.bytes)
+    {
+        other.bytes = nullptr;
+    }
+    
     UTF8String::~UTF8String()
     {
         if (bytes)
@@ -164,7 +171,7 @@ namespace jsp
         }
     }
     
-    UTF8String::operator const string () const
+    UTF8String::operator const char* ()
     {
         return bytes ? bytes : "";
     }
@@ -326,7 +333,7 @@ namespace jsp
         
         if (source)
         {
-            return UTF8String(source);
+            return UTF8String(source).data();
         }
         
         return ""; // I.E. FAILURE
@@ -348,7 +355,7 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto self = reinterpret_cast<Stringifier*>(data);
-            self->buffer += UTF8String(buf, len).data();
+            self->buffer += UTF8String(buf, len);
             
             return true;
         }
@@ -794,7 +801,7 @@ const uint32_t JSP::toHTMLColor(HandleValue value, const uint32_t defaultValue)
 {
     if (value.isString())
     {
-        string tmp = UTF8String(value.toString());
+        string tmp(UTF8String(value.toString()));
         
         if (!tmp.empty())
         {
