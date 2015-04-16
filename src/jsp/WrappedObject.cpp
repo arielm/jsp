@@ -44,6 +44,21 @@ namespace jsp
         DUMP_WRAPPED_OBJECT
     }
     
+    WrappedObject::WrappedObject(const HandleObject &handle)
+    :
+    object(handle.get())
+    {
+        DUMP_WRAPPED_OBJECT
+    }
+    
+    WrappedObject& WrappedObject::operator=(const HandleObject &handle)
+    {
+        object = handle.get();
+        DUMP_WRAPPED_OBJECT
+        
+        return *this;
+    }
+    
     WrappedObject::WrappedObject(JSObject *o)
     :
     object(o)

@@ -43,6 +43,12 @@ namespace jsp
         WrappedObject(const WrappedObject &other);
         void operator=(const WrappedObject &other);
         
+        /*
+         * NECESSARY, E.G. FOR CONSTRUCTING A Heap<WrappedObject> FROM HandleObject
+         */
+        WrappedObject(const HandleObject &handle);
+        WrappedObject& operator=(const HandleObject &handle);
+        
         WrappedObject(JSObject *o);
         WrappedObject& operator=(JSObject *newObject);
         
