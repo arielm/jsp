@@ -144,15 +144,11 @@ void TestingWrappedValue::testAutomaticConversion()
     
     // ---
     
-    RootedString s(cx);
-    
     wrapped = "from const char*";
-    s = wrapped.toString();
-    JSP_CHECK(stringEqualsASCII(s, "from const char*"));
+    JSP_CHECK(stringEqualsASCII(wrapped.toString(), "from const char*"));
     
     wrapped = string("from string");
-    s = wrapped.toString();
-    JSP_CHECK(stringEqualsASCII(s, "from string"));
+    JSP_CHECK(stringEqualsASCII(wrapped.toString(), "from string"));
 }
 
 // ---

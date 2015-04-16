@@ -70,54 +70,33 @@ namespace jsp
     void removeGCCallback(void *instance);
     
     // ---
-
-    bool stringEquals(HandleString str1, const std::string &str2);
-    bool stringEqualsASCII(HandleString str1, const std::string &str2);
     
-    JSFlatString* toJSString(const std::string &str);
-    
-    /*
-     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
-     */
-    std::string& appendToString(std::string &dst, const jschar *chars, size_t len);
-
-    inline std::string& appendToString(std::string &dst, HandleString str)
+    class UTF8String
     {
-        if (str)
-        {
-            js::RootedLinearString linear(cx, str->ensureLinear(cx)); // PROTECTING FROM GC
-            
-            if (linear)
-            {
-                return appendToString(dst, linear->chars(), linear->length()); // CAN TRIGGER GC
-            }
-        }
+    public:
+        UTF8String(const jschar *chars, size_t len);
+        UTF8String(JSString *str);
+        ~UTF8String();
         
-        return dst;
-    }
-
-    /*
-     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
-     */
-    inline const std::string toString(const jschar *chars, size_t len)
-    {
-        std::string dst; // TODO: TRY ACHIEVE RVO
-        return appendToString(dst, chars, len);
-    }
-    
-    inline const std::string toString(HandleString str)
-    {
-        std::string dst; // TODO: TRY ACHIEVE RVO
-        return appendToString(dst, str);
-    }
+        operator const std::string () const;
+        const char* data() const;
+        
+    protected:
+        char *bytes = nullptr;
+        
+        UTF8String(const UTF8String &other) = delete;
+        void operator=(const UTF8String &other) = delete;
+    };
     
     inline const std::string toString(HandleValue value)
     {
-        RootedString str(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-
-        std::string dst; // TODO: TRY ACHIEVE RVO
-        return appendToString(dst, str);
+        return UTF8String(ToString(cx, value)); // ToString() IS INFAILIBLE, POSSIBLY SLOW
     }
+
+    JSFlatString* toJSString(const std::string &str);
+
+    bool stringEquals(JSString *str1, const std::string &str2);
+    bool stringEqualsASCII(JSString *str1, const std::string &str2);
     
     // ---
     
@@ -207,8 +186,7 @@ namespace jsp
     {
         if (!value.isUndefined())
         {
-            RootedString rooted(cx, ToString(cx, value)); // INFAILIBLE, POSSIBLY SLOW
-            *result = toString(rooted);
+            *result = UTF8String(ToString(cx, value)).data(); // ToString() IS INFAILIBLE, POSSIBLY SLOW
             return true;
         }
         
@@ -256,17 +234,11 @@ namespace jsp
     {
         if (value.isString() && other.isString())
         {
-            /*
-             * ROOTING IS NECESSARY BECAUSE SOME "FLATTENING" CAN OCCUR
-             */
-            RootedString s1(cx, value.toString());
-            RootedString s2(cx, other.toString());
+            bool result;
             
-            int32_t result;
-            
-            if (JS_CompareStrings(cx, s1, s2, &result))
+            if (js::EqualStrings(cx, value.toString(), other.toString(), &result)) // ASSERTION: CAN'T TRIGGER GC?
             {
-                return (result == 0);
+                return result;
             }
             
             return false;
@@ -349,9 +321,7 @@ namespace jsp
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
             RootedValue rooted(cx, value);
-            RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
-            
-            return stringEquals(s, other);
+            return stringEquals(ToString(cx, rooted), other); // ToString() IS INFAILIBLE, POSSIBLY SLOW
         }
         
         return false;
@@ -362,9 +332,7 @@ namespace jsp
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
             RootedValue rooted(cx, value);
-            RootedString s(cx, ToString(cx, rooted)); // INFAILIBLE, POSSIBLY SLOW
-            
-            return stringEquals(s, other);
+            return stringEquals(ToString(cx, rooted), other); // ToString() IS INFAILIBLE, POSSIBLY SLOW
         }
         
         return false;

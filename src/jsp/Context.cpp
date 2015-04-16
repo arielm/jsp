@@ -135,7 +135,74 @@ namespace jsp
     
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
-    bool stringEquals(HandleString str1, const string &str2)
+    UTF8String::UTF8String(const jschar *chars, size_t len)
+    {
+        if (chars && len)
+        {
+            bytes = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
+        }
+    }
+    
+    UTF8String::UTF8String(JSString *str)
+    {
+        if (str)
+        {
+            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+            
+            if (linear)
+            {
+                bytes = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // ASSERTION: CAN'T TRIGGER GC?
+            }
+        }
+    }
+    
+    UTF8String::~UTF8String()
+    {
+        if (bytes)
+        {
+            js_free(bytes);
+        }
+    }
+    
+    UTF8String::operator const string () const
+    {
+        return bytes ? bytes : "";
+    }
+    
+    const char* UTF8String::data() const
+    {
+        return bytes ? bytes : "";
+    }
+    
+    // ---
+    
+    /*
+     * WE CAN SAFELY ASSUME THAT RESULT IS "FLAT" (I.E. LINEAR AND NULL-TERMINATED)
+     */
+    JSFlatString* toJSString(const string &str)
+    {
+        if (!str.empty())
+        {
+            size_t len;
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            
+            if (chars)
+            {
+                JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
+                
+                if (result)
+                {
+                    return result; // (TRANSFERRED) MEMORY IS NOW UNDER THE RULES OF GC...
+                }
+                
+                js_free(chars); // OTHERWISE: WE'RE IN CHARGE
+            }
+        }
+        
+        return cx->emptyString(); // ATOMS ARE "FLAT"
+    }
+    
+    bool stringEquals(JSString *str1, const string &str2)
     {
         if (str1)
         {
@@ -143,15 +210,15 @@ namespace jsp
             
             if (!len1 && str2.empty())
             {
-                return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY
+                return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY (TODO: TEST)
             }
             
-            js::RootedLinearString linear1(cx, str1->ensureLinear(cx)); // PROTECTING FROM GC
+            JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
             
             if (linear1)
             {
                 size_t len2;
-                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get(); // CAN TRIGGER GC
+                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get(); // ASSERTION: CAN'T TRIGGER GC?
                 
                 if (chars2)
                 {
@@ -166,7 +233,7 @@ namespace jsp
         return false;
     }
     
-    bool stringEqualsASCII(HandleString str1, const string &str2)
+    bool stringEqualsASCII(JSString *str1, const string &str2)
     {
         if (str1)
         {
@@ -177,7 +244,7 @@ namespace jsp
             {
                 if (!len1)
                 {
-                    return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY
+                    return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY (TODO: TEST)
                 }
                 
 #if defined(DEBUG)
@@ -187,7 +254,7 @@ namespace jsp
                 }
 #endif
                 
-                JSLinearString *linear1 = str1->ensureLinear(cx);
+                JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
                 
                 if (linear1)
                 {
@@ -207,44 +274,6 @@ namespace jsp
         }
         
         return false;
-    }
-    
-    /*
-     * WE CAN SAFELY THAT RESULT IS "FLAT" UPON SUCCESS (I.E. LINEAR AND NULL-TERMINATED)
-     */
-    JSFlatString* toJSString(const string &str)
-    {
-        if (!str.empty())
-        {
-            size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
-            
-            if (chars)
-            {
-                JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
-                
-                if (result)
-                {
-                    return result; // JS-STORE IS NOW IN CHARGE OF THE (TRANSFERRED) MEMORY...
-                }
-                
-                js_free(chars); // OTHERWISE: WE'RE ON CHARGE
-            }
-        }
-        
-        return cx->emptyString(); // ATOMS ARE "FLAT"
-    }
-    
-    string& appendToString(string &dst, const jschar *chars, size_t len)
-    {
-        if (chars && len)
-        {
-            UTF8CharsZ utf8 = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len));
-            dst.append(utf8.c_str()); // TODO: TRY TO AVOID COPY
-            JS_free(utf8);
-        }
-        
-        return dst;
     }
     
 #pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
@@ -302,15 +331,14 @@ namespace jsp
 
     const string toSource(HandleValue value)
     {
-        RootedString source(cx);
-        source.set(JS_ValueToSource(cx, value));
+        RootedString source(cx, JS_ValueToSource(cx, value));
         
         if (source)
         {
-            return toString(source);
+            return UTF8String(source);
         }
         
-        return "";
+        return ""; // I.E. FAILURE
     }
     
 #pragma mark ---------------------------------------- JSON ----------------------------------------
@@ -329,7 +357,7 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto self = reinterpret_cast<Stringifier*>(data);
-            appendToString(self->buffer, buf, len);
+            self->buffer += UTF8String(buf, len).data();
             
             return true;
         }
@@ -362,7 +390,7 @@ namespace jsp
         if (!str.empty())
         {
             size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get(); // WE'RE ON CHARGE OF THE MEMORY...
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
             
             if (chars)
             {
@@ -775,7 +803,7 @@ const uint32_t JSP::toHTMLColor(HandleValue value, const uint32_t defaultValue)
 {
     if (value.isString())
     {
-        string tmp = toString(value);
+        string tmp = UTF8String(value.toString());
         
         if (!tmp.empty())
         {

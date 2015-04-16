@@ -106,9 +106,7 @@ namespace jsp
         // ---
         
         string errorBody;
-        
-        RootedString tmp(cx, JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(JS_GetRuntime(cx), report->exnType)));
-        auto typeName = jsp::toString(tmp);
+        string typeName = UTF8String(JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(JS_GetRuntime(cx), report->exnType)));
         
         if (!typeName.empty())
         {
@@ -140,7 +138,7 @@ namespace jsp
             if (rooted)
             {
                 if (i > 0) buffer += ' ';
-                appendToString(buffer, rooted);
+                buffer += UTF8String(rooted).data();
             }
             else
             {
