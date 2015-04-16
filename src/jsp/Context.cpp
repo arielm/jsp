@@ -177,54 +177,45 @@ namespace jsp
     // ---
     
     /*
-     * WE CAN SAFELY ASSUME THAT RESULT IS "FLAT" (I.E. LINEAR AND NULL-TERMINATED)
+     * ONE CAN SAFELY ASSUME THAT RESULT IS "FLAT" (I.E. LINEAR AND NULL-TERMINATED)
      */
-    JSFlatString* toJSString(const string &str)
+    JSFlatString* toJSString(const char *c)
     {
-        if (!str.empty())
+        size_t len;
+        jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c, strlen(c)), &len).get();
+        
+        if (chars)
         {
-            size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
             
-            if (chars)
+            if (result)
             {
-                JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
-                
-                if (result)
-                {
-                    return result; // (TRANSFERRED) MEMORY IS NOW UNDER THE RULES OF GC...
-                }
-                
-                js_free(chars); // OTHERWISE: WE'RE IN CHARGE
+                return result; // (TRANSFERRED) MEMORY IS NOW UNDER THE RULES OF GC...
             }
+            
+            js_free(chars); // OTHERWISE: WE'RE IN CHARGE
         }
         
         return cx->emptyString(); // ATOMS ARE "FLAT"
     }
     
-    bool stringEquals(JSString *str1, const string &str2)
+    bool stringEquals(JSString *str1, const char *c2)
     {
         if (str1)
         {
-            size_t len1 = str1->length();
-            
-            if (!len1 && str2.empty())
-            {
-                return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY (TODO: TEST)
-            }
-            
             JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
             
             if (linear1)
             {
                 size_t len2;
-                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str2.data(), str2.size()), &len2).get(); // ASSERTION: CAN'T TRIGGER GC?
+                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c2, strlen(c2)), &len2).get(); // ASSERTION: CAN'T TRIGGER GC?
                 
                 if (chars2)
                 {
+                    size_t len1 = linear1->length();
                     bool result = (len1 == len2) && (js::CompareChars(linear1->chars(), len1, chars2, len2) == 0);
-                    js_free(chars2);
                     
+                    js_free(chars2);
                     return result;
                 }
             }
@@ -233,24 +224,24 @@ namespace jsp
         return false;
     }
     
-    bool stringEqualsASCII(JSString *str1, const string &str2)
+    bool stringEqualsASCII(JSString *str1, const char *c2)
     {
         if (str1)
         {
             size_t len1 = str1->length();
-            size_t len2 = str2.size();
+            size_t len2 = strlen(c2);
 
             if (len1 == len2)
             {
                 if (!len1)
                 {
-                    return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY (TODO: TEST)
+                    return true; // SPECIAL CASE: BOTH STRINGS ARE EMPTY
                 }
                 
 #if defined(DEBUG)
                 for (auto i = 0; i != len2; ++i)
                 {
-                    JS_ASSERT(unsigned(str2[i]) <= 127);
+                    JS_ASSERT(unsigned(c2[i]) <= 127);
                 }
 #endif
                 
@@ -260,9 +251,9 @@ namespace jsp
                 {
                     const jschar *chars1 = linear1->chars();
                     
-                    for (auto i = 0; i != len2; ++i)
+                    for (auto i = 0; i != len1; ++i)
                     {
-                        if (unsigned(str2[i]) != unsigned(chars1[i]))
+                        if (unsigned(chars1[i]) != unsigned(c2[i]))
                         {
                             return false;
                         }

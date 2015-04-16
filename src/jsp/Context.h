@@ -93,10 +93,14 @@ namespace jsp
         return UTF8String(ToString(cx, value)); // ToString() IS INFAILIBLE, POSSIBLY SLOW
     }
 
-    JSFlatString* toJSString(const std::string &str);
+    JSFlatString* toJSString(const char *c);
+    inline JSFlatString* toJSString(const std::string &s) { return toJSString(s.data()); }
 
-    bool stringEquals(JSString *str1, const std::string &str2);
-    bool stringEqualsASCII(JSString *str1, const std::string &str2);
+    bool stringEquals(JSString *str1, const char *c2);
+    inline bool stringEquals(JSString *str1, const std::string &s2) { return stringEquals(str1, s2.data()); }
+    
+    bool stringEqualsASCII(JSString *str1, const char *c2);
+    inline bool stringEqualsASCII(JSString *str1, const std::string &s2) { return stringEqualsASCII(str1, s2.data()); }
     
     // ---
     

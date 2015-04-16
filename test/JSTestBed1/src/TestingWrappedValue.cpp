@@ -144,11 +144,15 @@ void TestingWrappedValue::testAutomaticConversion()
     
     // ---
     
-    wrapped = "from const char*";
-    JSP_CHECK(stringEqualsASCII(wrapped.toString(), "from const char*"));
+    wrapped = "from ASCII const chars";
+    JSP_CHECK(stringEqualsASCII(wrapped.toString(), "from ASCII const chars"));
     
-    wrapped = string("from string");
-    JSP_CHECK(stringEqualsASCII(wrapped.toString(), "from string"));
+    wrapped = string("from UTF8 (אבג) string");
+    JSP_CHECK(stringEquals(wrapped.toString(), "from UTF8 (אבג) string"));
+    
+    wrapped = "";
+    JSP_CHECK(stringEqualsASCII(wrapped.toString(), ""));
+    JSP_CHECK(stringEquals(wrapped.toString(), ""));
 }
 
 // ---
