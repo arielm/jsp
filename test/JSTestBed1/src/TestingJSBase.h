@@ -28,9 +28,9 @@ public:
     virtual void performRun(bool force) = 0;
 
     bool evaluateBoolean(const std::string &source);
-    const std::string evaluateString(const std::string &source);
+    std::string evaluateString(const std::string &source);
     
-    const std::string write(const JS::HandleValueArray& args);
+    std::string write(const JS::HandleValueArray& args);
 
     /*
      * SOURCE: http://en.cppreference.com/w/cpp/container/vector/vector

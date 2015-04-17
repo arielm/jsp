@@ -92,7 +92,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testPermanentProperty2)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || false, testGetProperty1)
         JSP_TEST(force || false, testGetElement1)
@@ -106,7 +106,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testSetElements2)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testGetElements3)
         JSP_TEST(force || true, testSetElements3)
@@ -1310,13 +1310,15 @@ void TestingJS::testCustomScriptExecution()
 
 void TestingJS::testParsing1()
 {
-    const string source = utils::readText<string>(InputSource::getAsset("config.json"));
+    string source = utils::readText<string>(InputSource::getAsset("config.json"));
     
     initComplexJSON(source);
-    const string js = evaluateString("JSON.stringify(JSON.parse(complexJSON), null, 2)");
-    
+    string js = evaluateString("JSON.stringify(JSON.parse(complexJSON), null, 2)");
+    LOGI << (void*)&js << " | " << (void*)js.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+
     JSObject *parsed = parse(source);
-    const string cpp = stringify(parsed);
+    string cpp = stringify(parsed);
+    LOGI << (void*)&cpp << " | " << (void*)cpp.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
     
     JSP_CHECK(js == cpp);
 }
@@ -1361,12 +1363,12 @@ void TestingJS::testStringify()
     /*
      * USING stringify VIA JS
      */
-    const string js = evaluateString("JSON.stringify(complexObject, null, 2)");
+    string js = evaluateString("JSON.stringify(complexObject, null, 2)");
     
     /*
      * USING stringify VIA C++
      */
-    const string cpp = stringify(get<OBJECT>(globalHandle(), "complexObject"));
+    string cpp = stringify(get<OBJECT>(globalHandle(), "complexObject"));
     
     JSP_CHECK(js == cpp);
 }
@@ -1382,12 +1384,12 @@ void TestingJS::testToSource()
     /*
      * USING toSource() VIA JS
      */
-    const string js = evaluateString("complexObject.toSource()");
+    string js = evaluateString("complexObject.toSource()");
     
     /*
      * USING toSource() VIA C++
      */
-    const string cpp = toSource(get<OBJECT>(globalHandle(), "complexObject"));
+    string cpp = toSource(get<OBJECT>(globalHandle(), "complexObject"));
     
     JSP_CHECK(js == cpp);
 }

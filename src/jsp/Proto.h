@@ -166,7 +166,7 @@ namespace jsp
         // ---
         
         template<typename T>
-        inline const T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
+        inline T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             RootedValue value(cx);
             
@@ -227,7 +227,7 @@ namespace jsp
         // ---
         
         template<typename T>
-        inline const T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
+        inline T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
             RootedValue value(cx);
             

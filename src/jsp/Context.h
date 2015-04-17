@@ -29,6 +29,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <iostream> // FIXME: TEMPORARY
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -80,8 +81,7 @@ namespace jsp
         UTF8String(UTF8String &&other);
         ~UTF8String();
         
-        operator const char* ();
-        const char* data() const;
+        operator char* () const { return bytes; }
         
     protected:
         char *bytes = nullptr;
@@ -90,9 +90,12 @@ namespace jsp
         void operator=(const UTF8String &other) = delete;
     };
     
-    inline const std::string toString(HandleValue value)
+    inline std::string toString(HandleValue value)
     {
-        return UTF8String(ToString(cx, value)).data(); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+        std::string result(UTF8String(ToString(cx, value))); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+        std::cout << (void*)&result << " | " << (void*)result.data() << std::endl; // FIXME: TEMPORARY (TESTING RVO)
+
+        return result;
     }
 
     JSFlatString* toJSString(const char *c);
@@ -228,7 +231,7 @@ namespace jsp
     // ---
     
     template<class T>
-    inline const T convertSafely(HandleValue value, const T defaultValue)
+    inline T convertSafely(HandleValue value, const T defaultValue)
     {
         T result;
         return convertMaybe(value, &result) ? result : defaultValue;
@@ -347,55 +350,55 @@ namespace jsp
     // ---
     
     template<typename T>
-    inline const Value toValue(JSObject *object)
+    inline Value toValue(JSObject *object)
     {
         return ObjectOrNullValue(object);
     }
 
     template<typename T>
-    inline const Value toValue(std::nullptr_t)
+    inline Value toValue(std::nullptr_t)
     {
         return NullValue();
     }
     
     template<typename T>
-    inline const Value toValue(float f)
+    inline Value toValue(float f)
     {
         return DoubleValue(f);
     }
     
     template<typename T>
-    inline const Value toValue(double d)
+    inline Value toValue(double d)
     {
         return DoubleValue(d);
     }
     
     template<typename T>
-    inline const Value toValue(int32_t i)
+    inline Value toValue(int32_t i)
     {
         return Int32Value(i);
     }
     
     template<typename T>
-    inline const Value toValue(uint32_t ui)
+    inline Value toValue(uint32_t ui)
     {
         return NumberValue(ui);
     }
     
     template<typename T>
-    inline const Value toValue(bool b)
+    inline Value toValue(bool b)
     {
         return BooleanValue(b);
     }
 
     template <typename T>
-    inline const Value toValue(const std::string &s)
+    inline Value toValue(const std::string &s)
     {
         return StringValue(toJSString(s));
     }
 
     template<typename T>
-    inline const Value toValue(const char *c)
+    inline Value toValue(const char *c)
     {
         return StringValue(toJSString(c));
     }
@@ -403,112 +406,112 @@ namespace jsp
     //
     
     template<typename T>
-    inline const Value toValue(T&&);
+    inline Value toValue(T&&);
 
     template <>
-    inline const Value toValue(std::nullptr_t&&)
+    inline Value toValue(std::nullptr_t&&)
     {
         return NullValue();
     }
     
     template <>
-    inline const Value toValue(JSObject &object)
+    inline Value toValue(JSObject &object)
     {
         return ObjectValue(object);
     }
 
     template <>
-    inline const Value toValue(HandleObject &object)
+    inline Value toValue(HandleObject &object)
     {
         return ObjectOrNullValue(object);
     }
     
     template <>
-    inline const Value toValue(JSObject *&&object)
+    inline Value toValue(JSObject *&&object)
     {
         return ObjectOrNullValue(object);
     }
     
     template <>
-    inline const Value toValue(float &f)
+    inline Value toValue(float &f)
     {
         return DoubleValue(f);
     }
     
     template <>
-    inline const Value toValue(float &&f)
+    inline Value toValue(float &&f)
     {
         return DoubleValue(f);
     }
     
     template <>
-    inline const Value toValue(double &d)
+    inline Value toValue(double &d)
     {
         return DoubleValue(d);
     }
     
     template <>
-    inline const Value toValue(double &&d)
+    inline Value toValue(double &&d)
     {
         return DoubleValue(d);
     }
     
     template <>
-    inline const Value toValue(int32_t &i)
+    inline Value toValue(int32_t &i)
     {
         return Int32Value(i);
     }
     
     template <>
-    inline const Value toValue(int32_t &&i)
+    inline Value toValue(int32_t &&i)
     {
         return Int32Value(i);
     }
 
     template <>
-    inline const Value toValue(uint32_t &ui)
+    inline Value toValue(uint32_t &ui)
     {
         return NumberValue(ui);
     }
 
     template <>
-    inline const Value toValue(uint32_t &&ui)
+    inline Value toValue(uint32_t &&ui)
     {
         return NumberValue(ui);
     }
     
     template <>
-    inline const Value toValue(bool &b)
+    inline Value toValue(bool &b)
     {
         return BooleanValue(b);
     }
     
     template <>
-    inline const Value toValue(bool &&b)
+    inline Value toValue(bool &&b)
     {
         return BooleanValue(b);
     }
 
     template <>
-    inline const Value toValue(std::string &s)
+    inline Value toValue(std::string &s)
     {
         return StringValue(toJSString(s));
     }
 
     template <>
-    inline const Value toValue(const std::string &s)
+    inline Value toValue(const std::string &s)
     {
         return StringValue(toJSString(s));
     }
     
     template <>
-    inline const Value toValue(const char *&c)
+    inline Value toValue(const char *&c)
     {
         return StringValue(toJSString(c));
     }
     
     template <size_t N>
-    inline const Value toValue(const char (&c)[N])
+    inline Value toValue(const char (&c)[N])
     {
         return StringValue(toJSString(c));
     }
@@ -575,13 +578,13 @@ namespace jsp
 
     // ---
     
-    const std::string toSource(JSObject *object);
-    const std::string toSource(HandleValue value);
+    std::string toSource(JSObject *object);
+    std::string toSource(HandleValue value);
 
     // ---
     
-    const std::string stringify(JSObject *object, int indent = 2);
-    const std::string stringify(MutableHandleValue value, int indent = 2);
+    std::string stringify(JSObject *object, int indent = 2);
+    std::string stringify(MutableHandleValue value, int indent = 2);
 
     JSObject* parse(const std::string &str);
     JSObject* parse(HandleString str);

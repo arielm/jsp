@@ -171,16 +171,6 @@ namespace jsp
         }
     }
     
-    UTF8String::operator const char* ()
-    {
-        return bytes ? bytes : "";
-    }
-    
-    const char* UTF8String::data() const
-    {
-        return bytes ? bytes : "";
-    }
-    
     // ---
     
     /*
@@ -321,19 +311,19 @@ namespace jsp
     
 #pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
     
-    const string toSource(JSObject *object)
+    string toSource(JSObject *object)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
         return toSource(value);
     }
 
-    const string toSource(HandleValue value)
+    string toSource(HandleValue value)
     {
         RootedString source(cx, JS_ValueToSource(cx, value));
         
         if (source)
         {
-            return UTF8String(source).data();
+            return string(UTF8String(source));
         }
         
         return ""; // I.E. FAILURE
@@ -350,35 +340,34 @@ namespace jsp
     
     struct intern::Stringifier
     {
-        string buffer;
-        
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
-            auto self = reinterpret_cast<Stringifier*>(data);
-            self->buffer += UTF8String(buf, len);
+            auto buffer = reinterpret_cast<string*>(data);
+            buffer->append(UTF8String(buf, len));
             
             return true;
         }
     };
     
-    const string stringify(JSObject *object, int indent)
+    string stringify(JSObject *object, int indent)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
         return stringify(&value, indent);
     }
     
-    const string stringify(MutableHandleValue value, int indent)
+    string stringify(MutableHandleValue value, int indent)
     {
-        intern::Stringifier stringifier;
+        string buffer;
         
         RootedValue indentValue(cx, (indent > 0) ? Int32Value(indent) : UndefinedHandleValue);
         
-        if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &stringifier))
+        if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &buffer))
         {
             return ""; // ON-PAR WITH JSON.stringify()
         }
         
-        return stringifier.buffer;
+        LOGI << (void*)&buffer << " | " << (void*)buffer.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+        return buffer;
     }
     
     // ---

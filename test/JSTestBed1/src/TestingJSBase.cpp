@@ -67,7 +67,7 @@ bool TestingJSBase::evaluateBoolean(const string &source)
  *
  * TODO: SHOULD BE DONE VIA THE Proto API
  */
-const string TestingJSBase::evaluateString(const string &source)
+string TestingJSBase::evaluateString(const string &source)
 {
     OwningCompileOptions options(cx);
     options.setForEval(true);
@@ -92,7 +92,7 @@ const string TestingJSBase::evaluateString(const string &source)
 /*
  * SIMILAR TO Manager::function_print
  */
-const string TestingJSBase::write(const HandleValueArray& args)
+string TestingJSBase::write(const HandleValueArray& args)
 {
     string buffer;
     RootedString rooted(cx);
@@ -100,12 +100,11 @@ const string TestingJSBase::write(const HandleValueArray& args)
     for (auto i = 0; i < args.length(); i++)
     {
         rooted = ToString(cx, args[i]);
-        JSAutoByteString tmp;
         
-        if (tmp.encodeUtf8(cx, rooted))
+        if (rooted)
         {
             if (i > 0) buffer += ' ';
-            buffer += tmp.ptr();
+            buffer += UTF8String(rooted);
         }
         else
         {

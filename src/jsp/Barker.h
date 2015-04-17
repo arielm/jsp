@@ -52,7 +52,7 @@ namespace jsp
             return object;
         }
         
-        operator const Value () const
+        operator Value () const
         {
             return ObjectOrNullValue(object);
         }
