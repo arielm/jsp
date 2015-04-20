@@ -139,7 +139,7 @@ namespace jsp
     {
         if (chars && len)
         {
-            bytes = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
+            data = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
         }
     }
     
@@ -147,11 +147,11 @@ namespace jsp
     {
         if (str)
         {
-            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: NO NEED TO PROTECT BECAUSE THE FOLLOWING CAN'T TRIGGER GC
             
             if (linear)
             {
-                bytes = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // ASSERTION: CAN'T TRIGGER GC?
+                data = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str();
             }
         }
     }
@@ -163,7 +163,7 @@ namespace jsp
     
     toChars::~toChars()
     {
-        js_free(bytes);
+        js_free(data);
     }
     
     // ---
@@ -174,8 +174,7 @@ namespace jsp
         
         if (chars && len)
         {
-            result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
-//          LOGI << (void*)&result << " | " << (void*)result.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+            result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str(); // A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
         }
         
         return result; // RVO-COMPLIANT
@@ -187,12 +186,11 @@ namespace jsp
 
         if (str)
         {
-            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: NO NEED TO PROTECT BECAUSE THE FOLLOWING CAN'T TRIGGER GC
             
             if (linear)
             {
-                result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // ASSERTION: CAN'T TRIGGER GC?
-//              LOGI << (void*)&result << " | " << (void*)result.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+                result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
             }
         }
         
@@ -206,19 +204,22 @@ namespace jsp
      */
     JSFlatString* toJSString(const char *c)
     {
-        size_t len;
-        jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c, strlen(c)), &len).get();
-        
-        if (chars)
+        if (c)
         {
-            JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
+            size_t len;
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c, strlen(c)), &len).get();
             
-            if (result)
+            if (chars)
             {
-                return result; // (TRANSFERRED) MEMORY IS NOW UNDER THE RULES OF GC...
+                JSFlatString *result = js_NewString<js::CanGC>(cx, chars, len); // USED BY JS_NewUCString() BEHIND THE SCENES
+                
+                if (result)
+                {
+                    return result; // (TRANSFERRED) MEMORY IS NOW UNDER THE RULES OF GC...
+                }
+                
+                js_free(chars); // OTHERWISE: WE'RE IN CHARGE
             }
-            
-            js_free(chars); // OTHERWISE: WE'RE IN CHARGE
         }
         
         return cx->emptyString(); // ATOMS ARE "FLAT"
@@ -226,14 +227,14 @@ namespace jsp
     
     bool stringEquals(JSString *str1, const char *c2)
     {
-        if (str1)
+        if (str1 && c2)
         {
-            JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+            JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: NO NEED TO PROTECT BECAUSE THE FOLLOWING CAN'T TRIGGER GC
             
             if (linear1)
             {
                 size_t len2;
-                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c2, strlen(c2)), &len2).get(); // ASSERTION: CAN'T TRIGGER GC?
+                jschar *chars2 = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(c2, strlen(c2)), &len2).get();
                 
                 if (chars2)
                 {
@@ -251,7 +252,7 @@ namespace jsp
     
     bool stringEqualsASCII(JSString *str1, const char *c2)
     {
-        if (str1)
+        if (str1 && c2)
         {
             size_t len1 = str1->length();
             size_t len2 = strlen(c2);
@@ -270,7 +271,7 @@ namespace jsp
                 }
 #endif
                 
-                JSLinearString *linear1 = str1->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+                JSLinearString *linear1 = str1->ensureLinear(cx);
                 
                 if (linear1)
                 {
@@ -391,7 +392,6 @@ namespace jsp
         
         if (JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &buffer))
         {
-//          LOGI << (void*)&buffer << " | " << (void*)buffer.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
             return buffer; // RVO-COMPLIANT
         }
         

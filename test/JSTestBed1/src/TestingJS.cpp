@@ -1314,11 +1314,9 @@ void TestingJS::testParsing1()
     
     initComplexJSON(source);
     string js = evaluateString("JSON.stringify(JSON.parse(complexJSON), null, 2)");
-//  LOGI << (void*)&js << " | " << (void*)js.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
 
     JSObject *parsed = parse(source);
     string cpp = stringify(parsed);
-//  LOGI << (void*)&cpp << " | " << (void*)cpp.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
     
     JSP_CHECK(js == cpp);
 }

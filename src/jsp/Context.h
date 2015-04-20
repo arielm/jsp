@@ -71,9 +71,12 @@ namespace jsp
     
     // ---
     
+    /*
+     * OPTIMAL: NO DATA IS (UN-NECESSARILY) COPIED
+     */
     struct toChars
     {
-        char *bytes = nullptr;
+        char *data = nullptr;
 
         toChars(const toChars &other) = delete;
         void operator=(const toChars &other) = delete;
@@ -83,16 +86,15 @@ namespace jsp
         toChars(HandleValue value);
         ~toChars();
         
-        operator const char* () const { return bytes; }
+        operator const char* () const { return data; }
     };
     
+    /*
+     * SUB-OPTIMAL: DATA IS (UN-NECESSARILY) COPIED
+     */
     std::string toString(const jschar *chars, size_t len);
     std::string toString(JSString *str);
-    
-    inline std::string toString(HandleValue value)
-    {
-        return toString(ToString(cx, value));
-    }
+    inline std::string toString(HandleValue value) { return toString(ToString(cx, value)); }
 
     JSFlatString* toJSString(const char *c);
     inline JSFlatString* toJSString(const std::string &s) { return toJSString(s.data()); }
@@ -326,7 +328,7 @@ namespace jsp
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
             RootedValue rooted(cx, value);
-            return stringEquals(ToString(cx, rooted), other); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+            return stringEquals(ToString(cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
         }
         
         return false;
@@ -337,7 +339,7 @@ namespace jsp
         if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
         {
             RootedValue rooted(cx, value);
-            return stringEquals(ToString(cx, rooted), other); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+            return stringEquals(ToString(cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
         }
         
         return false;

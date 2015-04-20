@@ -151,19 +151,26 @@ void TestingRooting2::testBarkerJSFunctionality()
     auto nextId = Barker::nextId();
     string name = "js-created unrooted 1";
     
-    executeScript("var testBarkers1 = function(id, name) {\
-                  var idMatch = (new Barker(name).id) == id;\
-                  var nameMatch = Barker.getInstance(name).name == name;\
-                  var barked = Barker.bark(name);\
-                  forceGC();\
-                  return idMatch && nameMatch && Barker.isFinalized(name);\
-                  }");
-    
-    AutoValueVector args(cx);
-    args.append(toValue(nextId));
-    args.append(toValue(name));
-    
-    JSP_CHECK(call(globalHandle(), "testBarkers1", args).isTrue());
+    try
+    {
+        executeScript("var testBarkers1 = function(id, name) {\
+                      var idMatch = (new Barker(name).id) == id;\
+                      var nameMatch = Barker.getInstance(name).name == name;\
+                      var barked = Barker.bark(name);\
+                      forceGC();\
+                      return idMatch && nameMatch && Barker.isFinalized(name);\
+                      }");
+        
+        AutoValueVector args(cx);
+        args.append(toValue(nextId));
+        args.append(toValue(name));
+        
+        JSP_CHECK(call(globalHandle(), "testBarkers1", args).isTrue());
+    }
+    catch (exception &e)
+    {
+        JSP_CHECK(false);
+    }
 }
 
 void TestingRooting2::testBarkerMixedFunctionality()
@@ -187,14 +194,21 @@ void TestingRooting2::testBarkerMixedFunctionality()
     JSP_CHECK(Barker::getId(Barker::create(name)) == nextId);
     JSP_CHECK(Barker::getName(Barker::getInstance(name.data())) == name);
     
-    executeScript("var testBarkers2 = function(name) {\
-                  var barked = Barker.bark(name);\
-                  forceGC();\
-                  return barked && Barker.isFinalized(name);\
-                  }");
-    
-    RootedValue arg(cx, toValue(name));
-    JSP_CHECK(call(globalHandle(), "testBarkers2", arg).isTrue());
+    try
+    {
+        executeScript("var testBarkers2 = function(name) {\
+                      var barked = Barker.bark(name);\
+                      forceGC();\
+                      return barked && Barker.isFinalized(name);\
+                      }");
+        
+        RootedValue arg(cx, toValue(name));
+        JSP_CHECK(call(globalHandle(), "testBarkers2", arg).isTrue());
+    }
+    catch (exception &e)
+    {
+        JSP_CHECK(false);
+    }
 }
 
 void TestingRooting2::testRootedBarker1()
