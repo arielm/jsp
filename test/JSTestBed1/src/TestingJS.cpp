@@ -867,7 +867,7 @@ static bool setter1(JSContext *cx, unsigned argc, Value *vp)
     
     if (args.hasDefined(0))
     {
-        LOGI << "setter1 CALLED WITH: " << jsp::toString(args[0]) << endl;
+        LOGI << "setter1 CALLED WITH: " << toChars(args[0]) << endl;
         
         args.rval().setUndefined();
         return true;
@@ -900,7 +900,7 @@ static bool getterSetter1(JSContext *cx, unsigned argc, Value *vp)
     
     if (args.hasDefined(0))
     {
-        LOGI << "getterSetter1: setter CALLED WITH: " << jsp::toString(args[0]) << endl;
+        LOGI << "getterSetter1: setter CALLED WITH: " << toChars(args[0]) << endl;
 
         if (args[0].isInt32())
         {
@@ -1314,11 +1314,11 @@ void TestingJS::testParsing1()
     
     initComplexJSON(source);
     string js = evaluateString("JSON.stringify(JSON.parse(complexJSON), null, 2)");
-    LOGI << (void*)&js << " | " << (void*)js.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+//  LOGI << (void*)&js << " | " << (void*)js.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
 
     JSObject *parsed = parse(source);
     string cpp = stringify(parsed);
-    LOGI << (void*)&cpp << " | " << (void*)cpp.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+//  LOGI << (void*)&cpp << " | " << (void*)cpp.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
     
     JSP_CHECK(js == cpp);
 }

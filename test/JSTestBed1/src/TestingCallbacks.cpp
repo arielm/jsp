@@ -48,7 +48,7 @@ static bool methodDispatch(JSContext *cx, unsigned argc, Value *vp)
     JSFunction *function = &callee.as<JSFunction>();
     JSAtom *atom = function->atom();
     
-    LOGI << &callee << " | " << UTF8String(atom) << endl;
+    LOGI << &callee << " | " << toChars(atom) << endl;
     
     args.rval().setUndefined();
     return true;
@@ -97,7 +97,7 @@ static bool methodDispatchExtended(JSContext *cx, unsigned argc, Value *vp)
     JSFunction *function = &callee.as<JSFunction>();
     JSAtom *atom = function->atom();
     
-    LOGI << &callee << " | " << UTF8String(atom) << " | " << JSP::write(GetFunctionNativeReserved(function, 0)) << endl;
+    LOGI << &callee << " | " << toChars(atom) << " | " << JSP::write(GetFunctionNativeReserved(function, 0)) << endl;
     
     args.rval().setUndefined();
     return true;

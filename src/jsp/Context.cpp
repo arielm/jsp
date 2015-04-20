@@ -135,7 +135,7 @@ namespace jsp
     
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
-    UTF8String::UTF8String(const jschar *chars, size_t len)
+    toChars::toChars(const jschar *chars, size_t len)
     {
         if (chars && len)
         {
@@ -143,7 +143,7 @@ namespace jsp
         }
     }
     
-    UTF8String::UTF8String(JSString *str)
+    toChars::toChars(JSString *str)
     {
         if (str)
         {
@@ -155,22 +155,50 @@ namespace jsp
             }
         }
     }
-    
-    UTF8String::UTF8String(UTF8String &&other)
+
+    toChars::toChars(HandleValue value)
     :
-    bytes(other.bytes)
+    toChars(ToString(cx, value))
+    {}
+    
+    toChars::~toChars()
     {
-        other.bytes = nullptr;
+        js_free(bytes);
     }
     
-    UTF8String::~UTF8String()
+    // ---
+    
+    string toString(const jschar *chars, size_t len)
     {
-        if (bytes)
+        string result;
+        
+        if (chars && len)
         {
-            js_free(bytes);
+            result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
+//          LOGI << (void*)&result << " | " << (void*)result.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
         }
+        
+        return result; // RVO-COMPLIANT
     }
     
+    string toString(JSString *str)
+    {
+        string result;
+
+        if (str)
+        {
+            JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: CAN'T TRIGGER GC?
+            
+            if (linear)
+            {
+                result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // ASSERTION: CAN'T TRIGGER GC?
+//              LOGI << (void*)&result << " | " << (void*)result.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+            }
+        }
+        
+        return result; // RVO-COMPLIANT
+    }
+
     // ---
     
     /*
@@ -314,16 +342,16 @@ namespace jsp
     string toSource(JSObject *object)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
-        return toSource(value);
+        return toSource(value); // RVO-COMPLIANT
     }
 
     string toSource(HandleValue value)
     {
-        RootedString source(cx, JS_ValueToSource(cx, value));
+        JSString *source = JS_ValueToSource(cx, value);
         
         if (source)
         {
-            return string(UTF8String(source));
+            return toString(source); // RVO-COMPLIANT
         }
         
         return ""; // I.E. FAILURE
@@ -343,7 +371,7 @@ namespace jsp
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto buffer = reinterpret_cast<string*>(data);
-            buffer->append(UTF8String(buf, len));
+            buffer->append(toChars(buf, len));
             
             return true;
         }
@@ -352,7 +380,7 @@ namespace jsp
     string stringify(JSObject *object, int indent)
     {
         RootedValue value(cx, ObjectOrNullValue(object));
-        return stringify(&value, indent);
+        return stringify(&value, indent); // RVO-COMPLIANT
     }
     
     string stringify(MutableHandleValue value, int indent)
@@ -361,23 +389,23 @@ namespace jsp
         
         RootedValue indentValue(cx, (indent > 0) ? Int32Value(indent) : UndefinedHandleValue);
         
-        if (!JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &buffer))
+        if (JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &buffer))
         {
-            return ""; // ON-PAR WITH JSON.stringify()
+//          LOGI << (void*)&buffer << " | " << (void*)buffer.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
+            return buffer; // RVO-COMPLIANT
         }
         
-        LOGI << (void*)&buffer << " | " << (void*)buffer.data() << endl; // FIXME: TEMPORARY (TESTING RVO)
-        return buffer;
+        return ""; // I.E. FAILURE, ON-PAR WITH JSON.stringify()
     }
     
     // ---
     
-    JSObject* parse(const string &str)
+    JSObject* parse(const string &s)
     {
-        if (!str.empty())
+        if (!s.empty())
         {
             size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(str.data(), str.size()), &len).get();
+            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s.data(), s.size()), &len).get();
             
             if (chars)
             {
@@ -391,6 +419,12 @@ namespace jsp
         return nullptr;
     }
     
+    JSObject* parse(HandleValue value)
+    {
+        RootedString str(cx, ToString(cx, value));
+        return parse(str);
+    }
+    
     JSObject* parse(HandleString str)
     {
         if (str)
@@ -401,17 +435,6 @@ namespace jsp
             {
                 return parse(linear->chars(), linear->length()); // CAN TRIGGER GC
             }
-        }
-        
-        return nullptr;
-    }
-
-    JSObject* parse(const Value &value)
-    {
-        if (value.isString())
-        {
-            RootedString str(cx, value.toString());
-            return parse(str);
         }
         
         return nullptr;
@@ -790,7 +813,7 @@ const uint32_t JSP::toHTMLColor(HandleValue value, const uint32_t defaultValue)
 {
     if (value.isString())
     {
-        string tmp(UTF8String(value.toString()));
+        string tmp = toString(value);
         
         if (!tmp.empty())
         {

@@ -104,7 +104,7 @@ string TestingJSBase::write(const HandleValueArray& args)
         if (rooted)
         {
             if (i > 0) buffer += ' ';
-            buffer += UTF8String(rooted);
+            buffer += toChars(rooted);
         }
         else
         {

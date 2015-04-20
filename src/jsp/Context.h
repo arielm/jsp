@@ -29,7 +29,6 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <iostream> // FIXME: TEMPORARY
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -72,30 +71,27 @@ namespace jsp
     
     // ---
     
-    class UTF8String
+    struct toChars
     {
-    public:
-        UTF8String(const jschar *chars, size_t len);
-        UTF8String(JSString *str);
-        
-        UTF8String(UTF8String &&other);
-        ~UTF8String();
-        
-        operator char* () const { return bytes; }
-        
-    protected:
         char *bytes = nullptr;
+
+        toChars(const toChars &other) = delete;
+        void operator=(const toChars &other) = delete;
+
+        toChars(const jschar *chars, size_t len);
+        toChars(JSString *str);
+        toChars(HandleValue value);
+        ~toChars();
         
-        UTF8String(const UTF8String &other) = delete;
-        void operator=(const UTF8String &other) = delete;
+        operator const char* () const { return bytes; }
     };
+    
+    std::string toString(const jschar *chars, size_t len);
+    std::string toString(JSString *str);
     
     inline std::string toString(HandleValue value)
     {
-        std::string result(UTF8String(ToString(cx, value))); // ToString() IS INFAILIBLE, POSSIBLY SLOW
-        std::cout << (void*)&result << " | " << (void*)result.data() << std::endl; // FIXME: TEMPORARY (TESTING RVO)
-
-        return result;
+        return toString(ToString(cx, value));
     }
 
     JSFlatString* toJSString(const char *c);
@@ -195,7 +191,7 @@ namespace jsp
     {
         if (!value.isUndefined())
         {
-            *result = UTF8String(ToString(cx, value)); // ToString() IS INFAILIBLE, POSSIBLY SLOW
+            *result = toChars(value); // INFAILIBLE, POSSIBLY SLOW
             return true;
         }
         
@@ -586,13 +582,9 @@ namespace jsp
     std::string stringify(JSObject *object, int indent = 2);
     std::string stringify(MutableHandleValue value, int indent = 2);
 
-    JSObject* parse(const std::string &str);
+    JSObject* parse(const std::string &s);
+    JSObject* parse(HandleValue value);
     JSObject* parse(HandleString str);
-    JSObject* parse(const Value &value);
-    
-    /*
-     * chars MUST BE EITHER SELF-MANAGED OR PART OF A ROOTED JS-STRING
-     */
     JSObject* parse(const jschar *chars, size_t len);
 }
 
