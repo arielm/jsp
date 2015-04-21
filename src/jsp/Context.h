@@ -86,6 +86,14 @@ namespace jsp
         toChars(HandleValue value);
         ~toChars();
         
+        /*
+         * FIXME: PROBLEMATIC!!!
+         *
+         * E.G.
+         *
+         * const char *c = toChars(foo); // DATA WILL BE FREED
+         * cout << c << endl; // GARBAGE WILL BE PRINTED
+         */
         operator const char* () const { return data; }
     };
     
