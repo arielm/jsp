@@ -120,7 +120,7 @@ namespace jsp
                     JS_DeleteElement(cx, peerArray, instance->elementIndex);
                     
                     uint32_t length;
-                    JS_GetArrayLength(cx, peerArray, &length); // FIXME: LENGTH DOES NOT REFLECT THE "NEW" SIZE OF THE ARRAY
+                    JS_GetArrayLength(cx, peerArray, &length); // FIXME: USE "TRUE" ELEMENT-COUNT
                     
                     if (length == 0)
                     {

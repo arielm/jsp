@@ -70,6 +70,9 @@ namespace jsp
         JSObject* newArray(size_t length = 0) override;
         JSObject* newArray(const HandleValueArray& contents) override;
         
+        bool hasElement(HandleObject array, int index) override;
+        size_t getElementCount(HandleObject array) override;
+        
         size_t getLength(HandleObject array) override;
         bool setLength(HandleObject array, size_t length) override;
         

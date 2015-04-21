@@ -214,6 +214,45 @@ namespace jsp
         return JS_NewArrayObject(cx, contents);
     }
     
+    bool BaseProto::hasElement(HandleObject array, int index)
+    {
+        if (array)
+        {
+            bool found;
+            
+            if (JS_HasElement(cx, array, index, &found))
+            {
+                return found;
+            }
+        }
+        
+        return false;
+    }
+    
+    size_t BaseProto::getElementCount(HandleObject array)
+    {
+        uint32_t elementCount = 0;
+        
+        RootedValue iterable(cx, ObjectOrNullValue(array));
+        ForOfIterator it(cx);
+        
+        if (it.init(iterable))
+        {
+            bool done = false;
+            RootedValue value(cx);
+            
+            while (it.next(&value, &done) && !done)
+            {
+                if (!value.isUndefined())
+                {
+                    elementCount++;
+                }
+            }
+        }
+        
+        return elementCount;
+    }
+    
     size_t BaseProto::getLength(HandleObject array)
     {
         if (array)

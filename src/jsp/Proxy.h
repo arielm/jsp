@@ -144,6 +144,16 @@ namespace jsp
             return FORWARD(newArray, contents);
         }
         
+        inline bool hasElement(HandleObject array, int index) final
+        {
+            return FORWARD(hasElement, array, index);
+        }
+        
+        inline size_t getElementCount(HandleObject array) final
+        {
+            return FORWARD(getElementCount, array);
+        }
+        
         inline size_t getLength(HandleObject array) final
         {
             return FORWARD(getLength, array);

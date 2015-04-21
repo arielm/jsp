@@ -200,19 +200,20 @@ namespace jsp
         /*
          * TODO:
          *
-         * 0) size_t getElementCount(HandleObject array)
-         * 1) bool hasElement(HandleObject array, int index)
-         * 2) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-         * 3) template<typename T> bool append(HandleObject targetArray, T &&value)
-         * 4) bool appendElements(HandleObject array, const HandleValueArray &values)
-         * 5) bool appendElements(HandleObject array, const AutoValueVector &objects)
+         * 1) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
+         * 2) template<typename T> bool append(HandleObject targetArray, T &&value)
+         * 3) bool appendElements(HandleObject array, const HandleValueArray &values)
+         * 4) bool appendElements(HandleObject array, const AutoValueVector &objects)
          *
-         * 6) C++11 ITERATORS?
-         * 7) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
+         * 5) C++11 ITERATORS?
+         * 6) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
          */
         
         virtual JSObject* newArray(size_t length = 0) = 0;
         virtual JSObject* newArray(const HandleValueArray& contents) = 0;
+        
+        virtual bool hasElement(HandleObject array, int index) = 0;
+        virtual size_t getElementCount(HandleObject array) = 0;
 
         virtual size_t getLength(HandleObject array) = 0;
         virtual bool setLength(HandleObject array, size_t length) = 0;
