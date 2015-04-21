@@ -68,59 +68,55 @@ namespace jsp
         
         // ---
         
-        string errorPrefix;
+        stringstream errorPrefix;
         
         if JSREPORT_IS_WARNING(report->flags)
         {
             if JSREPORT_IS_STRICT(report->flags)
             {
-                errorPrefix += "STRICT WARNING";
+                errorPrefix << "STRICT WARNING";
             }
             else
             {
-                errorPrefix += "WARNING";
+                errorPrefix << "WARNING";
             }
         }
         else
         {
-            errorPrefix += "EXCEPTION";
+            errorPrefix << "EXCEPTION";
         }
         
         if (report->lineno)
         {
-            errorPrefix += " [";
+            errorPrefix << " [";
             
-            if (report->filename)
+            if (report->filename && strlen(report->filename))
             {
-                auto filename = string(report->filename);
-                
-                if (!filename.empty())
-                {
-                    errorPrefix += filename + " | ";
-                }
+                errorPrefix << report->filename << " | ";
             }
             
-            errorPrefix += "LINE " + ci::toString(report->lineno) + "]";
+            errorPrefix << "LINE " << report->lineno << "]";
         }
         
         // ---
         
-        string errorBody;
+        stringstream errorBody;
+        
         string typeName = jsp::toString(JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(rt, report->exnType)));
         
         if (!typeName.empty())
         {
             if (!boost::starts_with(message, typeName))
             {
-                errorBody += typeName + ": ";
+                errorBody << typeName << ": ";
             }
         }
         
-        errorBody += message;
+        errorBody << message;
         
         // ---
         
-        LOGI << "JS " << errorPrefix << " " << errorBody << endl; // TODO: IT SHOULD BE POSSIBLE TO DEFINE WHICH std::ostream IS USED
+        LOGI << errorPrefix.str() << " " << errorBody.str() << endl; // TODO: IT SHOULD BE POSSIBLE TO DEFINE WHICH std::ostream IS USED
     }
     
     bool Manager::function_print(JSContext *cx, unsigned argc, Value *vp)
@@ -134,7 +130,7 @@ namespace jsp
         for (auto i = 0; i < args.length(); i++)
         {
             rooted = ToString(cx, args[i]);
-            
+
             if (rooted)
             {
                 if (i > 0) buffer += ' ';
