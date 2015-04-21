@@ -70,21 +70,21 @@ void TestingJS::performRun(bool force)
         testJSID();
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testGetter1)
         JSP_TEST(force || true, testSetter1)
         JSP_TEST(force || true, testGetterSetter1)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testCustomConstruction1)
         JSP_TEST(force || true, testCustomConstruction2)
         JSP_TEST(force || true, testNewObject)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testReadOnlyProperty1)
         JSP_TEST(force || true, testReadOnlyProperty2)
@@ -92,7 +92,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testPermanentProperty2)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testGetProperty1)
         JSP_TEST(force || true, testGetElement1)
@@ -106,7 +106,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testSetElements2)
     }
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testGetElements3)
         JSP_TEST(force || true, testSetElements3)

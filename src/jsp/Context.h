@@ -116,14 +116,14 @@ namespace jsp
     // ---
     
     template<class T>
-    inline bool convertMaybe(HandleValue value, T *result);
+    inline bool convertMaybe(HandleValue value, T &result);
     
     template <>
-    inline bool convertMaybe(HandleValue value, JSObject **result)
+    inline bool convertMaybe(HandleValue value, JSObject *&result)
     {
         if (value.isObjectOrNull())
         {
-            *result = value.toObjectOrNull();
+            result = value.toObjectOrNull();
             return true;
         }
         
@@ -131,11 +131,11 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, float *result)
+    inline bool convertMaybe(HandleValue value, float &result)
     {
         if (value.isDouble())
         {
-            *result = float(value.toDouble());
+            result = float(value.toDouble());
             return true;
         }
         
@@ -143,11 +143,11 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, double *result)
+    inline bool convertMaybe(HandleValue value, double &result)
     {
         if (value.isDouble())
         {
-            *result = value.toDouble();
+            result = value.toDouble();
             return true;
         }
         
@@ -155,11 +155,11 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, int32_t *result)
+    inline bool convertMaybe(HandleValue value, int32_t &result)
     {
         if (value.isInt32())
         {
-            *result = value.toInt32();
+            result = value.toInt32();
             return true;
         }
         
@@ -167,17 +167,17 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, uint32_t *result)
+    inline bool convertMaybe(HandleValue value, uint32_t &result)
     {
         if (value.isInt32())
         {
-            *result = uint32_t(value.toInt32());
+            result = uint32_t(value.toInt32());
             return true;
         }
         
         if (value.isDouble())
         {
-            *result = uint32_t(value.toDouble());
+            result = uint32_t(value.toDouble());
             return true;
         }
         
@@ -185,11 +185,11 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, bool *result)
+    inline bool convertMaybe(HandleValue value, bool &result)
     {
         if (!value.isUndefined())
         {
-            *result = ToBoolean(value); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
+            result = ToBoolean(value); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
             return true;
         }
         
@@ -197,11 +197,11 @@ namespace jsp
     }
     
     template <>
-    inline bool convertMaybe(HandleValue value, std::string *result)
+    inline bool convertMaybe(HandleValue value, std::string &result)
     {
         if (!value.isUndefined())
         {
-            *result = toChars(value); // INFAILIBLE, POSSIBLY SLOW
+            result = toString(value); // INFAILIBLE, POSSIBLY SLOW
             return true;
         }
         
@@ -215,7 +215,7 @@ namespace jsp
     {
         inline static bool maybe(const HandleValue &v, typename std::vector<T>::iterator &result)
         {
-            return convertMaybe(v, &*result);
+            return convertMaybe(v, *result);
         }
     };
     
@@ -237,10 +237,16 @@ namespace jsp
     // ---
     
     template<class T>
-    inline T convertSafely(HandleValue value, const T defaultValue)
+    inline T convertSafely(HandleValue value, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
     {
         T result;
-        return convertMaybe(value, &result) ? result : defaultValue;
+        
+        if (!convertMaybe(value, result))
+        {
+            result = defaultValue;
+        }
+        
+        return result; // RVO-COMPLIANT
     }
 
     // ---

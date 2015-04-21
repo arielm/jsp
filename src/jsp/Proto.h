@@ -168,23 +168,19 @@ namespace jsp
         template<typename T>
         inline T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
+            T result;
             RootedValue value(cx);
             
-            if (getProperty(targetObject, propertyName, &value))
+            if (!getProperty(targetObject, propertyName, &value) || !convertMaybe(value, result))
             {
-                T result;
-                
-                if (convertMaybe(value, &result))
-                {
-                    return result;
-                }
+                result = defaultValue;
             }
             
-            return defaultValue;
+            return result; // RVO-COMPLIANT
         }
         
         template<typename T>
-        inline bool set(HandleObject targetObject, const char* propertyName, T &&value)
+        inline bool set(HandleObject targetObject, const char *propertyName, T &&value)
         {
             RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
             return setProperty(targetObject, propertyName, rooted);
@@ -204,13 +200,15 @@ namespace jsp
         /*
          * TODO:
          *
+         * 0) size_t getElementCount(HandleObject array)
          * 1) bool hasElement(HandleObject array, int index)
          * 2) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-         * 3) template<typename T> bool append(HandleObject targetArray, T value)
-         * 4) bool append(const HandleValueArray& contents)
+         * 3) template<typename T> bool append(HandleObject targetArray, T &&value)
+         * 4) bool appendElements(HandleObject array, const HandleValueArray &values)
+         * 5) bool appendElements(HandleObject array, const AutoValueVector &objects)
          *
-         * 5) C++11 ITERATORS
-         * 6) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
+         * 6) C++11 ITERATORS?
+         * 7) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
          */
         
         virtual JSObject* newArray(size_t length = 0) = 0;
@@ -229,19 +227,15 @@ namespace jsp
         template<typename T>
         inline T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
         {
+            T result;
             RootedValue value(cx);
             
-            if (getElement(targetArray, elementIndex, &value))
+            if (!getElement(targetArray, elementIndex, &value) || !convertMaybe(value, result))
             {
-                T result;
-                
-                if (convertMaybe(value, &result))
-                {
-                    return result;
-                }
+                result = defaultValue;
             }
             
-            return defaultValue;
+            return result; // RVO-COMPLIANT
         }
         
         template<typename T>
