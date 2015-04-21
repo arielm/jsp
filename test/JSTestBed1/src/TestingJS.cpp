@@ -37,7 +37,7 @@ void TestingJS::performRun(bool force)
     
     // ---
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testParsing1)
         JSP_TEST(force || true, testParsing2)
@@ -92,7 +92,7 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testPermanentProperty2)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testGetProperty1)
         JSP_TEST(force || true, testGetElement1)
@@ -106,11 +106,64 @@ void TestingJS::performRun(bool force)
         JSP_TEST(force || true, testSetElements2)
     }
     
-    if (force || true)
+    if (force || false)
     {
         JSP_TEST(force || true, testGetElements3)
         JSP_TEST(force || true, testSetElements3)
     }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || true, testArrayElementCount)
+    }
+}
+
+#pragma mark ---------------------------------------- ARRAYS ----------------------------------------
+
+/*
+ * DEMONSTRATED:
+ *
+ * - HOW TO OBTAIN THE "TRUE" ELEMENT-COUNT OF A JS-ARRAY
+ * - HOW TO WORK WITH ForOfIterator
+ */
+void TestingJS::testArrayElementCount()
+{
+    RootedObject array(cx, newArray());
+    
+    set(array, 0, -255);
+    set(array, 1, true);
+    set(array, 2, nullptr);
+    set(array, 3, "foo");
+    
+    deleteElement(array, 1);
+
+    /*
+     * Array.length IS NOT REFLECTING THE "TRUE" ELEMENT-COUNT
+     */
+    JSP_CHECK(getLength(array) == 4);
+
+    // ---
+    
+    uint32_t elementCount = 0;
+    
+    RootedValue iterable(cx, ObjectOrNullValue(array));
+    ForOfIterator it(cx);
+    
+    if (it.init(iterable))
+    {
+        bool done = false;
+        RootedValue value(cx);
+
+        while (it.next(&value, &done) && !done)
+        {
+            if (!value.isUndefined())
+            {
+                elementCount++;
+            }
+        }
+    }
+    
+    JSP_CHECK(elementCount == 3);
 }
 
 #pragma mark ---------------------------------------- GETTING / SETTING PROPERTIES AND ELEMENTS ----------------------------------------
@@ -403,9 +456,12 @@ void TestingJS::testGetElements3()
 
     {
         /*
-         * TODO: FORBID (OR DISCOURAGE) USAGE OF getElements<JSObject*>
+         * TODO: FORBID USAGE OF getElements<OBJECT>
+         *
+         * REASON: NOT GC-SAFE IN TERM OF OUTPUT-VALUES
+         * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
          */
-        
+
         vector<OBJECT> elements;
         
         RootedObject array(cx, evaluateObject("([{}, , []])"));
@@ -459,7 +515,10 @@ void TestingJS::testSetElements3()
     JSP_CHECK(toSource(array) == "[true, false, false]");
     
     /*
-     * TODO: FORBID (OR DISCOURAGE) USAGE OF getElements<JSObject*>
+     * TODO: FORBID USAGE OF setElements<JSObject*>
+     *
+     * REASON: NOT GC-SAFE IN TERM OF INPUT-VALUES
+     * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
      */
     JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
     JSP_CHECK(toSource(array) == "[{}, null, []]");

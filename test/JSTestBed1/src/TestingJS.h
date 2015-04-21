@@ -96,4 +96,8 @@ public:
     
     void testGetElements3();
     void testSetElements3();
+    
+    // ---
+    
+    void testArrayElementCount();
 };
