@@ -18,7 +18,7 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || false, testPeers1);
+    JSP_TEST(force || true, testPeers1);
     JSP_TEST(force || true, testNativeCalls1);
 }
 
@@ -26,31 +26,33 @@ void TestingProxy::performRun(bool force)
 
 void TestingProxy::testPeers1()
 {
-    Proxy vanilla1; // peers.Proxy[1]
-    Proxy singleton("ScriptManager", true); // peers.ScriptManager
-    
-    try
     {
-        /*
-         * ALLOWED
-         */
-        executeScript("peers.Proxy[0].bar = 'baz';");
-
-        /*
-         * INTENTIONALLY NOT ALLOWED
-         */
-        executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
+        Proxy vanilla1; // peers.Proxy[1]
+        Proxy singleton("ScriptManager", true); // peers.ScriptManager
         
-        /*
-         * SHOULD NOT BE ALLOWED AS WELL (I.E. ONLY GENERATE A "WARNING")
-         *
-         * TODO: FIND OUT HOW (SPOILER: NON-TRIVIAL)
-         */
-        executeScript("peers.foo = 123");
-    }
-    catch (exception &e)
-    {
-        LOGI << e.what() << endl;
+        try
+        {
+            /*
+             * ALLOWED
+             */
+            executeScript("peers.Proxy[0].bar = 'baz';");
+            
+            /*
+             * INTENTIONALLY NOT ALLOWED
+             */
+            executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
+            
+            /*
+             * SHOULD NOT BE ALLOWED AS WELL (I.E. ONLY GENERATE A "WARNING")
+             */
+            executeScript("peers.foo = 123");
+        }
+        catch (exception &e)
+        {
+            LOGI << e.what() << endl;
+        }
+        
+        LOGI << toSource(get<OBJECT>(globalHandle(), "peers")) << endl;
     }
     
     LOGI << toSource(get<OBJECT>(globalHandle(), "peers")) << endl;
@@ -100,11 +102,6 @@ void TestingProxy::testNativeCalls1()
     
     // ---
 
-    /*
-     * FIXME: CATCH 22!
-     */
-    executeScript("delete target.staticMethod1"); // THIS SHOULD NOT BE ALLOWED (I.E. PROPERTY SHOULD BE DEFINED WITH "PROP_PERMANENT")
-    unregisterNativeCall("staticMethod1"); // THIS IS NOT DELETING IF PROPERTY IS DEFINED WITH "PROP_PERMANENT"
-    
+    unregisterNativeCall("staticMethod1");
     executeScript("try { print(target.staticMethod1(33)); } catch(e) { print(e);}");
 }

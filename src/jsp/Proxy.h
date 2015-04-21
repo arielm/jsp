@@ -172,6 +172,9 @@ namespace jsp
     protected:
         Proto *target = nullptr;
         Proto *handler = nullptr;
+        
+        PeerProperties peerProperties;
+        uint32_t elementIndex = 0;
 
         /*
          * TODO:
@@ -219,7 +222,7 @@ namespace jsp
         
         static Statics *statics;
         
-        static int32_t addInstance(Proxy *instance, const PeerProperties &peerProperties);
+        static int32_t addInstance(Proxy *instance);
         static bool removeInstance(int32_t instanceId);
         static Proxy* getInstance(int32_t instanceId);
         

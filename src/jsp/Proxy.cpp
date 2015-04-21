@@ -26,7 +26,7 @@ namespace jsp
             statics = new Statics;
             
             statics->peers = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-            JS_DefineProperty(cx, globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
+            JS_DefineProperty(cx, globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
         }
         
         return statics;
@@ -40,18 +40,18 @@ namespace jsp
             statics->instances.clear();
             
             statics->peers = nullptr;
-            JS_DeleteProperty(cx, globalHandle(), "peers"); // XXX
+            JS_DeleteProperty(cx, globalHandle(), "peers");
             
             delete statics;
             statics = nullptr;
         }
     }
     
-    int32_t Proxy::addInstance(Proxy *instance, const PeerProperties &peerProperties)
+    int32_t Proxy::addInstance(Proxy *instance)
     {
-        if (!peerProperties.name.empty())
+        if (!instance->peerProperties.name.empty())
         {
-            const char *name = peerProperties.name.data();
+            const char *name = instance->peerProperties.name.data();
             
             RootedValue property(cx);
             JS_GetProperty(cx, statics->peers, name, &property);
@@ -62,36 +62,34 @@ namespace jsp
             bool singletonEnabled = !propertyIsDefined;
             bool multipleInstancesEnabled = (propertyIsDefined && propertyIsArray) || !propertyIsDefined;
             
-            if ((peerProperties.isSingleton && singletonEnabled) || (!peerProperties.isSingleton && multipleInstancesEnabled))
+            if ((instance->peerProperties.isSingleton && singletonEnabled) || (!instance->peerProperties.isSingleton && multipleInstancesEnabled))
             {
                 instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
                 
-                if (peerProperties.isSingleton)
+                if (instance->peerProperties.isSingleton)
                 {
-                    JS_DefineProperty(cx, statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
+                    JS_DefineProperty(cx, statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 else
                 {
                     RootedObject peerArray(cx);
-                    uint32_t peerCount = 0;
+                    instance->elementIndex = 0;
                     
                     if (propertyIsDefined)
                     {
                         peerArray = property.toObjectOrNull();
-                        JS_GetArrayLength(cx, peerArray, &peerCount);
+                        JS_GetArrayLength(cx, peerArray, &instance->elementIndex);
                     }
                     else
                     {
                         peerArray = JS_NewArrayObject(cx, 0);
-                        JS_DefineProperty(cx, statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT); // XXX
+                        JS_DefineProperty(cx, statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                     }
                     
-                    instance->peer = JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
-                    JS_DefineElement(cx, peerArray, peerCount, ObjectOrNullValue(instance->peer.get()), nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT); // XXX
+                    JS_DefineElement(cx, peerArray, instance->elementIndex, ObjectOrNullValue(instance->peer.get()), nullptr, nullptr, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);
-                
                 return statics->lastInstanceId;
             }
         }
@@ -101,12 +99,43 @@ namespace jsp
     
     bool Proxy::removeInstance(int32_t instanceId)
     {
-        /*
-         * TODO: DELETE PEER
-         */
+        Proxy *instance = getInstance(instanceId);
         
-        statics->instances.erase(instanceId);
-        return true;
+        if (instance)
+        {
+            const char *name = instance->peerProperties.name.data();
+            
+            RootedValue property(cx);
+            JS_GetProperty(cx, statics->peers, name, &property);
+         
+            if (property.isObject())
+            {
+                if (instance->peerProperties.isSingleton)
+                {
+                    JS_DeleteProperty(cx, statics->peers, name);
+                }
+                else
+                {
+                    RootedObject peerArray(cx, &property.toObject());
+                    JS_DeleteElement(cx, peerArray, instance->elementIndex);
+                    
+                    uint32_t length;
+                    JS_GetArrayLength(cx, peerArray, &length); // FIXME: LENGTH DOES NOT REFLECT THE "NEW" SIZE OF THE ARRAY
+                    
+                    if (length == 0)
+                    {
+                        JS_DeleteProperty(cx, statics->peers, name);
+                    }
+                }
+            }
+            
+            // ---
+            
+            statics->instances.erase(instanceId);
+            return true;
+        }
+        
+        return false;
     }
     
     Proxy* Proxy::getInstance(int32_t instanceId)
@@ -126,27 +155,30 @@ namespace jsp
     Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
     {
         this->target = target;
+        this->peerProperties = peerProperties;
         assert(this->target);
 
-        instanceId = addInstance(this, peerProperties);
+        instanceId = addInstance(this);
         assert(instanceId > -1);
     }
     
     Proxy::Proxy(Proto *target)
     {
         this->target = target ? target : defaultTarget();
+        this->peerProperties = defaultPeerProperties();
         assert(this->target);
 
-        instanceId = addInstance(this, defaultPeerProperties());
+        instanceId = addInstance(this);
         assert(instanceId > -1);
     }
     
     Proxy::Proxy(const string &peerName, bool isSingleton)
     {
         target = defaultTarget();
+        this->peerProperties = PeerProperties(peerName, isSingleton);
         assert(this->target);
 
-        instanceId = addInstance(this, PeerProperties(peerName, isSingleton));
+        instanceId = addInstance(this);
         assert(instanceId > -1);
     }
 
