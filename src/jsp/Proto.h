@@ -7,13 +7,9 @@
  */
 
 /*
- * FOLLOW-UP:
+ * TODO:
  *
- * 1) SHOULD EVALUATION AND OBJECT-CREATION BE PART OF THE Proto INTERFACE?
- *    - E.G. exec(), newArray(), ETC.
- *    - OR SHOULD SUCH FUNCTIONALITY BE PROVIDED BY THE "INHERENT JS CONTEXT"? (I.E. VIA THE jsp NAMESPACE)
- *
- * 2) HANDLE COMPLEX EXCEPTION SITUATIONS", E.G.
+ * 1) HANDLE "COMPLEX EXCEPTION SITUATIONS", E.G.
  *    - CALLING exec() FROM C++ -> CALLING C++ CODE FROM JS -> C++ EXCEPTION
  */
 
@@ -118,7 +114,7 @@ namespace jsp
          *
          * 1) DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
          *
-         * 2) THERE SHOULD BE ONLY ONE VIRTUAL METHOD (THE ONE TAKE A HandleValue)
+         * 2) THERE SHOULD BE ONLY ONE VIRTUAL METHOD (THE ONE TAKING A HandleValue)
          *    - THE OTHER ONES SHOULD BE SHORTHAND VERSIONS
          */
         
@@ -135,56 +131,37 @@ namespace jsp
         /*
          * TODO:
          *
-         * 1) bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs)
-         * 2) bool clear(HandleObject object)
+         * 1) bool clear(HandleObject object)
+         *
+         * 2) HOW ABOUT ADOPTING PART OF SPIDERMONKEY'S Proxy PROTOCOL?
+         *    - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsproxy.h#L175-224
+         *    - SOME SIMILARITIES WITH /js/ipc/JavascriptParent.h (NOW DEPRECATED...)
+         *    - THE NEW Reflect OBJECT DEFINED IN ECMA-6 SEEMS TO BE AN EVEN BETTER CANDIDATE:
+         *      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect
          */
         
-        virtual JSObject* newPlainObject() = 0;
-        virtual JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual JSObject* newPlainObject();
+        virtual JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty());
         
-        virtual bool hasProperty(HandleObject object, const char *name) = 0;
-        virtual bool hasOwnProperty(HandleObject object, const char *name) = 0;
+        virtual bool hasProperty(HandleObject object, const char *name);
+        virtual bool hasOwnProperty(HandleObject object, const char *name);
+        virtual bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc);
         
-        virtual bool getProperty(HandleObject object, const char *name, MutableHandleValue result) = 0;
-        virtual bool setProperty(HandleObject object, const char *name, HandleValue value) = 0;
+        virtual bool getProperty(HandleObject object, const char *name, MutableHandleValue result);
+        virtual bool setProperty(HandleObject object, const char *name, HandleValue value);
 
-        virtual bool deleteProperty(HandleObject object, const char *name) = 0;
+        virtual bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0);
+        virtual bool deleteProperty(HandleObject object, const char *name);
 
-        /*
-         * TODO:
-         *
-         * HOW ABOUT ADOPTING PART OF SPIDERMONKEY'S Proxy PROTOCOL?
-         * - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsproxy.h#L175-224
-         * - NOTE: SOME SIMILARITIES WITH /js/ipc/JavascriptParent.h (NOW DEPRECATED)
-         *
-         * THE NEW Reflect OBJECT DEFINED IN ECMA-6 SEEMS TO BE AN EVER BETTER CANDIDATE:
-         * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect
-         */
-        
-        virtual bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) = 0;
-
-        // ---
+        //
         
         template<typename T>
-        inline T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
-        {
-            T result;
-            RootedValue value(cx);
-            
-            if (!getProperty(targetObject, propertyName, &value) || !convertMaybe(value, result))
-            {
-                result = defaultValue;
-            }
-            
-            return result; // RVO-COMPLIANT
-        }
+        T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
         template<typename T>
-        inline bool set(HandleObject targetObject, const char *propertyName, T &&value)
-        {
-            RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
-            return setProperty(targetObject, propertyName, rooted);
-        }
+        bool set(HandleObject targetObject, const char *propertyName, T &&value);
+        
+        bool defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs = 0);
         
         // ---
         
@@ -200,119 +177,243 @@ namespace jsp
         /*
          * TODO:
          *
-         * 1) bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-         * 2) template<typename T> bool append(HandleObject targetArray, T &&value)
-         * 3) bool appendElements(HandleObject array, const HandleValueArray &values)
-         * 4) bool appendElements(HandleObject array, const AutoValueVector &objects)
-         *
-         * 5) C++11 ITERATORS?
-         * 6) INTEGRATION WITH JAVASCRIPT'S TYPED-ARRAYS
+         * 1) template<typename T> bool append(HandleObject targetArray, T &&value)
+         * 2) bool appendElements(HandleObject array, const HandleValueArray &values)
+         * 3) bool appendElements(HandleObject array, const AutoValueVector &objects)
+         * 4) INTEGRATION WITH JS TYPED-ARRAYS
          */
         
-        virtual JSObject* newArray(size_t length = 0) = 0;
-        virtual JSObject* newArray(const HandleValueArray& contents) = 0;
+        virtual JSObject* newArray(size_t length = 0);
+        virtual JSObject* newArray(const HandleValueArray& contents);
         
-        virtual bool hasElement(HandleObject array, int index) = 0;
-        virtual size_t getElementCount(HandleObject array) = 0;
+        virtual bool hasElement(HandleObject array, int index);
+        virtual uint32_t getElementCount(HandleObject array);
 
-        virtual size_t getLength(HandleObject array) = 0;
-        virtual bool setLength(HandleObject array, size_t length) = 0;
+        virtual uint32_t getLength(HandleObject array);
+        virtual bool setLength(HandleObject array, size_t length);
         
-        virtual bool getElement(HandleObject array, int index, MutableHandleValue result) = 0;
-        virtual bool setElement(HandleObject array, int index, HandleValue value) = 0;
+        virtual bool getElement(HandleObject array, int index, MutableHandleValue result);
+        virtual bool setElement(HandleObject array, int index, HandleValue value);
         
-        virtual bool deleteElement(HandleObject array, int index) = 0;
+        virtual bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
+        virtual bool deleteElement(HandleObject array, int index);
 
+        //
+        
+        template<typename T>
+        T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+
+        template<typename T>
+        bool set(HandleObject targetArray, int elementIndex, T &&value);
+        
+        template<typename T>
+        bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        
+        template<typename T>
+        bool setElements(HandleObject array, const std::vector<T> &elements);
+        
+        bool defineElement(HandleObject array, int index, HandleObject value, unsigned attrs = 0);
+    };
+    
+    namespace proto
+    {
+        JSObject* newPlainObject();
+        JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty());
+        
+        bool hasProperty(HandleObject object, const char *name);
+        bool hasOwnProperty(HandleObject object, const char *name);
+        bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc);
+        
+        bool getProperty(HandleObject object, const char *name, MutableHandleValue result);
+        bool setProperty(HandleObject object, const char *name, HandleValue value);
+        
+        bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0);
+        bool deleteProperty(HandleObject object, const char *name);
+        
+        inline bool defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs = 0)
+        {
+            RootedValue rooted(cx, ObjectOrNullValue(value));
+            return defineProperty(object, name, rooted, attrs);
+        }
+        
         // ---
         
-        template<typename T>
-        inline T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
+        JSObject* newArray(size_t length = 0);
+        JSObject* newArray(const HandleValueArray& contents);
+        
+        bool hasElement(HandleObject array, int index);
+        uint32_t getElementCount(HandleObject array);
+        
+        uint32_t getLength(HandleObject array);
+        bool setLength(HandleObject array, size_t length);
+        
+        bool getElement(HandleObject array, int index, MutableHandleValue result);
+        bool setElement(HandleObject array, int index, HandleValue value);
+        
+        bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
+        bool deleteElement(HandleObject array, int index);
+        
+        inline bool defineElement(HandleObject array, int index, HandleObject value, unsigned attrs = 0)
         {
-            T result;
+            RootedValue rooted(cx, ObjectOrNullValue(value));
+            return defineElement(array, index, rooted, attrs);
+        }
+    }
+    
+    // ---
+    
+    inline JSObject* Proto::newPlainObject() { return proto::newPlainObject(); }
+    inline JSObject* Proto::newObject(const std::string &className, const HandleValueArray& args) { return proto::newObject(className, args); }
+    
+    inline bool Proto::hasProperty(HandleObject object, const char *name) { return proto::hasProperty(object, name); }
+    inline bool Proto::hasOwnProperty(HandleObject object, const char *name) { return proto::hasOwnProperty(object, name); }
+    inline bool Proto::getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) { return proto::getOwnPropertyDescriptor(object, id, desc); }
+    
+    inline bool Proto::getProperty(HandleObject object, const char *name, MutableHandleValue result) { return proto::getProperty(object, name, result); }
+    inline bool Proto::setProperty(HandleObject object, const char *name, HandleValue value) { return proto::setProperty(object, name, value); }
+    
+    inline bool Proto::defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs) { return proto::defineProperty(object, name, value, attrs); }
+    inline bool Proto::deleteProperty(HandleObject object, const char *name) { return proto::deleteProperty(object, name); }
+    
+    //
+    
+    template<typename T>
+    inline T Proto::get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue)
+    {
+        T result;
+        RootedValue value(cx);
+        
+        if (!getProperty(targetObject, propertyName, &value) || !convertMaybe(value, result))
+        {
+            result = defaultValue;
+        }
+        
+        return result; // RVO-COMPLIANT
+    }
+    
+    template<typename T>
+    inline bool Proto::set(HandleObject targetObject, const char *propertyName, T &&value)
+    {
+        RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+        return setProperty(targetObject, propertyName, rooted);
+    }
+    
+    inline bool Proto::defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs)
+    {
+        return proto::defineProperty(object, name, value, attrs);
+    }
+    
+    // ---
+    
+    inline JSObject* Proto::newArray(size_t length) { return proto::newArray(length); }
+    inline JSObject* Proto::newArray(const HandleValueArray& contents) { return proto::newArray(contents); }
+
+    inline bool Proto::hasElement(HandleObject array, int index) { return proto::hasElement(array, index); }
+    inline uint32_t Proto::getElementCount(HandleObject array) { return proto::getElementCount(array); }
+    
+    inline uint32_t Proto::getLength(HandleObject array) { return proto::getLength(array); }
+    inline bool Proto::setLength(HandleObject array, size_t length) { return proto::setLength(array, length); };
+    
+    inline bool Proto::getElement(HandleObject array, int index, MutableHandleValue result) { return proto::getElement(array, index, result); }
+    inline bool Proto::setElement(HandleObject array, int index, HandleValue value) { return proto::setElement(array, index, value); }
+    
+    inline bool Proto::defineElement(HandleObject array, int index, HandleValue value, unsigned attrs) { return proto::defineElement(array, index, value, attrs); }
+    inline bool Proto::deleteElement(HandleObject array, int index) { return proto::deleteElement(array, index); }
+    
+    //
+    
+    template<typename T>
+    inline T Proto::get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue)
+    {
+        T result;
+        RootedValue value(cx);
+        
+        if (!getElement(targetArray, elementIndex, &value) || !convertMaybe(value, result))
+        {
+            result = defaultValue;
+        }
+        
+        return result; // RVO-COMPLIANT
+    }
+    
+    template<typename T>
+    inline bool Proto::set(HandleObject targetArray, int elementIndex, T &&value)
+    {
+        RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+        return setElement(targetArray, elementIndex, rooted);
+    }
+    
+    /*
+     * THE OVER-COMPLEXITY OF THE FOLLOWING 2 IS A CONSEQUENCE OF THE PARTIAL SUPPORT OF std::vector<bool> IN C++11
+     */
+    
+    template<typename T>
+    bool Proto::getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue)
+    {
+        auto size = proto::getLength(array);
+        
+        if (size > 0)
+        {
+            elements.clear();
+            elements.resize(size, TypeTraits<T>::defaultValue());
+            
+            bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
+            int index = 0;
+            int converted = 0;
+            
             RootedValue value(cx);
             
-            if (!getElement(targetArray, elementIndex, &value) || !convertMaybe(value, result))
+            for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
             {
-                result = defaultValue;
-            }
-            
-            return result; // RVO-COMPLIANT
-        }
-        
-        template<typename T>
-        inline bool set(HandleObject targetArray, int elementIndex, T &&value)
-        {
-            RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
-            return setElement(targetArray, elementIndex, rooted);
-        }
-        
-        /*
-         * THE OVER-COMPLEXITY OF THE FOLLOWING 2 IS A CONSEQUENCE OF THE PARTIAL SUPPORT OF std::vector<bool> IN C++11
-         */
-        
-        template<typename T>
-        bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
-        {
-            auto size = getLength(array);
-            
-            if (size > 0)
-            {
-                elements.clear();
-                elements.resize(size, TypeTraits<T>::defaultValue());
-
-                bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
-                int index = 0;
-                int converted = 0;
-                
-                RootedValue value(cx);
-                
-                for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
+                if (getElement(array, index++, &value))
                 {
-                    if (getElement(array, index++, &value))
-                    {
-                        if (Convert<T>::maybe(value, it))
-                        {
-                            converted++;
-                            continue;
-                        }
-                    }
-                    
-                    if (assignUnconverted)
-                    {
-                        *it = defaultValue;
-                    }
-                }
-                
-                return (index == converted);
-            }
-            
-            return false;
-        }
-        
-        template<typename T>
-        bool setElements(HandleObject array, const std::vector<T> &elements)
-        {
-            if ((elements.size() > 0) && setLength(array, 0))
-            {
-                int index = 0;
-                int converted = 0;
-
-                RootedValue value(cx);
-                
-                for (typename std::vector<T>::const_iterator it = elements.begin(); it != elements.end(); ++it)
-                {
-                    value = toValue<T>(*it);
-                    
-                    if (setElement(array, index++, value))
+                    if (Convert<T>::maybe(value, it))
                     {
                         converted++;
+                        continue;
                     }
                 }
                 
-                return (index == converted);
+                if (assignUnconverted)
+                {
+                    *it = defaultValue;
+                }
             }
             
-            return false;
+            return (index == converted);
         }
-    };
+        
+        return false;
+    }
+    
+    template<typename T>
+    bool Proto::setElements(HandleObject array, const std::vector<T> &elements)
+    {
+        if ((elements.size() > 0) && proto::setLength(array, 0))
+        {
+            int index = 0;
+            int converted = 0;
+            
+            RootedValue value(cx);
+            
+            for (typename std::vector<T>::const_iterator it = elements.begin(); it != elements.end(); ++it)
+            {
+                value = toValue<T>(*it);
+                
+                if (setElement(array, index++, value))
+                {
+                    converted++;
+                }
+            }
+            
+            return (index == converted);
+        }
+        
+        return false;
+    }
+    
+    inline bool Proto::defineElement(HandleObject array, int index, HandleObject value, unsigned attrs)
+    {
+        return proto::defineElement(array, index, value, attrs);
+    }
 }

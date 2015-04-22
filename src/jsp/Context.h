@@ -29,6 +29,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -579,7 +580,7 @@ namespace jsp
     {
         target.setString(s);
     }
-    
+
     // ---
     
     bool isFunction(JSObject *object);

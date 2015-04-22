@@ -42,44 +42,6 @@ namespace jsp
         {
             return nativeCall.fn(args);
         }
-
-        /*
-         * OBJECTS AND PROPERTIES
-         */
-        
-        JSObject* newPlainObject() override;
-        JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty()) override;
-        
-        bool hasProperty(HandleObject object, const char *name) override;
-        bool hasOwnProperty(HandleObject object, const char *name) override;
-        
-        bool getProperty(HandleObject object, const char *name, MutableHandleValue result) override;
-        bool setProperty(HandleObject object, const char *name, HandleValue value) override;
-        
-        bool deleteProperty(HandleObject object, const char *name) override;
-
-        inline bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) override
-        {
-            return js::GetOwnPropertyDescriptor(cx, object, id, desc); // XXX: NON-PUBLIC
-        }
-        
-        /*
-         * ARRAYS AND ELEMENTS
-         */
-        
-        JSObject* newArray(size_t length = 0) override;
-        JSObject* newArray(const HandleValueArray& contents) override;
-        
-        bool hasElement(HandleObject array, int index) override;
-        size_t getElementCount(HandleObject array) override;
-        
-        size_t getLength(HandleObject array) override;
-        bool setLength(HandleObject array, size_t length) override;
-        
-        bool getElement(HandleObject array, int index, MutableHandleValue result) override;
-        bool setElement(HandleObject array, int index, HandleValue value) override;
-        
-        bool deleteElement(HandleObject array, int index) override;
         
     private:
         BaseProto() = default;

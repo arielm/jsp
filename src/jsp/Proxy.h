@@ -54,6 +54,9 @@ namespace jsp
         virtual Proto* defaultTarget() const;
         virtual const PeerProperties defaultPeerProperties() const;
         
+        int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
+        bool unregisterNativeCall(const std::string &name);
+        
         // ---
         
         inline bool exec(const std::string &source, const ReadOnlyCompileOptions &options) final
@@ -112,6 +115,11 @@ namespace jsp
             return FORWARD(hasOwnProperty, object, name);
         }
         
+        inline bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) final
+        {
+            return FORWARD(getOwnPropertyDescriptor, object, id, desc);
+        }
+        
         inline bool getProperty(HandleObject object, const char *name, MutableHandleValue result) final
         {
             return FORWARD(getProperty, object, name, result);
@@ -122,14 +130,14 @@ namespace jsp
             return FORWARD(setProperty, object, name, value);
         }
         
+        inline bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0)
+        {
+            return FORWARD(defineProperty, object, name, value, attrs);
+        }
+        
         inline bool deleteProperty(HandleObject object, const char *name) final
         {
             return FORWARD(deleteProperty, object, name);
-        }
-        
-        inline bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) final
-        {
-            return FORWARD(getOwnPropertyDescriptor, object, id, desc);
         }
         
         // ---
@@ -149,12 +157,12 @@ namespace jsp
             return FORWARD(hasElement, array, index);
         }
         
-        inline size_t getElementCount(HandleObject array) final
+        inline uint32_t getElementCount(HandleObject array) final
         {
             return FORWARD(getElementCount, array);
         }
         
-        inline size_t getLength(HandleObject array) final
+        inline uint32_t getLength(HandleObject array) final
         {
             return FORWARD(getLength, array);
         }
@@ -174,6 +182,11 @@ namespace jsp
             return FORWARD(setElement, array, index, value);
         }
         
+        inline bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0) final
+        {
+            return FORWARD(defineElement, array, index, value, attrs);
+        }
+        
         inline bool deleteElement(HandleObject array, int index) final
         {
             return FORWARD(deleteElement, array, index);
@@ -186,39 +199,6 @@ namespace jsp
         PeerProperties peerProperties;
         uint32_t elementIndex = 0;
 
-        /*
-         * TODO:
-         *
-         * 1) EACH Proxy SHOULD BE ASSOCIATED WITH A JS-PEER:
-         *    - CREATED DURING Proxy CONSTRUCTION:
-         *      - ASSOCIATED WITH A "NAME" AND SOME "INDEX"
-         *        - NAME COULD BE AUTOMATICALLY GENERATED (E.G. VIA "CLASS-NAME DEMANGLING")
-         *          - BETTER ALTERNATIVE: A VIRTUAL string Proxy.peerName() METHOD
-         *            - BECAUSE CLASS-NAME DEMANGLING IS NOT STANDARD
-         *            - MORE FLEXIBLE ANYWAY, E.G. NOT BEING BOUND SOLELY TO C++ CLASS NAMES
-         *        - INDEX SHOULD BE AUTOMATICALLY INCREMENTED BASED ON INSTANCE-COUNT
-         *        - E.G. SomeProxy proxy(); SomeProxy anotherProxy();
-         *          - proxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 0
-         *          - anotherProxy WOULD BE NAMED SomeProxy, WITH AN INDEX OF 1
-         *    - GLOBALLY-ACCESSIBLE FROM THE JS-SIDE:
-         *      - E.G. Peers.SomeProxy[0] (OR peers.SomeProxy[0]?)
-         *      - THE GLOBAL Peers (OR peers?) OBJECT SHOULD BE MANAGED AT THE JS-COMPARTMENT LEVEL
-         * 2) registerNativeCall(HandleObject object, ...) AND unregisterNativeCall(HandleObject object, ...)
-         *    SHOULD NOT OPERATE ON SOME EXTERNAL JS-OBJECT BUT ON THE PROXY'S JS-PEER, E.G.
-         *    - proxy.registerNativeCall("method1", BIND_STATIC1(staticMethod1);
-         *      proxy.unregisterNativeCall("method1");
-         * 3) THEN IT SHOULD BE POSSIBLE TO "CONNECT/DISCONNECT":
-         *    - FROM THE C++ SIDE, E.G.
-         *      - proxy.bindNativeCall(globalHandle, "method1");
-         *        proxy.unbindNativeCall(globalHandle, "method1");
-         *    - OR FROM THE JS-SIDE, E.G.
-         *      - var foo = {}; foo.method1 = peers.SomeProxy[0].method1; foo.method1(123);
-         *        - peers.SomeProxy[0].method1 SHOULD BE A READ-ONLY PROPERTY
-         */
-
-        int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
-        bool unregisterNativeCall(const std::string &name);
-        
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
