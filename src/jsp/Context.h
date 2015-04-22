@@ -117,7 +117,7 @@ namespace jsp
     // ---
     
     template<class T>
-    inline bool convertMaybe(HandleValue value, T &result);
+    bool convertMaybe(HandleValue, T&);
     
     template <>
     inline bool convertMaybe(HandleValue value, JSObject *&result)
@@ -419,7 +419,7 @@ namespace jsp
     //
     
     template<typename T>
-    inline Value toValue(T&&);
+    Value toValue(T&&);
 
     template <>
     inline Value toValue(std::nullptr_t&&)

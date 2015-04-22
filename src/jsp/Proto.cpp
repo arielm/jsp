@@ -14,7 +14,19 @@ using namespace chr;
 
 namespace jsp
 {
-#pragma mark ---------------------------------------- EVALUATION ----------------------------------------
+    bool Proto::exec(const string &source, const ReadOnlyCompileOptions &options)
+    {
+        RootedValue result(cx);
+        bool success = Evaluate(cx, globalHandle(), options, source.data(), source.size(), &result);
+        
+        if (JS_IsExceptionPending(cx))
+        {
+            JS_ReportPendingException(cx);
+            JS_ClearPendingException(cx);
+        }
+        
+        return success;
+    }
     
     void Proto::executeScript(const string &source, const string &file, int line)
     {
@@ -38,6 +50,19 @@ namespace jsp
     }
 
     // ---
+    
+    bool Proto::eval(const string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result)
+    {
+        bool success = Evaluate(cx, globalHandle(), options, source.data(), source.size(), result);
+        
+        if (JS_IsExceptionPending(cx))
+        {
+            JS_ReportPendingException(cx);
+            JS_ClearPendingException(cx);
+        }
+        
+        return success;
+    }
     
     JSObject* Proto::evaluateObject(const string &source, const string &file, int line)
     {
@@ -68,6 +93,65 @@ namespace jsp
     {
         return evaluateObject(utils::readText<string>(inputSource), inputSource->getFilePathHint());
     }
+    
+    // ---
+    
+    Value Proto::call(HandleObject object, const char *functionName, const HandleValueArray& args)
+    {
+        RootedValue result(cx);
+        bool success = JS_CallFunctionName(cx, object, functionName, args, &result);
+        
+        if (JS_IsExceptionPending(cx))
+        {
+            JS_ReportPendingException(cx);
+            JS_ClearPendingException(cx);
+        }
+        
+        if (success)
+        {
+            return result;
+        }
+        
+        throw EXCEPTION(Proto, "FUNCTION-CALL FAILED");
+    }
+    
+    Value Proto::call(HandleObject object, HandleValue functionValue, const HandleValueArray& args)
+    {
+        RootedValue result(cx);
+        bool success = JS_CallFunctionValue(cx, object, functionValue, args, &result);
+        
+        if (JS_IsExceptionPending(cx))
+        {
+            JS_ReportPendingException(cx);
+            JS_ClearPendingException(cx);
+        }
+        
+        if (success)
+        {
+            return result;
+        }
+        
+        throw EXCEPTION(Proto, "FUNCTION-CALL FAILED");
+    }
+    
+    Value Proto::call(HandleObject object, HandleFunction function, const HandleValueArray& args)
+    {
+        RootedValue result(cx);
+        bool success = JS_CallFunction(cx, object, function, args, &result);
+        
+        if (JS_IsExceptionPending(cx))
+        {
+            JS_ReportPendingException(cx);
+            JS_ClearPendingException(cx);
+        }
+        
+        if (success)
+        {
+            return result;
+        }
+        
+        throw EXCEPTION(Proto, "FUNCTION-CALL FAILED");
+    }
 
     // ---
     
@@ -78,7 +162,7 @@ namespace jsp
             return JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
         }
         
-        JSObject* newObject(const std::string &className, const HandleValueArray& args)
+        JSObject* newObject(const string &className, const HandleValueArray& args)
         {
             RootedValue value(cx);
             

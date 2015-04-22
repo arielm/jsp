@@ -49,7 +49,7 @@ namespace jsp
          * bool exec<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options);
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        virtual bool exec(const std::string &source, const ReadOnlyCompileOptions &options) = 0;
+        virtual bool exec(const std::string &source, const ReadOnlyCompileOptions &options);
         
         /*
          * TODO INSTEAD:
@@ -81,7 +81,7 @@ namespace jsp
          * bool eval<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        virtual bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result) = 0;
+        virtual bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
         
         /*
          * TODO INSTEAD:
@@ -118,13 +118,13 @@ namespace jsp
          *    - THE OTHER ONES SHOULD BE SHORTHAND VERSIONS
          */
         
-        virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty()) = 0;
-        virtual Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty()) = 0;
-        virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty()) = 0;
+        virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty());
+        virtual Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty());
+        virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty());
         
         // ---
         
-        virtual bool apply(const NativeCall &nativeCall, CallArgs args) = 0;
+        virtual bool apply(const NativeCall &nativeCall, CallArgs args);
 
         // ---
         
@@ -258,6 +258,13 @@ namespace jsp
             RootedValue rooted(cx, ObjectOrNullValue(value));
             return defineElement(array, index, rooted, attrs);
         }
+    }
+    
+    // ---
+    
+    inline bool Proto::apply(const NativeCall &nativeCall, CallArgs args)
+    {
+        return nativeCall.fn(args);
     }
     
     // ---
