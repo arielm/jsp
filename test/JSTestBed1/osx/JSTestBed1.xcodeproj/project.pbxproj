@@ -23,7 +23,6 @@
 		A826F5081A6C7ED3002A23A9 /* CinderSketch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A826F5061A6C7ED3002A23A9 /* CinderSketch.cpp */; };
 		A82C910A16E02DAA00FF519C /* Sketch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A82C910816E02DAA00FF519C /* Sketch.cpp */; };
 		A840013F1ABA391F00C90EF0 /* Barker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A840012D1ABA391F00C90EF0 /* Barker.cpp */; };
-		A84001401ABA391F00C90EF0 /* BaseProto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A840012F1ABA391F00C90EF0 /* BaseProto.cpp */; };
 		A84001411ABA391F00C90EF0 /* CloneBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84001311ABA391F00C90EF0 /* CloneBuffer.cpp */; };
 		A84001421ABA391F00C90EF0 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84001331ABA391F00C90EF0 /* Context.cpp */; };
 		A84001431ABA391F00C90EF0 /* Manager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A84001351ABA391F00C90EF0 /* Manager.cpp */; };
@@ -101,8 +100,6 @@
 		A83F55091A31302300E3531E /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
 		A840012D1ABA391F00C90EF0 /* Barker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Barker.cpp; sourceTree = "<group>"; };
 		A840012E1ABA391F00C90EF0 /* Barker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Barker.h; sourceTree = "<group>"; };
-		A840012F1ABA391F00C90EF0 /* BaseProto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BaseProto.cpp; sourceTree = "<group>"; };
-		A84001301ABA391F00C90EF0 /* BaseProto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseProto.h; sourceTree = "<group>"; };
 		A84001311ABA391F00C90EF0 /* CloneBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CloneBuffer.cpp; sourceTree = "<group>"; };
 		A84001321ABA391F00C90EF0 /* CloneBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CloneBuffer.h; sourceTree = "<group>"; };
 		A84001331ABA391F00C90EF0 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Context.cpp; sourceTree = "<group>"; };
@@ -367,8 +364,6 @@
 				A84001351ABA391F00C90EF0 /* Manager.cpp */,
 				A84001381ABA391F00C90EF0 /* Proto.h */,
 				A84001371ABA391F00C90EF0 /* Proto.cpp */,
-				A84001301ABA391F00C90EF0 /* BaseProto.h */,
-				A840012F1ABA391F00C90EF0 /* BaseProto.cpp */,
 				A84001391ABA391F00C90EF0 /* Proxy.h */,
 				A8C294A01ABC782B00FD36C9 /* Proxy.cpp */,
 			);
@@ -698,7 +693,6 @@
 				A84001441ABA391F00C90EF0 /* Proto.cpp in Sources */,
 				A869010F1A0292FA00D2C9F3 /* FrameClock.cpp in Sources */,
 				A86901171A0292FA00D2C9F3 /* Utils.cpp in Sources */,
-				A84001401ABA391F00C90EF0 /* BaseProto.cpp in Sources */,
 				A85ADFFD1A13A34D005726DC /* TestingRooting2.cpp in Sources */,
 				A826F4BA1A68301A002A23A9 /* SystemManager.cpp in Sources */,
 				A8702C601A5B4B4E00EF9E9E /* FileHelperBase.cpp in Sources */,

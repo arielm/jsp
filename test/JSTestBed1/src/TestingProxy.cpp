@@ -18,8 +18,9 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || true, testPeers1);
-    JSP_TEST(force || true, testNativeCalls1);
+    JSP_TEST(force || false, testPeers1);
+    JSP_TEST(force || false, testNativeCalls1);
+    JSP_TEST(force || true, testHandler1);
 }
 
 // ---
@@ -104,4 +105,81 @@ void TestingProxy::testNativeCalls1()
 
     unregisterNativeCall("staticMethod1");
     executeScript("try { print(target.staticMethod1(33)); } catch(e) { print(e);}");
+}
+
+// ---
+
+struct Record
+{
+    vector<string> values;
+    
+    Record(const vector<string> &values)
+    :
+    values(values)
+    {}
+    
+    string write() const
+    {
+        string buffer;
+        int count = 0;
+        
+        for (const auto &value : values)
+        {
+            if (count++) buffer += ' ';
+            buffer += value;
+        }
+        
+        return buffer;
+    }
+};
+
+class Handler1 : public Proxy
+{
+public:
+    vector<Record> records;
+    
+    string getRecord(size_t index)
+    {
+        if (index < records.size())
+        {
+            return records[index].write();
+        }
+        
+        return "";
+    }
+    
+    // ---
+    
+    JSObject* newArray(size_t length = 0) final
+    {
+        records.emplace_back(Record({"newArray", ci::toString(length)}));
+        return Proto::newArray(length);
+    }
+    
+    bool setElement(HandleObject array, int index, HandleValue value) final
+    {
+        records.emplace_back(Record({"setElement", ci::toString(index), jsp::toString(value)}));
+        return Proto::setElement(array, index, value);
+    }
+};
+
+void TestingProxy::testHandler1()
+{
+    Handler1 handler;
+    setHandler(&handler);
+    
+    RootedObject array(cx, newArray());
+    setElements(array, vector<FLOAT64> {1.33, 2.33});
+    set(array, 2, "foo");
+    
+    setHandler(nullptr);
+    
+    // ---
+    
+    JSP_CHECK(handler.getRecord(0) == "newArray 0");
+    JSP_CHECK(handler.getRecord(1) == "setElement 0 1.33");
+    JSP_CHECK(handler.getRecord(2) == "setElement 1 2.33");
+    JSP_CHECK(handler.getRecord(3) == "setElement 2 foo");
+    
+    JSP_CHECK(toSource(array) == "[1.33, 2.33, \"foo\"]");
 }

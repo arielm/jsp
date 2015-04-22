@@ -7,8 +7,6 @@
  */
 
 #include "jsp/Proxy.h"
-#include "jsp/BaseProto.h"
-#include "jsp/WrappedObject.h"
 
 #include "chronotext/utils/Utils.h"
 
@@ -148,33 +146,19 @@ namespace jsp
     }
 
     // ---
-    
-    Proxy::Proxy(Proto *target, const PeerProperties &peerProperties)
-    {
-        this->target = target;
-        this->peerProperties = peerProperties;
-        assert(this->target);
 
-        instanceId = addInstance(this);
-        assert(instanceId > -1);
-    }
-    
-    Proxy::Proxy(Proto *target)
+    Proxy::Proxy()
+    :
+    peerProperties(defaultPeerProperties())
     {
-        this->target = target ? target : defaultTarget();
-        this->peerProperties = defaultPeerProperties();
-        assert(this->target);
-
         instanceId = addInstance(this);
         assert(instanceId > -1);
     }
     
     Proxy::Proxy(const string &peerName, bool isSingleton)
+    :
+    peerProperties(PeerProperties(peerName, isSingleton))
     {
-        this->target = defaultTarget();
-        this->peerProperties = PeerProperties(peerName, isSingleton);
-        assert(this->target);
-
         instanceId = addInstance(this);
         assert(instanceId > -1);
     }
@@ -184,99 +168,25 @@ namespace jsp
         removeInstance(instanceId);
     }
     
-    bool Proxy::setTarget(Proto *target)
+    Proxy* Proxy::getHandler() const
     {
-        if (target && (target != this) && (target != handler))
-        {
-            this->target = target;
-            return true;
-        }
-        
-        return false;
+        return handler;
     }
     
-    bool Proxy::setHandler(Proto *handler)
+    void Proxy::setHandler(Proxy *handler)
     {
-        if ((handler != this) && (handler != target))
+        if (handler != this)
         {
             this->handler = handler;
-            return true;
         }
-        
-        return false;
-    }
-
-    bool Proxy::setTarget(Proxy *target)
-    {
-        if (target && (target->target != this))
-        {
-            return setTarget(static_cast<Proto*>(target));
-        }
-        
-        return false;
-    }
-    
-    bool Proxy::setHandler(Proxy *handler)
-    {
-        if (handler->target != this)
-        {
-            return setHandler(static_cast<Proto*>(handler));
-        }
-        
-        return false;
     }
     
     // ---
-    
-    Proto* Proxy::defaultTarget() const
-    {
-        return BaseProto::target();
-    }
     
     const PeerProperties Proxy::defaultPeerProperties() const
     {
         return PeerProperties("Proxy", false);
     }
-
-    // ---
-    
-    const NativeCall* Proxy::getNativeCall(int32_t nativeCallId) const
-    {
-        const auto found = nativeCalls.find(nativeCallId);
-        
-        if (found != nativeCalls.end())
-        {
-            return &found->second;
-        }
-        
-        return nullptr;
-    }
-    
-    int32_t Proxy::getNativeCallId(const string &name) const
-    {
-        for (auto &element : nativeCalls)
-        {
-            if (name == element.second.name)
-            {
-                return element.first;
-            }
-        }
-        
-        return -1;
-    }
-    
-    int32_t Proxy::addNativeCall(const string &name, const NativeCallFnType &fn)
-    {
-        nativeCalls.emplace(++lastNativeCallId, NativeCall(name, fn));
-        return lastNativeCallId;
-    }
-    
-    void Proxy::removeNativeCall(int32_t nativeCallId)
-    {
-        nativeCalls.erase(nativeCallId);
-    }
-
-    // ---
     
     int32_t Proxy::registerNativeCall(const string &name, const NativeCallFnType &fn)
     {
@@ -313,7 +223,14 @@ namespace jsp
         
         return false;
     }
+    
+    bool Proxy::apply(const NativeCall &nativeCall, CallArgs args)
+    {
+        return nativeCall.fn(args);
+    }
 
+    // ---
+    
     bool Proxy::forwardNativeCall(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
@@ -338,5 +255,43 @@ namespace jsp
          */
         
         return false;
+    }
+    
+    // ---
+    
+    const NativeCall* Proxy::getNativeCall(int32_t nativeCallId) const
+    {
+        const auto found = nativeCalls.find(nativeCallId);
+        
+        if (found != nativeCalls.end())
+        {
+            return &found->second;
+        }
+        
+        return nullptr;
+    }
+    
+    int32_t Proxy::getNativeCallId(const string &name) const
+    {
+        for (auto &element : nativeCalls)
+        {
+            if (name == element.second.name)
+            {
+                return element.first;
+            }
+        }
+        
+        return -1;
+    }
+    
+    int32_t Proxy::addNativeCall(const string &name, const NativeCallFnType &fn)
+    {
+        nativeCalls.emplace(++lastNativeCallId, NativeCall(name, fn));
+        return lastNativeCallId;
+    }
+    
+    void Proxy::removeNativeCall(int32_t nativeCallId)
+    {
+        nativeCalls.erase(nativeCallId);
     }
 }

@@ -14,5 +14,4 @@ LOCAL_SRC_FILES += $(JSP_SRC)/jsp/Barker.cpp
 LOCAL_SRC_FILES += $(JSP_SRC)/jsp/CloneBuffer.cpp
 LOCAL_SRC_FILES += $(JSP_SRC)/jsp/Manager.cpp
 LOCAL_SRC_FILES += $(JSP_SRC)/jsp/Proto.cpp
-LOCAL_SRC_FILES += $(JSP_SRC)/jsp/BaseProto.cpp
 LOCAL_SRC_FILES += $(JSP_SRC)/jsp/Proxy.cpp

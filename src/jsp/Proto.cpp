@@ -8,6 +8,8 @@
 
 #include "jsp/Proto.h"
 
+#include "chronotext/utils/Utils.h"
+
 using namespace std;
 using namespace ci;
 using namespace chr;

@@ -17,24 +17,10 @@
 
 #include "jsp/Context.h"
 
-#include "chronotext/utils/Utils.h"
+#include "chronotext/InputSource.h"
 
 namespace jsp
 {
-    typedef std::function<bool(CallArgs)> NativeCallFnType;
-    
-    struct NativeCall
-    {
-        std::string name;
-        NativeCallFnType fn;
-        
-        NativeCall(const std::string &name, const NativeCallFnType &fn)
-        :
-        name(name),
-        fn(fn)
-        {}
-    };
-
     class Proto
     {
     public:
@@ -121,10 +107,6 @@ namespace jsp
         virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty());
         virtual Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty());
         virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty());
-        
-        // ---
-        
-        virtual bool apply(const NativeCall &nativeCall, CallArgs args);
 
         // ---
         
@@ -258,13 +240,6 @@ namespace jsp
             RootedValue rooted(cx, ObjectOrNullValue(value));
             return defineElement(array, index, rooted, attrs);
         }
-    }
-    
-    // ---
-    
-    inline bool Proto::apply(const NativeCall &nativeCall, CallArgs args)
-    {
-        return nativeCall.fn(args);
     }
     
     // ---
