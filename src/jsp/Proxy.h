@@ -17,7 +17,7 @@
 
 namespace jsp
 {
-    typedef std::function<bool(CallArgs)> NativeCallFnType;
+    typedef std::function<bool(const CallArgs&)> NativeCallFnType;
     
     struct NativeCall
     {
@@ -67,7 +67,7 @@ namespace jsp
         
         virtual int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
         virtual bool unregisterNativeCall(const std::string &name);
-        virtual bool apply(const NativeCall &nativeCall, CallArgs args);
+        virtual bool apply(const NativeCall &nativeCall, const CallArgs &args);
         
         // ---
         

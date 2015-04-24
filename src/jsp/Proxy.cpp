@@ -224,7 +224,7 @@ namespace jsp
         return false;
     }
     
-    bool Proxy::apply(const NativeCall &nativeCall, CallArgs args)
+    bool Proxy::apply(const NativeCall &nativeCall, const CallArgs &args)
     {
         return nativeCall.fn(args);
     }

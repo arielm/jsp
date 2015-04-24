@@ -22,7 +22,7 @@ public:
     // ---
     
     double instanceValue1 = 5;
-    bool instanceMethod1(JS::CallArgs args);
+    bool instanceMethod1(const JS::CallArgs &args);
     void testNativeCalls1();
     
     // ---

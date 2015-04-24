@@ -62,7 +62,7 @@ void TestingProxy::testPeers1()
 
 // ---
 
-static bool staticMethod1(CallArgs args)
+static bool staticMethod1(const CallArgs &args)
 {
     if (args.hasDefined(0) && args[0].isNumber())
     {
@@ -73,7 +73,7 @@ static bool staticMethod1(CallArgs args)
     return false;
 }
 
-bool TestingProxy::instanceMethod1(CallArgs args)
+bool TestingProxy::instanceMethod1(const CallArgs &args)
 {
     if (args.hasDefined(0) && args[0].isNumber())
     {
@@ -89,7 +89,7 @@ void TestingProxy::testNativeCalls1()
     registerNativeCall("staticMethod1", BIND_STATIC1(staticMethod1));
     registerNativeCall("instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
     
-    registerNativeCall("lambda1", [=](CallArgs args)->bool
+    registerNativeCall("lambda1", [=](const CallArgs &args)->bool
     {
         if (args.hasDefined(0) && args[0].isNumber())
         {
