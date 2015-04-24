@@ -18,6 +18,8 @@ public:
     // ---
     
     void testPeers1();
+    void testPeers2();
+    void testPeers3();
     
     // ---
     

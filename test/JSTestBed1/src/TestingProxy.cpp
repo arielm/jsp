@@ -19,45 +19,107 @@ using namespace jsp;
 void TestingProxy::performRun(bool force)
 {
     JSP_TEST(force || true, testPeers1);
-    JSP_TEST(force || true, testNativeCalls1);
-    JSP_TEST(force || true, testHandler1);
+    JSP_TEST(force || true, testPeers2);
+    JSP_TEST(force || true, testPeers3);
+    
+    JSP_TEST(force || false, testNativeCalls1);
+    JSP_TEST(force || false, testHandler1);
 }
 
 // ---
 
+/*
+ * DEMONSTRATING JS-SIDE "PEER" OPERATIONS (1/2)
+ */
 void TestingProxy::testPeers1()
 {
     {
         Proxy vanilla1; // peers.Proxy[1]
         Proxy singleton("ScriptManager", true); // peers.ScriptManager
         
-        try
-        {
-            /*
-             * ALLOWED
-             */
-            executeScript("peers.Proxy[0].bar = 'baz';");
-            JSP_CHECK(get<STRING>(peer, "bar") == "baz");
-            
-            /*
-             * INTENTIONALLY NOT ALLOWED
-             */
-            executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
-            
-            /*
-             * SHOULD NOT BE ALLOWED AS WELL (I.E. ONLY GENERATE A "WARNING")
-             */
-            executeScript("peers.foo = 123");
-        }
-        catch (exception &e)
-        {
-            LOGI << e.what() << endl;
-        }
+        /*
+         * ALLOWED
+         */
+        executeScript("peers.Proxy[1].alien = new Barker('ALIEN1')");
         
-        JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{bar:\"baz\"}, {}], ScriptManager:{}, foo:123})");
+        /*
+         * INTENTIONALLY NOT ALLOWED
+         */
+        executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
+
+        JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{}, {alien:(new Barker(\"ALIEN1\"))}], ScriptManager:{}})");
     }
     
-    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{bar:\"baz\"}, ,], foo:123})");
+    /*
+     * THE JS-PEERS ASSOCIATED WITH vanilla1 AND singleton ARE:
+     *
+     * - NOT ACCESSIBLE FROM JS ANYMORE
+     * - FINALIZED
+     */
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{}, ,]})");
+    
+    JSP::forceGC();
+    JSP_CHECK(Barker::isFinalized("ALIEN1")); // PROOF THAT peers.Proxy[1] (ASSOCIATED WITH vanilla1) IS TRULY GONE
+}
+
+void TestingProxy::testPeers2()
+{
+    /*
+     * peers.Proxy[0] IS THE JS-PEER ASSOCIATED WITH THIS C++ Proxy
+     */
+    executeScript("peers.Proxy[0].callMeBack = function() { print('PROXY IS CALLING BACK'); }");
+    
+    if (hasOwnProperty(peer, "callMeBack"))
+    {
+        call(peer, "callMeBack");
+    }
+}
+
+/*
+ * DEMONSTRATING JS-SIDE "PEER" OPERATIONS (2/2)
+ *
+ * TODO: PREVENT THOSE WHICH SHOULD NOT BE ALLOWED
+ * 
+ * WHY IS IT NON-TRIVIAL TO IMPLEMENT?
+ * - TestingJS::testReadOnlyProperty2
+ * - TestingJS::testPermanentProperty1
+ * - Proxy::init / Proxy::uninit
+ * - Proxy::addInstance / Proxy::removeInstance
+ */
+void TestingProxy::testPeers3()
+{
+    executeScript("peers.Proxy[0].alien = new Barker('ALIEN2')");
+    
+    /*
+     * SHOULD NOT BE ALLOWED
+     */
+    executeScript("delete peers.Proxy[0]");
+    
+    /*
+     * EVEN IF peers.Proxy[0] IS NOT ACCESSIBLE ANYMORE FROM JS:
+     * - IT IS STILL ROOTED (VIA Proxy::peer):
+     *   - AS LONG AS THIS C++ Proxy IS ALIVE
+     */
+    JSP::forceGC();
+    JSP_CHECK(Barker::isHealthy("ALIEN2"));
+
+    /*
+     * SHOULD NOT BE ALLOWED
+     */
+    executeScript("peers.alien = new Barker('ALIEN3')");
+
+    /*
+     * SHOULD NOT BE ALLOWED
+     */
+    executeScript("delete peers");
+    
+    /*
+     * EVEN IF peers IS NOT ACCESSIBLE ANYMORE FROM JS:
+     * - IT IS STILL ROOTED (VIA Proxy::Statics::peers):
+     *   - AS LONG AS JS-CONTEXT IS ALIVE
+     */
+    JSP::forceGC();
+    JSP_CHECK(Barker::isHealthy("ALIEN3"));
 }
 
 // ---
