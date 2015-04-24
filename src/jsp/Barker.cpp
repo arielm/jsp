@@ -8,6 +8,10 @@
 
 #include "jsp/Barker.h"
 
+#if defined(JSP_USE_PRIVATE_APIS)
+#include "vm/StringBuffer.h"
+#endif
+
 #include "chronotext/utils/Utils.h"
 
 using namespace std;
@@ -163,6 +167,7 @@ namespace jsp
     
     const JSFunctionSpec Barker::functions[] =
     {
+        JS_FS("toSource", function_toSource, 0, 0),
         JS_FS("bark", function_bark, 0, 0),
         JS_FS_END
     };
@@ -359,6 +364,20 @@ namespace jsp
         return false;
     }
     
+    bool Barker::maybeBark(JSObject *instance)
+    {
+        auto barkerId = getId(instance);
+        
+        if (barkerId >= 0)
+        {
+            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
+            return true;
+        }
+        
+        LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl; // LOG: VERBOSE
+        return false;
+    }
+    
     // ---
     
     bool Barker::init()
@@ -410,6 +429,30 @@ namespace jsp
     
     // ---
     
+    bool Barker::function_toSource(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        auto instance = args.thisv().toObjectOrNull();
+        
+        char quoteChar = '"';
+        string quotedName = quoteChar + getName(instance) + quoteChar;
+        
+        js::StringBuffer sb(cx);
+        
+        if (sb.append("(new Barker(") && sb.appendInflated(quotedName.data(), quotedName.size()) && sb.append("))"))
+        {
+            JSString *str = sb.finishString();
+            
+            if (str)
+            {
+                args.rval().setString(str);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     bool Barker::function_bark(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
@@ -417,20 +460,6 @@ namespace jsp
         
         args.rval().setBoolean(maybeBark(instance));
         return true;
-    }
-    
-    bool Barker::maybeBark(JSObject *instance)
-    {
-        auto barkerId = getId(instance);
-        
-        if (barkerId >= 0)
-        {
-            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
-            return true;
-        }
-        
-        LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl; // LOG: VERBOSE
-        return false;
     }
     
     // ---

@@ -115,6 +115,7 @@ namespace jsp
         /*
          * JS FUNCTIONS
          */
+        static bool function_toSource(JSContext *cx, unsigned argc, Value *vp);
         static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
         
         /*
