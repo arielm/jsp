@@ -55,9 +55,22 @@ namespace jsp
     extern JSContext *cx;
     extern Heap<JSObject*> global;
     
-    JSRuntime* runtime();
-    JSContext* context();
-    HandleObject globalHandle();
+    inline JSRuntime* runtime()
+    {
+        return rt;
+    }
+    
+    inline JSContext* context()
+    {
+        return cx;
+    }
+    
+    inline JS::HandleObject globalHandle()
+    {
+        return JS::HandleObject::fromMarkedLocation(global.address());
+    }
+
+    // ---
     
     bool postInit();
     void preShutdown();
@@ -211,7 +224,7 @@ namespace jsp
     
     //
     
-    template <class T>
+    template<class T>
     struct Convert
     {
         inline static bool maybe(const HandleValue &v, typename std::vector<T>::iterator &result)

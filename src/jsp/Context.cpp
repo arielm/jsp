@@ -39,22 +39,7 @@ namespace jsp
     
     JSRuntime *rt = nullptr;
     JSContext *cx = nullptr;
-    JS::Heap<JSObject*> global;
-    
-    JSRuntime* runtime()
-    {
-        return rt;
-    }
-    
-    JSContext* context()
-    {
-        return cx;
-    }
-    
-    HandleObject globalHandle()
-    {
-        return HandleObject::fromMarkedLocation(global.address());
-    }
+    Heap<JSObject*> global;
     
     // ---
     

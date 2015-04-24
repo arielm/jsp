@@ -18,8 +18,8 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || false, testPeers1);
-    JSP_TEST(force || false, testNativeCalls1);
+    JSP_TEST(force || true, testPeers1);
+    JSP_TEST(force || true, testNativeCalls1);
     JSP_TEST(force || true, testHandler1);
 }
 
@@ -37,6 +37,7 @@ void TestingProxy::testPeers1()
              * ALLOWED
              */
             executeScript("peers.Proxy[0].bar = 'baz';");
+            JSP_CHECK(get<STRING>(peer, "bar") == "baz");
             
             /*
              * INTENTIONALLY NOT ALLOWED
@@ -53,10 +54,10 @@ void TestingProxy::testPeers1()
             LOGI << e.what() << endl;
         }
         
-        LOGI << toSource(get<OBJECT>(globalHandle(), "peers")) << endl;
+        JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{bar:\"baz\"}, {}], ScriptManager:{}, foo:123})");
     }
     
-    LOGI << toSource(get<OBJECT>(globalHandle(), "peers")) << endl;
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{bar:\"baz\"}, ,], foo:123})");
 }
 
 // ---

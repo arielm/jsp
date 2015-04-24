@@ -61,7 +61,7 @@ namespace jsp
         virtual Proxy* getHandler() const;
         virtual void setHandler(Proxy *handler);
 
-        // --
+        // ---
         
         virtual const PeerProperties defaultPeerProperties() const;
         
