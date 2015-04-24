@@ -120,15 +120,12 @@ namespace jsp
     
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
-    toChars::toChars(const jschar *chars, size_t len)
+    string& appendToString(string &s, const jschar *chars, size_t len)
     {
-        if (chars && len)
-        {
-            data = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
-        }
+        return s.append(TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str());
     }
     
-    toChars::toChars(JSString *str)
+    string& appendToString(string &s, JSString *str)
     {
         if (str)
         {
@@ -136,19 +133,11 @@ namespace jsp
             
             if (linear)
             {
-                data = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str();
+                return s.append(TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str());
             }
         }
-    }
-
-    toChars::toChars(HandleValue value)
-    :
-    toChars(ToString(cx, value))
-    {}
-    
-    toChars::~toChars()
-    {
-        js_free(data);
+        
+        return s;
     }
     
     // ---
@@ -159,7 +148,10 @@ namespace jsp
         
         if (chars && len)
         {
-            result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str(); // A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
+            /*
+             * SUB-OPTIMAL: A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
+             */
+            result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
         }
         
         return result; // RVO-COMPLIANT
@@ -175,7 +167,10 @@ namespace jsp
             
             if (linear)
             {
-                result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str(); // A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
+                /*
+                 * SUB-OPTIMAL: A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
+                 */
+                result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str();
             }
         }
         
@@ -345,19 +340,12 @@ namespace jsp
     
 #pragma mark ---------------------------------------- JSON ----------------------------------------
     
-    /*
-     * TODO:
-     *
-     * 1) CONSIDER IMPLEMENTING JSString* stringify() WITH jschar ACCUMULATION BUFFER
-     * 2) HANDLE CUSTOM "REPLACER" (IN ORDER TO COPE WITH "CYCLIC VALUES")
-     */
-    
     struct intern::Stringifier
     {
         static bool callback(const jschar *buf, uint32_t len, void *data)
         {
             auto buffer = reinterpret_cast<string*>(data);
-            buffer->append(toChars(buf, len));
+            appendToString(*buffer, buf, len);
             
             return true;
         }

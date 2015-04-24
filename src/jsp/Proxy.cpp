@@ -64,6 +64,12 @@ namespace jsp
             {
                 instance->peer = proto::newPlainObject();
                 
+                RootedValue tmp(cx, toValue(name));
+                JS_DefineProperty(cx, instance->peer, "name", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+
+                tmp = toValue(instance->peerProperties.isSingleton);
+                JS_DefineProperty(cx, instance->peer, "isSingleton", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+
                 if (instance->peerProperties.isSingleton)
                 {
                     proto::defineProperty(statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
@@ -85,6 +91,9 @@ namespace jsp
                     }
                     
                     proto::defineElement(peerArray, instance->elementIndex, instance->peer, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                    
+                    tmp = toValue(instance->elementIndex);
+                    JS_DefineProperty(cx, instance->peer, "index", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);

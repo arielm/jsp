@@ -85,35 +85,10 @@ namespace jsp
     
     // ---
     
-    /*
-     * OPTIMAL: NO DATA IS (UN-NECESSARILY) COPIED
-     */
-    struct toChars
-    {
-        char *data = nullptr;
-
-        toChars(const toChars &other) = delete;
-        void operator=(const toChars &other) = delete;
-
-        toChars(const jschar *chars, size_t len);
-        toChars(JSString *str);
-        toChars(HandleValue value);
-        ~toChars();
-        
-        /*
-         * FIXME: PROBLEMATIC!!!
-         *
-         * E.G.
-         *
-         * const char *c = toChars(foo); // DATA WILL BE FREED
-         * cout << c << endl; // GARBAGE WILL BE PRINTED
-         */
-        operator const char* () const { return data; }
-    };
+    std::string& appendToString(std::string &s, const jschar *chars, size_t len);
+    std::string& appendToString(std::string &s, JSString *str);
+    inline std::string& appendToString(std::string &s, HandleValue value) { return appendToString(s, ToString(cx, value)); }
     
-    /*
-     * SUB-OPTIMAL: DATA IS (UN-NECESSARILY) COPIED
-     */
     std::string toString(const jschar *chars, size_t len);
     std::string toString(JSString *str);
     inline std::string toString(HandleValue value) { return toString(ToString(cx, value)); }
