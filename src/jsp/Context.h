@@ -426,6 +426,12 @@ namespace jsp
     {
         return ObjectOrNullValue(object);
     }
+
+    template <>
+    inline Value toValue(HandleObject &&object)
+    {
+        return ObjectOrNullValue(object);
+    }
     
     template <>
     inline Value toValue(JSObject *&&object)
