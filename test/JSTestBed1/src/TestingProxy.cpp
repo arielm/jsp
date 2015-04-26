@@ -18,9 +18,9 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || true, testPeers1);
+    JSP_TEST(force || false, testPeers1);
     JSP_TEST(force || true, testPeers2);
-    JSP_TEST(force || true, testPeers3);
+    JSP_TEST(force || false, testPeers3);
     
     JSP_TEST(force || false, testNativeCalls1);
     JSP_TEST(force || false, testHandler1);
@@ -28,14 +28,16 @@ void TestingProxy::performRun(bool force)
 
 // ---
 
-/*
- * DEMONSTRATING JS-SIDE "PEER" OPERATIONS (1/2)
- */
 void TestingProxy::testPeers1()
 {
     {
-        Proxy vanilla1; // peers.Proxy[1]
-        Proxy singleton("ScriptManager", true); // peers.ScriptManager
+        JSP_CHECK(getPeerId() == "peers.Proxy[0]");
+        
+        Proxy vanilla1;
+        JSP_CHECK(vanilla1.getPeerId() == "peers.Proxy[1]");
+        
+        Proxy singleton("ScriptManager", true);
+        JSP_CHECK(singleton.getPeerId() == "peers.ScriptManager");
         
         /*
          * ALLOWED
@@ -51,7 +53,7 @@ void TestingProxy::testPeers1()
     }
     
     /*
-     * THE JS-PEERS ASSOCIATED WITH vanilla1 AND singleton ARE:
+     * AT THIS STAGE, THE JS-PEERS ASSOCIATED WITH vanilla1 AND singleton ARE:
      *
      * - NOT ACCESSIBLE FROM JS ANYMORE
      * - FINALIZED
@@ -64,21 +66,47 @@ void TestingProxy::testPeers1()
 
 void TestingProxy::testPeers2()
 {
-    /*
-     * peers.Proxy[0] IS THE JS-PEER ASSOCIATED WITH THIS C++ Proxy
-     */
-    executeScript("peers.Proxy[0].callMeBack = function() { print('PROXY IS CALLING BACK'); }");
-    
-    if (hasOwnProperty(peer, "callMeBack"))
+    if (getPeerId() == "peers.Proxy[0]")
     {
-        call(peer, "callMeBack");
+        executeScript("peers.Proxy[0].callMeBack = function() { print('C++ PROXY IS CALLING BACK'); }");
+        
+        if (hasOwnProperty(peerHandle(), "callMeBack"))
+        {
+            call(peerHandle(), "callMeBack");
+        }
     }
+    else
+    {
+        JSP_CHECK(false);
+    }
+    
+    // ---
+    
+    /*
+     * TODO:
+     *
+     * 1) DO NOT CREATE A PEER WHEN PROXY'S NAME IS NOT A JS-IDENTIFIER
+     *
+     * 2) CONSIDER USING (OPTIONAL) "NAMESPACES", E.G.
+     *    peers.v1.FileManager
+     *
+     * 3) POSSIBILITY TO CREATE A C++ PROXY FROM THE JS-SIDE, E.G.
+     *    var peer = new Peer("FileDownloader", "http:://foo.com/bar.zip");
+     *    peer.onReady = function(data) { ... };
+     *    peer.start();
+     *
+     * 4) peersHandle() (AT THE proto NAMESPACE LEVEL?), INSTEAD OF get<OBJECT>(globalHandle(), "peers")
+     */
+    
+    Proxy customNamed1("Contains spaces");
+    JSP_CHECK(customNamed1.getPeerId() == "peers[\"Contains spaces\"][0]");
+    
+    Proxy customNamed2("Script Manager", true);
+    JSP_CHECK(customNamed2.getPeerId() == "peers[\"Script Manager\"]");
 }
 
 /*
- * DEMONSTRATING JS-SIDE "PEER" OPERATIONS (2/2)
- *
- * TODO: PREVENT THOSE WHICH SHOULD NOT BE ALLOWED
+ * TODO: PREVENT THE FOLLOWING NON-INTENTIONALLY-ALLOWED OPERATIONS
  * 
  * WHY IS IT NON-TRIVIAL TO IMPLEMENT?
  * - TestingJS::testReadOnlyProperty2

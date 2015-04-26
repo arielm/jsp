@@ -62,27 +62,20 @@ namespace jsp
             
             if ((instance->peerProperties.isSingleton && singletonEnabled) || (!instance->peerProperties.isSingleton && multipleInstancesEnabled))
             {
-                instance->peer = proto::newPlainObject();
-                
-                RootedValue tmp(cx, toValue(name));
-                JS_DefineProperty(cx, instance->peer, "name", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
-
-                tmp = toValue(instance->peerProperties.isSingleton);
-                JS_DefineProperty(cx, instance->peer, "isSingleton", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
-
                 if (instance->peerProperties.isSingleton)
                 {
+                    instance->peer = instance->createPeer();
                     proto::defineProperty(statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 else
                 {
                     RootedObject peerArray(cx);
-                    instance->elementIndex = 0;
+                    instance->peerElementIndex = 0;
                     
                     if (peerIsDefined)
                     {
                         peerArray = peerValue.toObjectOrNull();
-                        instance->elementIndex = proto::getLength(peerArray);
+                        instance->peerElementIndex = proto::getLength(peerArray);
                     }
                     else
                     {
@@ -90,10 +83,8 @@ namespace jsp
                         proto::defineProperty(statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                     }
                     
-                    proto::defineElement(peerArray, instance->elementIndex, instance->peer, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
-                    
-                    tmp = toValue(instance->elementIndex);
-                    JS_DefineProperty(cx, instance->peer, "index", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+                    instance->peer = instance->createPeer();
+                    proto::defineElement(peerArray, instance->peerElementIndex, instance->peer, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);
@@ -124,7 +115,7 @@ namespace jsp
                 else
                 {
                     RootedObject peerArray(cx, peerValue.toObjectOrNull());
-                    proto::deleteElement(peerArray, instance->elementIndex);
+                    proto::deleteElement(peerArray, instance->peerElementIndex);
                     
                     if (proto::getElementCount(peerArray) == 0)
                     {
@@ -152,6 +143,53 @@ namespace jsp
         }
         
         return nullptr;
+    }
+    
+    // ---
+    
+    const PeerProperties Proxy::defaultPeerProperties() const
+    {
+        return PeerProperties("Proxy", false);
+    }
+    
+    JSObject* Proxy::createPeer()
+    {
+        RootedObject object(cx, proto::newPlainObject());
+        
+        RootedValue tmp(cx, toValue(peerProperties.name));
+        JS_DefineProperty(cx, object, "name", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+        
+        tmp = toValue(peerProperties.isSingleton);
+        JS_DefineProperty(cx, object, "isSingleton", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+        
+        if (!peerProperties.isSingleton)
+        {
+            tmp = toValue(peerElementIndex);
+            JS_DefineProperty(cx, object, "index", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+        }
+        
+        return object;
+    }
+    
+    std::string Proxy::getPeerId()
+    {
+        string result = "peers";
+        
+        if (isIdentifier(peerProperties.name))
+        {
+            result += '.' + peerProperties.name;
+        }
+        else
+        {
+            result += "[\"" + peerProperties.name + "\"]";
+        }
+        
+        if (!peerProperties.isSingleton)
+        {
+            result += '[' + ci::toString(peerElementIndex) + ']';
+        }
+        
+        return result;
     }
 
     // ---
@@ -191,11 +229,6 @@ namespace jsp
     }
     
     // ---
-    
-    const PeerProperties Proxy::defaultPeerProperties() const
-    {
-        return PeerProperties("Proxy", false);
-    }
     
     int32_t Proxy::registerNativeCall(const string &name, const NativeCallFnType &fn)
     {

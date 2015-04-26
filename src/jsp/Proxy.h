@@ -51,8 +51,6 @@ namespace jsp
         
         // ---
         
-        Heap<WrappedObject> peer;
-
         Proxy();
         Proxy(const std::string &peerName, bool isSingleton = false);
         
@@ -62,9 +60,14 @@ namespace jsp
         virtual void setHandler(Proxy *handler);
 
         // ---
+
+        inline JS::HandleObject peerHandle() const
+        {
+            return JS::Handle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject* const*>(peer.address())); // XXX
+        }
         
-        virtual const PeerProperties defaultPeerProperties() const;
-        
+        std::string getPeerId();
+
         virtual int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
         virtual bool unregisterNativeCall(const std::string &name);
         virtual bool apply(const NativeCall &nativeCall, const CallArgs &args);
@@ -201,7 +204,10 @@ namespace jsp
         Proxy *handler = nullptr;
         
         PeerProperties peerProperties;
-        uint32_t elementIndex = 0;
+        int32_t peerElementIndex = -1;
+
+        virtual const PeerProperties defaultPeerProperties() const;
+        virtual JSObject* createPeer();
 
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
@@ -221,6 +227,8 @@ namespace jsp
         static Proxy* getInstance(int32_t instanceId);
         
         // ---
+        
+        Heap<WrappedObject> peer;
         
         int32_t instanceId = -1;
         int32_t lastNativeCallId = -1;
