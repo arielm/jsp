@@ -236,11 +236,12 @@ namespace jsp
         
         if (nativeCallId == -1)
         {
-            auto function = DefineFunctionWithReserved(cx, peer.get(), name.data(), forwardNativeCall, 0, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX
+            auto function = DefineFunctionWithReserved(cx, peer.get(), name.data(), forwardNativeCall, 0, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
             
             if (function)
             {
-                nativeCallId = addNativeCall(name, fn);
+                nativeCalls.emplace(++lastNativeCallId, NativeCall(name, fn));
+                nativeCallId = lastNativeCallId;
                 
                 SetFunctionNativeReserved(function, 0, NumberValue(instanceId));
                 SetFunctionNativeReserved(function, 1, NumberValue(nativeCallId));
@@ -256,11 +257,10 @@ namespace jsp
         
         if (nativeCallId != -1)
         {
-            if (proto::deleteProperty(peer, name.data()))
-            {
-                removeNativeCall(nativeCallId);
-                return true;
-            }
+            proto::deleteProperty(peer, name.data());
+            nativeCalls.erase(nativeCallId);
+            
+            return true;
         }
         
         return false;
@@ -324,16 +324,5 @@ namespace jsp
         }
         
         return -1;
-    }
-    
-    int32_t Proxy::addNativeCall(const string &name, const NativeCallFnType &fn)
-    {
-        nativeCalls.emplace(++lastNativeCallId, NativeCall(name, fn));
-        return lastNativeCallId;
-    }
-    
-    void Proxy::removeNativeCall(int32_t nativeCallId)
-    {
-        nativeCalls.erase(nativeCallId);
     }
 }

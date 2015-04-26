@@ -6,6 +6,32 @@
  * https://github.com/arielm/jsp/blob/master/LICENSE
  */
 
+/*
+ * TODO:
+ *
+ * 1) IT SHOULD BE POSSIBLE TO CREATE A (C++)PROXY WITHOUT ANY (JS)PEER, E.G.
+ *    - WHEN PEER-NAME IS ALREADY TAKEN (I.E. FOR SINGLETONS)
+ *    - WHEN PEER-NAME IS NOT A JS-IDENTIFIER, ETC.
+ *    - OR WHEN THE PROXY INTENDED TO ACT SOLELY AS A "HANDLER"
+ *      - QUESTION: HOW TO CONSTRUCT SUCH A PROXY?
+ *
+ * 2) PEERS COULD HAVE A "NAMESPACE" (IN ADDITION TO THEIR NAME), E.G.
+ *    - v1.FileManager
+ *
+ * 3) PEERS COULD HAVE A STRING-BASED "SIGNATURE" (INSTEAD OF THE PeerProperties STRUCT), E.G.
+ *    - Proxy[] (I.E. ARRAY-BASED)
+ *    - FileManager (I.E. SINGLETON)
+ *    - v1.FileDownloader[] (I.E. ARRAY-BASED, WITH NAMESPACE)
+ *
+ * 4) SHOULD IT BE POSSIBLE TO CREATE A (C++)PROXY FROM THE JS-SIDE?, E.G.
+ *    var peer = new Peer("v1.FileDownloader", "http:://foo.com/bar.txt");
+ *    peer.onReady = function(data) { print(data); };
+ *    peer.start();
+ *
+ * 5) THERE COULD BE A STATIC Proxy::peersHandle() METHOD, I.E.
+ *    - INSTEAD OF USING get<OBJECT>(globalHandle(), "peers")
+ */
+
 #pragma once
 
 #include "jsp/Proto.h"
@@ -236,8 +262,6 @@ namespace jsp
         
         const NativeCall* getNativeCall(int32_t nativeCallId) const;
         int32_t getNativeCallId(const std::string &name) const;
-        int32_t addNativeCall(const std::string &name, const NativeCallFnType &fn);
-        void removeNativeCall(int32_t nativeCallId);
     };
 }
 

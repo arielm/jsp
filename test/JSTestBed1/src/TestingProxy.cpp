@@ -18,12 +18,22 @@ using namespace jsp;
 
 void TestingProxy::performRun(bool force)
 {
-    JSP_TEST(force || false, testPeers1);
-    JSP_TEST(force || true, testPeers2);
-    JSP_TEST(force || false, testPeers3);
+    if (force || true)
+    {
+        JSP_TEST(force || true, testPeers1); // SHOULD BE EXECUTED FIRST BECAUSE IT ASSUMES peers.Proxy[0] IS THE LAST Proxy INSTANCE
+        JSP_TEST(force || true, testPeers2);
+    }
     
-    JSP_TEST(force || false, testNativeCalls1);
-    JSP_TEST(force || false, testHandler1);
+    if (force || true)
+    {
+        JSP_TEST(force || true, testNativeCalls1);
+        JSP_TEST(force || true, testHandler1);
+    }
+    
+    if (force || true)
+    {
+        JSP_TEST(force || true, testPeers3); // SHOULD BE EXECUTED LAST BECAUSE IT DELETES THE peers GLOBAL ARRAY
+    }
 }
 
 // ---
@@ -83,19 +93,7 @@ void TestingProxy::testPeers2()
     // ---
     
     /*
-     * TODO:
-     *
-     * 1) DO NOT CREATE A PEER WHEN PROXY'S NAME IS NOT A JS-IDENTIFIER
-     *
-     * 2) CONSIDER USING (OPTIONAL) "NAMESPACES", E.G.
-     *    peers.v1.FileManager
-     *
-     * 3) POSSIBILITY TO CREATE A C++ PROXY FROM THE JS-SIDE, E.G.
-     *    var peer = new Peer("FileDownloader", "http:://foo.com/bar.zip");
-     *    peer.onReady = function(data) { ... };
-     *    peer.start();
-     *
-     * 4) peersHandle() (AT THE proto NAMESPACE LEVEL?), INSTEAD OF get<OBJECT>(globalHandle(), "peers")
+     * XXX: NOT SURE IF NAMES WHICH ARE NOT JS-IDENTIFIERS SHOULD BE ALLOWED...
      */
     
     Proxy customNamed1("Contains spaces");
@@ -144,7 +142,7 @@ void TestingProxy::testPeers3()
     /*
      * EVEN IF peers IS NOT ACCESSIBLE ANYMORE FROM JS:
      * - IT IS STILL ROOTED (VIA Proxy::Statics::peers):
-     *   - AS LONG AS JS-CONTEXT IS ALIVE
+     *   - UNTIL Proxy::uninit() IS CALLED
      */
     JSP::forceGC();
     JSP_CHECK(Barker::isHealthy("ALIEN3"));
@@ -254,6 +252,12 @@ public:
     }
 };
 
+/*
+ * FINDINGS:
+ *
+ * - THE HANDLER SHOULD ONLY DEAL WITH PROXYING
+ * - BUT RIGHT NOW IT IS ALSO ASSOCIATED WITH A JS-PEER
+ */
 void TestingProxy::testHandler1()
 {
     Handler1 handler;
