@@ -79,20 +79,19 @@ namespace jsp
             finalName = name;
         }
         
-        names[barkerId] = finalName;
-        
         // ---
         
-        RootedObject rootedInstance(cx, instance);
-        
         instances[barkerId] = instance;
-        JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId));
+        names[barkerId] = finalName;
         
-        RootedValue rootedId(cx, Int32Value(barkerId));
-        JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        RootedObject rootedInstance(cx, instance);
+        JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId)); // TODO: CONSIDER USING id PROPERTY INSTEAD OF PRIVATE VALUE [1/2]
+        
+        RootedValue rootedId(cx, toValue(int32_t(barkerId))); // TODO: BARKER-ID SHOULD BE int32_t
+        JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_READONLY | JSPROP_PERMANENT);
         
         RootedValue rootedName(cx, toValue(finalName));
-        JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+        JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_READONLY | JSPROP_PERMANENT);
         
         // ---
         
@@ -192,7 +191,7 @@ namespace jsp
                 
             case JSGC_END:
             {
-                auto freeOp = rt->defaultFreeOp();
+                auto freeOp = rt->defaultFreeOp(); // NOT USED IN PRACTICE...
                 
                 for (auto &element : barker::instances)
                 {
@@ -262,7 +261,7 @@ namespace jsp
     
     int32_t Barker::nextId()
     {
-        return int32_t(barker::createCount) + 1;
+        return int32_t(barker::createCount) + 1; // TODO: BARKER-ID SHOULD BE int32_t
     }
     
     ptrdiff_t Barker::getId(JSObject *instance)
@@ -271,7 +270,7 @@ namespace jsp
         {
             if (JS_GetClass(instance) == &Barker::clazz)
             {
-                auto barkerId = reinterpret_cast<ptrdiff_t>(JS_GetPrivate(instance));
+                auto barkerId = reinterpret_cast<ptrdiff_t>(JS_GetPrivate(instance)); // TODO: CONSIDER USING id PROPERTY INSTEAD OF PRIVATE VALUE [1/2]
                 
                 if (barker::instances.count(barkerId))
                 {
@@ -434,8 +433,7 @@ namespace jsp
         auto args = CallArgsFromVp(argc, vp);
         auto instance = args.thisv().toObjectOrNull();
         
-        char quoteChar = '"';
-        string quotedName = quoteChar + getName(instance) + quoteChar;
+        string quotedName = '"' + getName(instance) + '"';
         
         js::StringBuffer sb(cx);
         
