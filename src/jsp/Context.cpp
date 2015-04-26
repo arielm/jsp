@@ -318,6 +318,24 @@ namespace jsp
         return false;
     }
     
+    bool isIdentifier(JSString *str)
+    {
+        bool result = false;
+
+        if (str)
+        {
+            RootedString rooted(cx, str);
+            JS_IsIdentifier(cx, rooted, &result);
+        }
+        
+        return result;
+    }
+    
+    bool isIdentifier(const string &s)
+    {
+        return isIdentifier(toJSString(s));
+    }
+    
 #pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
     
     string toSource(JSObject *object)

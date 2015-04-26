@@ -582,6 +582,9 @@ namespace jsp
 
     bool isArray(JSObject *object);
     bool isArray(const Value &value);
+    
+    bool isIdentifier(JSString *str);
+    bool isIdentifier(const std::string &s);
 
     // ---
     
