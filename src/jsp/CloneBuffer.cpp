@@ -141,7 +141,7 @@ namespace jsp
             {
                 if (JS_ObjectIsFunction(cx, obj))
                 {
-                    LOGD << toSource(obj) << endl << endl;
+                    LOGD << JSP::toSource(obj) << endl << endl;
                 }
             }
         }

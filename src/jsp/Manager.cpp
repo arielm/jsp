@@ -176,10 +176,11 @@ namespace jsp
     {
         if (!initialized)
         {
-            if (performInit() && jsp::postInit())
+            if (performInit())
             {
                 JS_DefineFunctions(cx, globalHandle(), global_functions);
                 
+                JSP::init();
                 Barker::init();
                 Proxy::init();
                 
@@ -198,8 +199,8 @@ namespace jsp
         {
             Barker::uninit();
             Proxy::uninit();
+            JSP::uninit();
 
-            jsp:preShutdown();
             performShutdown();
             
             // ---

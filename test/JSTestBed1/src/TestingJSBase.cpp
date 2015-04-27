@@ -16,14 +16,14 @@ using namespace jsp;
 
 void TestingJSBase::setup()
 {
-    JSP::forceGC();
+    forceGC();
     performSetup();
 }
 
 void TestingJSBase::shutdown()
 {
     performShutdown();
-    JSP::forceGC();
+    forceGC();
 }
 
 void TestingJSBase::run(bool force)

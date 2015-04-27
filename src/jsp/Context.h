@@ -29,7 +29,6 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <iostream>
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -46,42 +45,16 @@ namespace jsp
     class WrappedObject;
     class WrappedValue;
 
-    typedef std::function<void(JSTracer*)> TracerCallbackFnType;
-    typedef std::function<void(JSRuntime*, JSGCStatus)> GCCallbackFnType;
-
     // ---
     
     extern JSRuntime *rt;
     extern JSContext *cx;
     extern Heap<JSObject*> global;
     
-    inline JSRuntime* runtime()
-    {
-        return rt;
-    }
-    
-    inline JSContext* context()
-    {
-        return cx;
-    }
-    
     inline JS::HandleObject globalHandle()
     {
         return JS::HandleObject::fromMarkedLocation(global.address());
     }
-
-    // ---
-    
-    bool postInit();
-    void preShutdown();
-    
-    // ---
-    
-    void addTracerCallback(void *instance, const TracerCallbackFnType &fn);
-    void removeTracerCallback(void *instance);
-    
-    void addGCCallback(void *instance, const GCCallbackFnType &fn);
-    void removeGCCallback(void *instance);
     
     // ---
     
@@ -580,32 +553,6 @@ namespace jsp
     {
         target.setString(s);
     }
-
-    // ---
-    
-    bool isFunction(JSObject *object);
-    bool isFunction(const Value &value);
-
-    bool isArray(JSObject *object);
-    bool isArray(const Value &value);
-    
-    bool isIdentifier(JSString *str);
-    bool isIdentifier(const std::string &s);
-
-    // ---
-    
-    std::string toSource(JSObject *object);
-    std::string toSource(HandleValue value);
-
-    // ---
-    
-    std::string stringify(JSObject *object, int indent = 2);
-    std::string stringify(MutableHandleValue value, int indent = 2);
-
-    JSObject* parse(const std::string &s);
-    JSObject* parse(HandleValue value);
-    JSObject* parse(HandleString str);
-    JSObject* parse(const jschar *chars, size_t len);
 }
 
 namespace js
@@ -636,6 +583,48 @@ namespace js
 class JSP
 {
 public:
+    typedef std::function<void(JSTracer*)> TracerCallbackFnType;
+    typedef std::function<void(JSRuntime*, JSGCStatus)> GCCallbackFnType;
+
+    static bool init();
+    static void uninit();
+    
+    // ---
+    
+    static void addTracerCallback(void *instance, const TracerCallbackFnType &fn);
+    static void removeTracerCallback(void *instance);
+    
+    static void addGCCallback(void *instance, const GCCallbackFnType &fn);
+    static void removeGCCallback(void *instance);
+    
+    // ---
+    
+    static bool isFunction(JSObject *object);
+    static bool isFunction(const JS::Value &value);
+    
+    static bool isArray(JSObject *object);
+    static bool isArray(const JS::Value &value);
+    
+    static bool isIdentifier(JSString *str);
+    static bool isIdentifier(const std::string &s);
+    
+    // ---
+    
+    static std::string toSource(JSObject *object);
+    static std::string toSource(JS::HandleValue value);
+    
+    // ---
+    
+    static std::string stringify(JSObject *object, int indent = 2);
+    static std::string stringify(JS::MutableHandleValue value, int indent = 2);
+    
+    static JSObject* parse(const std::string &s);
+    static JSObject* parse(JS::HandleValue value);
+    static JSObject* parse(JS::HandleString str);
+    static JSObject* parse(const jschar *chars, size_t len);
+    
+    // ---
+    
     static void dumpString(JSString *str);
     static void dumpAtom(JSAtom *atom);
     static void dumpObject(JSObject *obj);
@@ -908,6 +897,21 @@ public:
     static const uint32_t toHTMLColor(JS::HandleValue value, const uint32_t defaultValue = 0x000000); // INFAILIBLE
     
 private:
+    struct Stringifier
+    {
+        static bool callback(const jschar *buf, uint32_t len, void *data);
+    };
+
+    static bool initialized;
+
+    static std::map<void*, TracerCallbackFnType> tracerCallbacks;
+    static std::map<void*, GCCallbackFnType> gcCallbacks;
+
+    static void tracerCallback(JSTracer *trc, void *data);
+    static void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
+    
+    // ---
+    
     static constexpr size_t TRACE_BUFFER_SIZE = 256;
     static char traceBuffer[TRACE_BUFFER_SIZE];
     

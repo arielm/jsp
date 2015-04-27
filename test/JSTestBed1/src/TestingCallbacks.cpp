@@ -287,8 +287,8 @@ void TestingCallbacks::testDefinedFunctionRooting1()
 {
     JSFunction *customMethodF1 = JS_DefineFunction(cx, globalHandle(), "customMethodF1", methodDispatch, 0, 0);
     
-    JSP::forceGC(); // WILL NOT AFFECT GLOBAL-OBJECT
-    JSP_CHECK(JSP::isHealthy(customMethodF1)); // DEFINED-FUNCTION IS ALIVE
+    forceGC(); // WILL NOT AFFECT GLOBAL-OBJECT
+    JSP_CHECK(isHealthy(customMethodF1)); // DEFINED-FUNCTION IS ALIVE
 }
 
 void TestingCallbacks::testDefinedFunctionRooting2()
@@ -299,10 +299,10 @@ void TestingCallbacks::testDefinedFunctionRooting2()
         RootedObject object(cx, Barker::create("HOST-OBJECT"));
         customMethodF2 = JS_DefineFunction(cx, object, "customMethodF2", methodDispatch, 0, 0);
         
-        JSP::forceGC(); // WILL NOT AFFECT (ROOTED) BARKER
-        JSP_CHECK(JSP::isHealthy(customMethodF2)); // DEFINED-FUNCTION IS ALIVE
+        forceGC(); // WILL NOT AFFECT (ROOTED) BARKER
+        JSP_CHECK(isHealthy(customMethodF2)); // DEFINED-FUNCTION IS ALIVE
     }
     
-    JSP::forceGC(); // WILL FINALIZE BARKER
-    JSP_CHECK(!JSP::isHealthy(customMethodF2)); // DEFINED-FUNCTION IS DEAD
+    forceGC(); // WILL FINALIZE BARKER
+    JSP_CHECK(!isHealthy(customMethodF2)); // DEFINED-FUNCTION IS DEAD
 }

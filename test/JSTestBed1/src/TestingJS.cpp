@@ -20,7 +20,7 @@ void TestingJS::performRun(bool force)
 {
     if (force || false)
     {
-        JSP::dumpObject(globalHandle());
+        dumpObject(globalHandle());
     }
     
     if (force || false)
@@ -29,7 +29,7 @@ void TestingJS::performRun(bool force)
         executeScript(InputSource::getAsset("test.js"));
 
         call(globalHandle(), "start");
-        LOGI << JSP::writeDetailed(get<OBJECT>(globalHandle(), "foo")) << endl;
+        LOGI << writeDetailed(get<OBJECT>(globalHandle(), "foo")) << endl;
         
         executeScript("print(1, 'אריאל מלכא', {x: 5, y: null})");
         executeScript("error tester", __FILE__, __LINE__);
@@ -37,7 +37,7 @@ void TestingJS::performRun(bool force)
     
     // ---
     
-    if (force || false)
+    if (force || true)
     {
         JSP_TEST(force || true, testParsing1)
         JSP_TEST(force || true, testParsing2)
@@ -761,7 +761,7 @@ bool TestingJS::CustomConstructor(JSContext *cx, unsigned argc, Value *vp)
 void TestingJS::testCustomConstruction1()
 {
     RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor, 0, nullptr, nullptr, nullptr, nullptr));
-    JSP::dumpObject(constructor1);
+    dumpObject(constructor1);
     
     try
     {
@@ -801,7 +801,7 @@ void TestingJS::testCustomConstruction1()
 void TestingJS::testCustomConstruction2()
 {
     RootedObject constructor2(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
-    JSP::dumpObject(constructor2);
+    dumpObject(constructor2);
     
     /*
      * JUST TO ILLUSTRATE THE POSSIBILITY OF USING AutoValueArray...
@@ -1032,7 +1032,7 @@ void TestingJS::testShapes1()
                     RootedValue vp(cx);
                     vp.set(obj2->nativeGetSlot(shape->slot())); // PROBABLY THE BRIDGE TO ("NATURALLY" NON-ACCESSIBLE) "RESERVED SLOTS" FROM THE JS SIDE
                     
-                    LOGI << JSP::write(id) << ": " << JSP::write(vp) << endl;
+                    LOGI << JSP::write(id) << ": " << write(vp) << endl;
                 }
             }
         }
@@ -1044,11 +1044,11 @@ void TestingJS::testShapes1()
 void TestingJS::testShapes2()
 {
     JSObject *object1 = evaluateObject("({one: 1, two: 'deux', trois: [1, 2, 3]})");
-    JSP::dumpObject(object1);
+    dumpObject(object1);
     LOGI << "-----" << endl;
     
     JSObject *object2 = evaluateObject("({one: 250, two: 'dos', trois: [0]})");
-    JSP::dumpObject(object2);
+    dumpObject(object2);
     LOGI << "-----" << endl;
 }
 
@@ -1083,8 +1083,8 @@ void TestingJS::testAtoms()
     /*
      * DEMONSTRATING THAT AN ATOM IS A JS STRING
      */
-    JSP::dumpAtom(atom1);
-    JSP::dumpAtom(atom2);
+    dumpAtom(atom1);
+    dumpAtom(atom2);
     
     // ---
     
@@ -1149,7 +1149,7 @@ void TestingJS::testReservedSlots()
     /*
      * DEMONSTRATES THAT THE RESERVED SLOT HAVE NO JSID
      */
-    JSP::dumpObject(object);
+    dumpObject(object);
     
     /*
      * DEMONSTRATES THAT THE RESERVED SLOT IS NOT (AUTOMATICALLY) ACCESSIBLE VIA JS
@@ -1287,7 +1287,7 @@ void TestingJS::testThreadSafety()
 void TestingJS::testEvaluationScope()
 {
     JSObject *newObject = evaluateObject("({x: 250.33, foo: [1, 2, 3], bar: 'baz'})");
-    JSP::dumpObject(newObject);
+    dumpObject(newObject);
 }
 
 /*
@@ -1312,7 +1312,7 @@ void TestingJS::testFunctionScope()
     })";
     
     RootedObject containerObject(cx, evaluateObject(source));
-    JSP::dumpObject(containerObject);
+    dumpObject(containerObject);
     
     // ---
     
@@ -1329,7 +1329,7 @@ void TestingJS::testFunctionScope()
          * someGlobalThing WILL BE PROPERLY RESOLVED
          */
         JS::RootedValue result1(cx, call(NullPtr(), function1, args));
-        LOGI << "RESULT 1: " << JSP::write(result1) << endl; // RESULT: 0
+        LOGI << "RESULT 1: " << write(result1) << endl; // RESULT: 0
     }
     
     if (getProperty(containerObject, "function2", &function2))
@@ -1339,14 +1339,14 @@ void TestingJS::testFunctionScope()
          * this.someAmbiguousThing WILL RESOLVE TO THE "LOCAL VALUE"
          */
         RootedValue result2A(cx, call(containerObject, function2, args));
-        LOGI << "RESULT 2A: " << JSP::write(result2A) << endl; // RESULT: 99
+        LOGI << "RESULT 2A: " << write(result2A) << endl; // RESULT: 99
         
         /*
          * IF nullptr OR NOTHING (I.E. THE GLOBAL-OBJECT) IS PROVIDED:
          * this.someAmbiguousThing WILL RESOLVE TO THE "GLOBAL VALUE"
          */
         RootedValue result2B(cx, call(NullPtr(), function2, args));
-        LOGI << "RESULT 2B: " << JSP::write(result2B) << endl; // RESULT: 66
+        LOGI << "RESULT 2B: " << write(result2B) << endl; // RESULT: 66
     }
 }
 

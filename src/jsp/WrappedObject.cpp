@@ -78,7 +78,7 @@ namespace jsp
     
     void WrappedObject::postBarrier()
     {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
+        JSP::addTracerCallback(this, BIND_INSTANCE1(&WrappedObject::trace, this));
         HeapCellPostBarrier(reinterpret_cast<js::gc::Cell**>(&object));
         
         DUMP_WRAPPED_OBJECT
@@ -87,7 +87,7 @@ namespace jsp
     void WrappedObject::relocate()
     {
         HeapCellRelocate(reinterpret_cast<js::gc::Cell**>(&object));
-        removeTracerCallback(this);
+        JSP::removeTracerCallback(this);
         
         DUMP_WRAPPED_OBJECT
     }

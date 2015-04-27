@@ -91,7 +91,7 @@ namespace jsp
     
     void WrappedValue::postBarrier()
     {
-        addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
+        JSP::addTracerCallback(this, BIND_INSTANCE1(&WrappedValue::trace, this));
         HeapValuePostBarrier(&value);
         
         DUMP_WRAPPED_VALUE
@@ -99,7 +99,7 @@ namespace jsp
     
     void WrappedValue::relocate()
     {
-        removeTracerCallback(this);
+        JSP::removeTracerCallback(this);
         HeapValueRelocate(&value);
         
         DUMP_WRAPPED_VALUE

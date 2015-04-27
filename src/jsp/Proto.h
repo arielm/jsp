@@ -21,7 +21,7 @@
 
 namespace jsp
 {
-    class Proto
+    class Proto : public JSP
     {
     public:
         /*

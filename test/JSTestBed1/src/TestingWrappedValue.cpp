@@ -103,18 +103,18 @@ void TestingWrappedValue::testStackCreationAndAssignment()
     // --
     
     wrapped = ObjectOrNullValue(Barker::create("ASSIGNED-TO-VALUE 1"));
-    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
+    JSP_CHECK(writeGCDescriptor(wrapped) == 'n'); // I.E. IN NURSERY
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
+    forceGC();
+    JSP_CHECK(!isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
     
     // ---
     
     wrapped = StringValue(toJSString("assigned-to-value 1"));
-    JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
+    JSP_CHECK(writeGCDescriptor(wrapped) == 'W'); // I.E. TENURED
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
+    forceGC();
+    JSP_CHECK(!isHealthy(wrapped)); // REASON: GC-THING NOT ROOTED
 }
 
 void TestingWrappedValue::testAutomaticConversion()
@@ -163,7 +163,7 @@ void TestingWrappedValue::testAutomaticConversion()
 void TestingWrappedValue::testObjectStackRooting1()
 {
     RootedObject rootedObject(cx, Barker::create("STACK-ROOTED STANDALONE"));
-    JSP_CHECK(JSP::isInsideNursery(rootedObject.get())); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
+    JSP_CHECK(isInsideNursery(rootedObject.get())); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
     
     /*
      * MISTAKE: ASSERTING THAT THE ASSIGNED GC-POINTER WILL NOT MOVE
@@ -171,15 +171,15 @@ void TestingWrappedValue::testObjectStackRooting1()
      */
     WrappedValue wrapped(rootedObject);
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-POINTER HAS MOVED FROM THE NURSERY
+    forceGC();
+    JSP_CHECK(!isHealthy(wrapped)); // REASON: GC-POINTER HAS MOVED FROM THE NURSERY
     JSP_CHECK(Barker::isHealthy("STACK-ROOTED STANDALONE")); // REASON: GC-THING IS ROOTED
     
     // ---
     
     rootedObject = nullptr;
     
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isFinalized("STACK-ROOTED STANDALONE"));
 }
 
@@ -189,10 +189,10 @@ void TestingWrappedValue::testObjectStackRooting1()
 void TestingWrappedValue::testObjectStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, Barker::create("STACK-ROOTED VIA-WRAPPED-VALUE"));
-    JSP_CHECK(JSP::isInsideNursery(rootedWrapped.get())); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
+    JSP_CHECK(isInsideNursery(rootedWrapped.get())); // JS-OBJECTS ARE USUALLY CREATED IN THE NURSERY
     
-    JSP::forceGC();
-    JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
+    forceGC();
+    JSP_CHECK(isHealthy(rootedWrapped.get()));
     JSP_CHECK(Barker::isHealthy("STACK-ROOTED VIA-WRAPPED-VALUE"));
     
     // ---
@@ -202,7 +202,7 @@ void TestingWrappedValue::testObjectStackRooting2()
      */
     rootedWrapped = 123;
     
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isFinalized("STACK-ROOTED VIA-WRAPPED-VALUE"));
 }
 
@@ -212,7 +212,7 @@ void TestingWrappedValue::testObjectStackRooting2()
 void TestingWrappedValue::testStringStackRooting1()
 {
     RootedString rootedString(cx, toJSString("stack-rooted standalone"));
-    JSP_CHECK(!JSP::isInsideNursery(rootedString.get())); // JS-STRINGS ARE ALWAYS TENURED
+    JSP_CHECK(!isInsideNursery(rootedString.get())); // JS-STRINGS ARE ALWAYS TENURED
     
     /*
      * MISTAKE: ASSERTING THAT THE ASSIGNED GC-POINTER WILL NOT MOVE
@@ -220,15 +220,15 @@ void TestingWrappedValue::testStringStackRooting1()
      */
     WrappedValue wrapped(rootedString);
     
-    JSP::forceGC();
-    JSP_CHECK(JSP::isHealthy(wrapped)); // REASON: GC-POINTER WAS TENURED AND GC-THING IS ROOTED
+    forceGC();
+    JSP_CHECK(isHealthy(wrapped)); // REASON: GC-POINTER WAS TENURED AND GC-THING IS ROOTED
     
     // ---
     
     rootedString = nullptr;
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(wrapped)); // REASON: GC-THING IS NOT ROOTED ANYMORE
+    forceGC();
+    JSP_CHECK(!isHealthy(wrapped)); // REASON: GC-THING IS NOT ROOTED ANYMORE
 }
 
 /*
@@ -237,13 +237,13 @@ void TestingWrappedValue::testStringStackRooting1()
 void TestingWrappedValue::testStringStackRooting2()
 {
     Rooted<WrappedValue> rootedWrapped(cx, "stack-rooted via-wrapped-value");
-    JSP_CHECK(!JSP::isInsideNursery(rootedWrapped.get())); // JS-STRINGS ARE ALWAYS TENURED
+    JSP_CHECK(!isInsideNursery(rootedWrapped.get())); // JS-STRINGS ARE ALWAYS TENURED
 
     JSString *gcPointer = rootedWrapped->toString();
 
-    JSP::forceGC();
-    JSP_CHECK(JSP::isHealthy(rootedWrapped.get()));
-    JSP_CHECK(JSP::isHealthy(gcPointer)); // REASON: GC-POINTER WAS TENURED
+    forceGC();
+    JSP_CHECK(isHealthy(rootedWrapped.get()));
+    JSP_CHECK(isHealthy(gcPointer)); // REASON: GC-POINTER WAS TENURED
     
     // ---
     
@@ -252,8 +252,8 @@ void TestingWrappedValue::testStringStackRooting2()
      */
     rootedWrapped = 123;
     
-    JSP::forceGC();
-    JSP_CHECK(!JSP::isHealthy(gcPointer));
+    forceGC();
+    JSP_CHECK(!isHealthy(gcPointer));
 }
 
 // ---
@@ -591,7 +591,7 @@ void TestingWrappedValue::testAutoWrappedValueVector()
     /*
      * JS-STRING AND BARKER ARE ROOTED VIA THE AutoWrappedValueVector
      */
-    JSP::forceGC();
+    forceGC();
     
     JSP_CHECK(write(args) == "123 foo [object Barker] 33.33");
 }
@@ -603,14 +603,14 @@ void TestingWrappedValue::testHeapWrappedToHandle1()
     heapWrapped1 = Barker::create("HEAP-WRAPPED 1");
     testHandleValue1(heapWrapped1);
     
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isHealthy("HEAP-WRAPPED 1"));
     
     // ---
     
     heapWrapped1 = nullptr;
     
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isFinalized("HEAP-WRAPPED 1"));
 }
 
@@ -627,11 +627,11 @@ if (true)
     RootedString rooted(cx, toJSString("not atomized"));
     wrapped = StringValue(rooted);
     
-    JSP::forceGC();
+    forceGC();
     
-    if (JSP_CHECK(JSP::isHealthy(wrapped.get()), "HEALTHY VALUE"))
+    if (JSP_CHECK(isHealthy(wrapped.get()), "HEALTHY VALUE"))
     {
-        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'B');
+        JSP_CHECK(writeGCDescriptor(wrapped) == 'B');
     }
 }
 else
@@ -641,11 +641,11 @@ else
     string atomized = "atomized";
     wrapped = StringValue(Atomize(cx, atomized.data(), atomized.size()));
     
-    JSP::forceGC();
+    forceGC();
     
-    if (JSP_CHECK(!JSP::isHealthy(wrapped.get()), "UNHEALTHY VALUE")) // REASON: ATOMS ARE NOT ROOTED BY DEFAULT
+    if (JSP_CHECK(!isHealthy(wrapped.get()), "UNHEALTHY VALUE")) // REASON: ATOMS ARE NOT ROOTED BY DEFAULT
     {
-        JSP_CHECK(JSP::writeGCDescriptor(wrapped) == 'P');
+        JSP_CHECK(writeGCDescriptor(wrapped) == 'P');
     }
 }
 */

@@ -20,103 +20,9 @@ using namespace chr;
 
 namespace jsp
 {
-    namespace intern
-    {
-        struct Stringifier;
-
-        map<void*, TracerCallbackFnType> tracerCallbacks;
-        map<void*, GCCallbackFnType> gcCallbacks;
-        
-        void tracerCallback(JSTracer *trc, void *data);
-        void gcCallback(JSRuntime *rt, JSGCStatus status, void *data);
-        
-        // ---
-        
-        bool postInitialized = false;
-    }
-    
-    // ---
-    
     JSRuntime *rt = nullptr;
     JSContext *cx = nullptr;
     Heap<JSObject*> global;
-    
-    // ---
-    
-    bool postInit()
-    {
-        if (!intern::postInitialized && rt && cx)
-        {
-            JS_AddExtraGCRootsTracer(rt, intern::tracerCallback, nullptr);
-            JS_SetGCCallback(rt, intern::gcCallback, nullptr);
-            
-            // ---
-            
-            intern::postInitialized = true;
-        }
-        
-        return intern::postInitialized;
-    }
-    
-    void preShutdown()
-    {
-        if (intern::postInitialized && rt && cx)
-        {
-            JS_RemoveExtraGCRootsTracer(rt, intern::tracerCallback, nullptr);
-            intern::tracerCallbacks.clear();
-            
-            JS_SetGCCallback(rt, nullptr, nullptr);
-            intern::gcCallbacks.clear();
-            
-            // ---
-            
-            intern::postInitialized = false;
-        }
-    }
-    
-#pragma mark ---------------------------------------- CENTRALIZED EXTRA-ROOT-TRACING ----------------------------------------
-    
-    void addTracerCallback(void *instance, const TracerCallbackFnType &fn)
-    {
-        JS_ASSERT(intern::postInitialized);
-        intern::tracerCallbacks.emplace(instance, fn);
-    }
-    
-    void removeTracerCallback(void *instance)
-    {
-        JS_ASSERT(intern::postInitialized);
-        intern::tracerCallbacks.erase(instance);
-    }
-    
-    void intern::tracerCallback(JSTracer *trc, void *data)
-    {
-        for (auto &element : tracerCallbacks)
-        {
-            element.second(trc);
-        }
-    }
-    
-#pragma mark ---------------------------------------- CENTRALIZED GC-CALLBACKS ----------------------------------------
-
-    void addGCCallback(void *instance, const GCCallbackFnType &fn)
-    {
-        JS_ASSERT(intern::postInitialized);
-        intern::gcCallbacks.emplace(instance, fn);
-    }
-    
-    void removeGCCallback(void *instance)
-    {
-        JS_ASSERT(intern::postInitialized);
-        intern::gcCallbacks.erase(instance);
-    }
-    
-    void intern::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
-    {
-        for (auto &element : gcCallbacks)
-        {
-            element.second(rt, status);
-        }
-    }
     
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
@@ -272,190 +178,270 @@ namespace jsp
         
         return false;
     }
-    
-#pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
-    
-    bool isFunction(JSObject *object)
-    {
-        if (object)
-        {
-            return JS_ObjectIsFunction(cx, object);
-        }
-        
-        return false;
-    }
-    
-    bool isFunction(const Value &value)
-    {
-        if (value.isObject())
-        {
-            return isFunction(value.toObjectOrNull());
-        }
-        
-        return false;
-    }
-
-    // ---
-    
-    bool isArray(JSObject *object)
-    {
-        if (object)
-        {
-            RootedObject rooted(cx, object);
-            return JS_IsArrayObject(cx, rooted);
-        }
-        
-        return false;
-    }
-    
-    bool isArray(const Value &value)
-    {
-        if (value.isObject())
-        {
-            return isArray(value.toObjectOrNull());
-        }
-        
-        return false;
-    }
-    
-    bool isIdentifier(JSString *str)
-    {
-        bool result = false;
-
-        if (str)
-        {
-            RootedString rooted(cx, str);
-            JS_IsIdentifier(cx, rooted, &result);
-        }
-        
-        return result;
-    }
-    
-    bool isIdentifier(const string &s)
-    {
-        return isIdentifier(toJSString(s));
-    }
-    
-#pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
-    
-    string toSource(JSObject *object)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return toSource(value); // RVO-COMPLIANT
-    }
-
-    string toSource(HandleValue value)
-    {
-        JSString *source = JS_ValueToSource(cx, value);
-        
-        if (source)
-        {
-            return toString(source); // RVO-COMPLIANT
-        }
-        
-        return ""; // I.E. FAILURE
-    }
-    
-#pragma mark ---------------------------------------- JSON ----------------------------------------
-    
-    struct intern::Stringifier
-    {
-        static bool callback(const jschar *buf, uint32_t len, void *data)
-        {
-            auto buffer = reinterpret_cast<string*>(data);
-            appendToString(*buffer, buf, len);
-            
-            return true;
-        }
-    };
-    
-    string stringify(JSObject *object, int indent)
-    {
-        RootedValue value(cx, ObjectOrNullValue(object));
-        return stringify(&value, indent); // RVO-COMPLIANT
-    }
-    
-    string stringify(MutableHandleValue value, int indent)
-    {
-        string buffer;
-        
-        RootedValue indentValue(cx, (indent > 0) ? Int32Value(indent) : UndefinedHandleValue);
-        
-        if (JS_Stringify(cx, value, NullPtr(), indentValue, &intern::Stringifier::callback, &buffer))
-        {
-            return buffer; // RVO-COMPLIANT
-        }
-        
-        return ""; // I.E. FAILURE, ON-PAR WITH JSON.stringify()
-    }
-    
-    // ---
-    
-    JSObject* parse(const string &s)
-    {
-        if (!s.empty())
-        {
-            size_t len;
-            jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s.data(), s.size()), &len).get();
-            
-            if (chars)
-            {
-                JSObject *result = parse(chars, len);
-                js_free(chars);
-                
-                return result;
-            }
-        }
-        
-        return nullptr;
-    }
-    
-    JSObject* parse(HandleValue value)
-    {
-        RootedString str(cx, ToString(cx, value));
-        return parse(str);
-    }
-    
-    JSObject* parse(HandleString str)
-    {
-        if (str)
-        {
-            js::RootedLinearString linear(cx, str->ensureLinear(cx)); // PROTECTING FROM GC
-            
-            if (linear)
-            {
-                return parse(linear->chars(), linear->length()); // CAN TRIGGER GC
-            }
-        }
-        
-        return nullptr;
-    }
-    
-    JSObject* parse(const jschar *chars, size_t len)
-    {
-        if (chars && len)
-        {
-            RootedValue result(cx);
-            
-            if (JS_ParseJSON(cx, chars, len, &result))
-            {
-                if (result.isObject())
-                {
-                    return result.toObjectOrNull();
-                }
-            }
-        }
-        
-        return nullptr;
-    }
 }
 
 #pragma mark ---------------------------------------- JSP NAMESPACE ----------------------------------------
 
 using namespace jsp;
 
+bool JSP::initialized = false;
+
+map<void*, JSP::TracerCallbackFnType> JSP::tracerCallbacks;
+map<void*, JSP::GCCallbackFnType> JSP::gcCallbacks;
+
 char JSP::traceBuffer[TRACE_BUFFER_SIZE];
+
 map<string, uint32_t> JSP::htmlColors;
+
+// ---
+
+bool JSP::init()
+{
+    if (!initialized && rt && cx)
+    {
+        JS_AddExtraGCRootsTracer(rt, tracerCallback, nullptr);
+        JS_SetGCCallback(rt, gcCallback, nullptr);
+        
+        // ---
+        
+        initialized = true;
+    }
+    
+    return initialized;
+}
+
+void JSP::uninit()
+{
+    if (initialized && rt && cx)
+    {
+        JS_RemoveExtraGCRootsTracer(rt, tracerCallback, nullptr);
+        tracerCallbacks.clear();
+        
+        JS_SetGCCallback(rt, nullptr, nullptr);
+        gcCallbacks.clear();
+        
+        // ---
+        
+        initialized = false;
+    }
+}
+
+#pragma mark ---------------------------------------- CENTRALIZED EXTRA-ROOT-TRACING ----------------------------------------
+
+void JSP::addTracerCallback(void *instance, const TracerCallbackFnType &fn)
+{
+    JS_ASSERT(initialized);
+    tracerCallbacks.emplace(instance, fn);
+}
+
+void JSP::removeTracerCallback(void *instance)
+{
+    JS_ASSERT(initialized);
+    tracerCallbacks.erase(instance);
+}
+
+void JSP::tracerCallback(JSTracer *trc, void *data)
+{
+    for (auto &element : tracerCallbacks)
+    {
+        element.second(trc);
+    }
+}
+
+#pragma mark ---------------------------------------- CENTRALIZED GC-CALLBACKS ----------------------------------------
+
+void JSP::addGCCallback(void *instance, const GCCallbackFnType &fn)
+{
+    JS_ASSERT(initialized);
+    gcCallbacks.emplace(instance, fn);
+}
+
+void JSP::removeGCCallback(void *instance)
+{
+    JS_ASSERT(initialized);
+    gcCallbacks.erase(instance);
+}
+
+void JSP::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
+{
+    for (auto &element : gcCallbacks)
+    {
+        element.second(rt, status);
+    }
+}
+
+#pragma mark ---------------------------------------- TYPE-CHECK ----------------------------------------
+
+bool JSP::isFunction(JSObject *object)
+{
+    if (object)
+    {
+        return JS_ObjectIsFunction(cx, object);
+    }
+    
+    return false;
+}
+
+bool JSP::isFunction(const Value &value)
+{
+    if (value.isObject())
+    {
+        return isFunction(value.toObjectOrNull());
+    }
+    
+    return false;
+}
+
+// ---
+
+bool JSP::isArray(JSObject *object)
+{
+    if (object)
+    {
+        RootedObject rooted(cx, object);
+        return JS_IsArrayObject(cx, rooted);
+    }
+    
+    return false;
+}
+
+bool JSP::isArray(const Value &value)
+{
+    if (value.isObject())
+    {
+        return isArray(value.toObjectOrNull());
+    }
+    
+    return false;
+}
+
+bool JSP::isIdentifier(JSString *str)
+{
+    bool result = false;
+    
+    if (str)
+    {
+        RootedString rooted(cx, str);
+        JS_IsIdentifier(cx, rooted, &result);
+    }
+    
+    return result;
+}
+
+bool JSP::isIdentifier(const string &s)
+{
+    return isIdentifier(toJSString(s));
+}
+
+#pragma mark ---------------------------------------- TO-SOURCE ----------------------------------------
+
+string JSP::toSource(JSObject *object)
+{
+    RootedValue value(cx, ObjectOrNullValue(object));
+    return toSource(value); // RVO-COMPLIANT
+}
+
+string JSP::toSource(HandleValue value)
+{
+    JSString *source = JS_ValueToSource(cx, value);
+    
+    if (source)
+    {
+        return toString(source); // RVO-COMPLIANT
+    }
+    
+    return ""; // I.E. FAILURE
+}
+
+#pragma mark ---------------------------------------- JSON ----------------------------------------
+
+bool JSP::Stringifier::callback(const jschar *buf, uint32_t len, void *data)
+{
+    auto buffer = reinterpret_cast<string*>(data);
+    appendToString(*buffer, buf, len);
+    
+    return true;
+}
+
+string JSP::stringify(JSObject *object, int indent)
+{
+    RootedValue value(cx, ObjectOrNullValue(object));
+    return stringify(&value, indent); // RVO-COMPLIANT
+}
+
+string JSP::stringify(MutableHandleValue value, int indent)
+{
+    string buffer;
+    
+    RootedValue indentValue(cx, (indent > 0) ? Int32Value(indent) : UndefinedHandleValue);
+    
+    if (JS_Stringify(cx, value, NullPtr(), indentValue, &Stringifier::callback, &buffer))
+    {
+        return buffer; // RVO-COMPLIANT
+    }
+    
+    return ""; // I.E. FAILURE, ON-PAR WITH JSON.stringify()
+}
+
+// ---
+
+JSObject* JSP::parse(const string &s)
+{
+    if (!s.empty())
+    {
+        size_t len;
+        jschar *chars = LossyUTF8CharsToNewTwoByteCharsZ(cx, UTF8Chars(s.data(), s.size()), &len).get();
+        
+        if (chars)
+        {
+            JSObject *result = parse(chars, len);
+            js_free(chars);
+            
+            return result;
+        }
+    }
+    
+    return nullptr;
+}
+
+JSObject* JSP::parse(HandleValue value)
+{
+    RootedString str(cx, ToString(cx, value));
+    return parse(str);
+}
+
+JSObject* JSP::parse(HandleString str)
+{
+    if (str)
+    {
+        js::RootedLinearString linear(cx, str->ensureLinear(cx)); // PROTECTING FROM GC
+        
+        if (linear)
+        {
+            return parse(linear->chars(), linear->length()); // CAN TRIGGER GC
+        }
+    }
+    
+    return nullptr;
+}
+
+JSObject* JSP::parse(const jschar *chars, size_t len)
+{
+    if (chars && len)
+    {
+        RootedValue result(cx);
+        
+        if (JS_ParseJSON(cx, chars, len, &result))
+        {
+            if (result.isObject())
+            {
+                return result.toObjectOrNull();
+            }
+        }
+    }
+    
+    return nullptr;
+}
 
 #pragma mark ---------------------------------------- DEBUG / DUMP ----------------------------------------
 
@@ -555,7 +541,7 @@ string JSP::writeTraceThingInfo(JSObject *object, bool details)
 {
     if (isHealthy(object))
     {
-        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, false); // XXX: FORCING details TO FALSE, IN ORDER TO SUPPRESS " <no private>"
+        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, details);
         return traceBuffer;
     }
     

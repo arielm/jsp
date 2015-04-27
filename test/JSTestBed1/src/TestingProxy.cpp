@@ -69,7 +69,7 @@ void TestingProxy::testPeers1()
      */
     JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({})");
     
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isFinalized("ALIEN1")); // PROOF THAT peers.Proxy[0] (ASSOCIATED WITH vanilla) IS TRULY GONE
 }
 
@@ -118,7 +118,7 @@ void TestingProxy::testPeers3()
      * EVEN IF peers.Proxy[0] IS NOT ACCESSIBLE ANYMORE FROM JS:
      * - IT IS STILL ROOTED (VIA Proxy::peer), AS LONG AS proxy IS ALIVE
      */
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isHealthy("ALIEN2"));
 
     /*
@@ -135,7 +135,7 @@ void TestingProxy::testPeers3()
      * EVEN IF peers IS NOT ACCESSIBLE ANYMORE FROM JS:
      * - IT IS STILL ROOTED (VIA Proxy::Statics::peers), UNTIL Proxy::uninit() IS CALLED
      */
-    JSP::forceGC();
+    forceGC();
     JSP_CHECK(Barker::isHealthy("ALIEN3"));
 }
 

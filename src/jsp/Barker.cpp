@@ -392,7 +392,7 @@ namespace jsp
             barker::setup(classInstance, 0, "CLASS-INSTANCE");
             
             static bool unique;
-            addGCCallback(&unique, BIND_STATIC2(Barker::gcCallback));
+            JSP::addGCCallback(&unique, BIND_STATIC2(Barker::gcCallback));
             
             // ---
             
@@ -403,12 +403,10 @@ namespace jsp
     }
     
     /*
-     * TODO: COMPLETE UN-INITIALIZATION
+     * TODO
      */
     void Barker::uninit()
-    {
-        barker::initialized = false;
-    }
+    {}
     
     // ---
     
