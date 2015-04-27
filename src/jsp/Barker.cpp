@@ -7,6 +7,7 @@
  */
 
 #include "jsp/Barker.h"
+#include "jsp/Proto.h"
 
 #if defined(JSP_USE_PRIVATE_APIS)
 #include "vm/StringBuffer.h"
@@ -25,23 +26,23 @@ namespace jsp
     {
         bool initialized = false;
         
-        ptrdiff_t createCount = 0; // CLASS-INSTANCE IS NOT COUNTED
-        map<ptrdiff_t, string> names;
-        map<ptrdiff_t, JSObject*> instances;
+        int32_t createCount = 0; // CLASS-INSTANCE IS NOT COUNTED
+        map<int32_t, string> names;
+        map<int32_t, JSObject*> instances;
         
-        void setup(JSObject *instance, ptrdiff_t barkerId, const string &name = "");
+        void setup(JSObject *instance, int32_t barkerId, const string &name = "");
         
         /*
          * RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
          * OTHERWISE: MAY RETURN THE NAME OF A NON-HEALTHY BARKER
          */
-        string getName(ptrdiff_t barkerId);
+        string getName(int32_t barkerId);
 
         /*
          * RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
          * OTHERWISE: MAY RETURN THE ID OF A NON-HEALTHY BARKER
          */
-        ptrdiff_t getId(const string &name);
+        int32_t getId(const string &name);
         
         /*
          * IF THE RETURNED bool IS FALSE: SUCH A BARKER NEVER EXISTED
@@ -50,7 +51,7 @@ namespace jsp
         pair<bool, JSObject*> getInstance(const string &name);
     }
     
-    void barker::setup(JSObject *instance, ptrdiff_t barkerId, const string &name)
+    void barker::setup(JSObject *instance, int32_t barkerId, const string &name)
     {
         assert(barker::initialized || (barkerId == 0));
         
@@ -85,20 +86,24 @@ namespace jsp
         names[barkerId] = finalName;
         
         RootedObject rootedInstance(cx, instance);
-        JS_SetPrivate(instance, reinterpret_cast<void*>(barkerId)); // TODO: CONSIDER USING id PROPERTY INSTEAD OF PRIVATE VALUE [1/2]
+        Proto::define(rootedInstance, "id", barkerId, JSPROP_READONLY | JSPROP_PERMANENT);
+        Proto::define(rootedInstance, "name", finalName, JSPROP_READONLY | JSPROP_PERMANENT);
         
-        RootedValue rootedId(cx, toValue(int32_t(barkerId))); // TODO: BARKER-ID SHOULD BE int32_t
-        JS_DefineProperty(cx, rootedInstance, "id", rootedId, JSPROP_READONLY | JSPROP_PERMANENT);
-        
-        RootedValue rootedName(cx, toValue(finalName));
-        JS_DefineProperty(cx, rootedInstance, "name", rootedName, JSPROP_READONLY | JSPROP_PERMANENT);
+        /*
+         * RELYING SOLELY ON THE id PROPERTY (PREVIOUSLY DEFINED) IS NOT WORKING:
+         * - IT WOULD CRASH WHEN THE PROPERTY IS ACCESSED DURING TRACING IN Barker::getId()
+         *
+         * RELYING ON THE INSTANCE'S "PRIVATE" WOULD WORK, BUT:
+         * - IT'S MORE SUITED TO STORE ptrdiff_t VALUES
+         */
+        JS_SetReservedSlot(instance, 0, Int32Value(barkerId));
         
         // ---
         
         LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << finalName << endl; // LOG: VERBOSE
     }
     
-    string barker::getName(ptrdiff_t barkerId)
+    string barker::getName(int32_t barkerId)
     {
         auto element = names.find(barkerId);
         
@@ -110,7 +115,7 @@ namespace jsp
         return ""; // I.E. SUCH A BARKER NEVER EXISTED
     }
     
-    ptrdiff_t barker::getId(const string &name)
+    int32_t barker::getId(const string &name)
     {
         for (auto &element : names)
         {
@@ -149,7 +154,7 @@ namespace jsp
     const JSClass Barker::clazz =
     {
         "Barker",
-        JSCLASS_HAS_PRIVATE,
+        JSCLASS_HAS_RESERVED_SLOTS(1),
         JS_PropertyStub,
         JS_DeletePropertyStub,
         JS_PropertyStub,
@@ -261,16 +266,16 @@ namespace jsp
     
     int32_t Barker::nextId()
     {
-        return int32_t(barker::createCount) + 1; // TODO: BARKER-ID SHOULD BE int32_t
+        return barker::createCount + 1;
     }
     
-    ptrdiff_t Barker::getId(JSObject *instance)
+    int32_t Barker::getId(JSObject *instance)
     {
         if (JSP::isHealthy(instance))
         {
             if (JS_GetClass(instance) == &Barker::clazz)
             {
-                auto barkerId = reinterpret_cast<ptrdiff_t>(JS_GetPrivate(instance)); // TODO: CONSIDER USING id PROPERTY INSTEAD OF PRIVATE VALUE [1/2]
+                auto barkerId = JS_GetReservedSlot(instance, 0).toInt32();
                 
                 if (barker::instances.count(barkerId))
                 {

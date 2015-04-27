@@ -29,9 +29,7 @@
  *
  * 3) ALLOW TO ENABLE/DISABLE LOGGING
  *
- * 4) CONSIDER SWITCHING TO int32_t INSTEAD OF ptrdiff_t FOR BARKER IDS
- *
- * 5) CONSIDER USING A CUSTOM NATIVE OBJECT EXTENDING JSObject:
+ * 4) CONSIDER USING A CUSTOM NATIVE OBJECT EXTENDING JSObject:
  *    - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/builtin/TestingFunctions.cpp#L1262-1421
  *    - ALTERNATIVELY:
  *      - CHECK THE "Helper Macros for creating JSClasses that function as proxies" (EG. "PROXY_CLASS_WITH_EXT") IN jsfriendapi.h
@@ -61,7 +59,7 @@ namespace jsp
         
         static int32_t nextId();
         
-        static ptrdiff_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
+        static int32_t getId(JSObject *instance); // RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
         static std::string getName(JSObject *instance); // RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
         static JSObject* getInstance(const std::string &name); // RETURNS NULL IF THERE IS NO SUCH A LIVING BARKER
         

@@ -555,7 +555,7 @@ string JSP::writeTraceThingInfo(JSObject *object, bool details)
 {
     if (isHealthy(object))
     {
-        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, details);
+        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, false); // XXX: FORCING details TO FALSE, IN ORDER TO SUPPRESS " <no private>"
         return traceBuffer;
     }
     
