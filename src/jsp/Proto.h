@@ -9,8 +9,8 @@
 /*
  * TODO:
  *
- * 1) HANDLE "COMPLEX EXCEPTION SITUATIONS", E.G.
- *    - CALLING exec() FROM C++ -> CALLING C++ CODE FROM JS -> C++ EXCEPTION
+ * 1) HANDLE "COMPLEX EXCEPTION SITUATIONS" IN exec(), eval() AND call()
+ *    - E.G. CALLING exec() FROM C++ -> WHICH IN TURN CALLS C++ CODE FROM JS NATIVE-CALLBACK -> WHICH IN TURN THROWS C++ EXCEPTION
  */
 
 #pragma once
@@ -24,8 +24,6 @@ namespace jsp
     class Proto
     {
     public:
-        virtual ~Proto() {}
-        
         /*
          * TODO INSTEAD:
          *
@@ -35,7 +33,7 @@ namespace jsp
          * bool exec<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options);
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        virtual bool exec(const std::string &source, const ReadOnlyCompileOptions &options);
+        static bool exec(const std::string &source, const ReadOnlyCompileOptions &options);
         
         /*
          * TODO INSTEAD:
@@ -43,20 +41,20 @@ namespace jsp
          * bool exec<Maybe>(const std::string &source); // UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
          * bool exec<CanThrow>(const std::string &source); // UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        void executeScript(const std::string &source, const std::string &file = "", int line = 1);
+        static void executeScript(const std::string &source, const std::string &file = "", int line = 1);
         
         /*
          * TODO INSTEAD:
          *
-         * bool exec<Maybe>(chr::InputSource<std::string>::Ref textSource);
+         * bool exec<Maybe>(chr::InputSource::Ref inputSource);
          * - UPON INPUT-SOURCE ERROR: RETURNS FALSE
          * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS FALSE
          *
-         * bool exec<CanThrow>(chr::InputSource<std::string>::Ref textSource);
+         * bool exec<CanThrow>(chr::InputSource::Ref inputSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        void executeScript(chr::InputSource::Ref inputSource);
+        static void executeScript(chr::InputSource::Ref inputSource);
         
         /*
          * TODO INSTEAD:
@@ -67,7 +65,7 @@ namespace jsp
          * bool eval<CanThrow>(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        virtual bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
+        static bool eval(const std::string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result);
         
         /*
          * TODO INSTEAD:
@@ -78,72 +76,66 @@ namespace jsp
          * WrappedValue eval<CanThrow>(const std::string &source);
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        JSObject* evaluateObject(const std::string &source, const std::string &file = "", int line = 1);
+        static JSObject* evaluateObject(const std::string &source, const std::string &file = "", int line = 1);
         
         /*
          * TODO INSTEAD:
          *
-         * WrappedValue eval<Maybe>(chr::InputSource<std::string>::Ref textSource);
+         * WrappedValue eval<Maybe>(chr::InputSource::Ref inputSource);
          * - UPON INPUT-SOURCE ERROR: RETURNS "UNDEFINED" VALUE
          * - UPON EXECUTION-ERROR: REPORTS EXCEPTION TO JS (IF RELEVANT) AND RETURNS "UNDEFINED" WrappedValue
          *
-         * WrappedValue eval<CanThrow>(chr::InputSource<std::string>::Ref textSource);
+         * WrappedValue eval<CanThrow>(chr::InputSource::Ref inputSource);
          * - UPON INPUT-SOURCE ERROR: THROWS INPUT-SOURCE EXCEPTION
          * - UPON EXECUTION-ERROR: THROWS C++ EXCEPTION (WITH JS-ERROR EMBEDDED IF RELEVANT)
          */
-        JSObject* evaluateObject(chr::InputSource::Ref inputSource);
+        static JSObject* evaluateObject(chr::InputSource::Ref inputSource);
         
         // ---
         
         /*
          * TODO:
          *
-         * 1) DECIDE IF EXECUTION-ERRORS AND RETURN-VALUES SHOULD BE HANDLED AS IN WHAT'S PLANNED FOR evaluateObject()
+         * CONSIDER HANDLING EXECUTION-ERRORS AND RETURN-VALUES SIMILARELY AS WHAT'S PLANNED FOR evaluateObject()
          *
-         * 2) THERE SHOULD BE ONLY ONE VIRTUAL METHOD (THE ONE TAKING A HandleValue)
-         *    - THE OTHER ONES SHOULD BE SHORTHAND VERSIONS
+         * THERE SHOULD BE ONLY ONE VIRTUAL METHOD (THE ONE TAKING A HandleValue)
+         * - THE OTHER ONES SHOULD BE SHORTHAND VERSIONS
          */
-        
-        virtual Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty());
-        virtual Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty());
-        virtual Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty());
 
+        static Value call(HandleObject object, const char *functionName, const HandleValueArray& args = HandleValueArray::empty());
+        static Value call(HandleObject object, HandleValue functionValue, const HandleValueArray& args = HandleValueArray::empty());
+        static Value call(HandleObject object, HandleFunction function, const HandleValueArray& args = HandleValueArray::empty());
+        
         // ---
         
         /*
          * TODO:
          *
          * 1) bool clear(HandleObject object)
-         *
-         * 2) HOW ABOUT ADOPTING PART OF SPIDERMONKEY'S Proxy PROTOCOL?
-         *    - https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsproxy.h#L175-224
-         *    - SOME SIMILARITIES WITH /js/ipc/JavascriptParent.h (NOW DEPRECATED...)
-         *    - THE NEW Reflect OBJECT DEFINED IN ECMA-6 SEEMS TO BE AN EVEN BETTER CANDIDATE:
-         *      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect
          */
-        
-        virtual JSObject* newPlainObject();
-        virtual JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty());
-        
-        virtual bool hasProperty(HandleObject object, const char *name);
-        virtual bool hasOwnProperty(HandleObject object, const char *name);
-        virtual bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc);
-        
-        virtual bool getProperty(HandleObject object, const char *name, MutableHandleValue result);
-        virtual bool setProperty(HandleObject object, const char *name, HandleValue value);
 
-        virtual bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0);
-        virtual bool deleteProperty(HandleObject object, const char *name);
-
+        static JSObject* newPlainObject();
+        static JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty());
+        
+        static bool hasProperty(HandleObject object, const char *name);
+        static bool hasOwnProperty(HandleObject object, const char *name);
+        
+        static bool getProperty(HandleObject object, const char *name, MutableHandleValue result);
+        static bool setProperty(HandleObject object, const char *name, HandleValue value);
+        
+        static bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0);
+        static bool deleteProperty(HandleObject object, const char *name);
+        
         //
         
         template<typename T>
-        T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        static T get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
         template<typename T>
-        bool set(HandleObject targetObject, const char *propertyName, T &&value);
+        static bool set(HandleObject targetObject, const char *propertyName, T &&value);
         
-        bool defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs = 0);
+        template<typename T>
+        static bool define(HandleObject targetObject, const char *propertyName, T &&value, unsigned attrs = 0);
         
         // ---
         
@@ -151,9 +143,7 @@ namespace jsp
          * PURPOSELY NOT USING uint32_t FOR ARRAY INDICES:
          *
          * 1) BECAUSE OF THE AMBIGUITY WITH const char* WHEN INDEX IS 0
-         *
-         * 2) BECAUSE IT'S MORE EXPLICIT, E.G.
-         *    - "CAN'T GET ELEMENT AT INDEX -1" VS "CAN'T GET ELEMENT AT INDEX 4294967295"
+         * 2) BECAUSE "CAN'T GET ELEMENT AT INDEX -1" IS MORE EXPLICIT THAN "CAN'T GET ELEMENT AT INDEX 4294967295"
          */
         
         /*
@@ -165,99 +155,48 @@ namespace jsp
          * 4) INTEGRATION WITH JS TYPED-ARRAYS
          */
         
-        virtual JSObject* newArray(size_t length = 0);
-        virtual JSObject* newArray(const HandleValueArray& contents);
+        static JSObject* newArray(size_t length = 0);
+        static JSObject* newArray(const HandleValueArray& contents);
         
-        virtual bool hasElement(HandleObject array, int index);
-        virtual uint32_t getElementCount(HandleObject array);
-
-        virtual uint32_t getLength(HandleObject array);
-        virtual bool setLength(HandleObject array, size_t length);
+        static bool hasElement(HandleObject array, int index);
+        static uint32_t getElementCount(HandleObject array);
         
-        virtual bool getElement(HandleObject array, int index, MutableHandleValue result);
-        virtual bool setElement(HandleObject array, int index, HandleValue value);
+        static uint32_t getLength(HandleObject array);
+        static bool setLength(HandleObject array, size_t length);
         
-        virtual bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
-        virtual bool deleteElement(HandleObject array, int index);
-
+        static bool getElement(HandleObject array, int index, MutableHandleValue result);
+        static bool setElement(HandleObject array, int index, HandleValue value);
+        
+        static bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
+        static bool deleteElement(HandleObject array, int index);
+        
         //
         
         template<typename T>
-        T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        static T get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        
+        template<typename T>
+        static bool set(HandleObject targetArray, int elementIndex, T &&value);
 
         template<typename T>
-        bool set(HandleObject targetArray, int elementIndex, T &&value);
-        
+        static bool define(HandleObject targetArray, int elementIndex, T &&value, unsigned attrs = 0);
+
+        /*
+         * TODO INSTEAD (ASSUMING IT IS RVO-COMPLIANT):
+         * std::vector<T> getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue = ...)
+         */
         template<typename T>
-        bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        static bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
+        /*
+         * TODO INSTEAD:
+         * bool appendElements(HandleObject array, const std::vector<T> &elements)
+         */
         template<typename T>
-        bool setElements(HandleObject array, const std::vector<T> &elements);
-        
-        bool defineElement(HandleObject array, int index, HandleObject value, unsigned attrs = 0);
+        static bool setElements(HandleObject array, const std::vector<T> &elements);
     };
     
-    namespace proto
-    {
-        JSObject* newPlainObject();
-        JSObject* newObject(const std::string &className, const HandleValueArray& args = HandleValueArray::empty());
-        
-        bool hasProperty(HandleObject object, const char *name);
-        bool hasOwnProperty(HandleObject object, const char *name);
-        bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc);
-        
-        bool getProperty(HandleObject object, const char *name, MutableHandleValue result);
-        bool setProperty(HandleObject object, const char *name, HandleValue value);
-        
-        bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs = 0);
-        bool deleteProperty(HandleObject object, const char *name);
-        
-        inline bool defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs = 0)
-        {
-            RootedValue rooted(cx, ObjectOrNullValue(value));
-            return defineProperty(object, name, rooted, attrs);
-        }
-        
-        // ---
-        
-        JSObject* newArray(size_t length = 0);
-        JSObject* newArray(const HandleValueArray& contents);
-        
-        bool hasElement(HandleObject array, int index);
-        uint32_t getElementCount(HandleObject array);
-        
-        uint32_t getLength(HandleObject array);
-        bool setLength(HandleObject array, size_t length);
-        
-        bool getElement(HandleObject array, int index, MutableHandleValue result);
-        bool setElement(HandleObject array, int index, HandleValue value);
-        
-        bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
-        bool deleteElement(HandleObject array, int index);
-        
-        inline bool defineElement(HandleObject array, int index, HandleObject value, unsigned attrs = 0)
-        {
-            RootedValue rooted(cx, ObjectOrNullValue(value));
-            return defineElement(array, index, rooted, attrs);
-        }
-    }
-    
     // ---
-    
-    inline JSObject* Proto::newPlainObject() { return proto::newPlainObject(); }
-    inline JSObject* Proto::newObject(const std::string &className, const HandleValueArray& args) { return proto::newObject(className, args); }
-    
-    inline bool Proto::hasProperty(HandleObject object, const char *name) { return proto::hasProperty(object, name); }
-    inline bool Proto::hasOwnProperty(HandleObject object, const char *name) { return proto::hasOwnProperty(object, name); }
-    inline bool Proto::getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc) { return proto::getOwnPropertyDescriptor(object, id, desc); }
-    
-    inline bool Proto::getProperty(HandleObject object, const char *name, MutableHandleValue result) { return proto::getProperty(object, name, result); }
-    inline bool Proto::setProperty(HandleObject object, const char *name, HandleValue value) { return proto::setProperty(object, name, value); }
-    
-    inline bool Proto::defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs) { return proto::defineProperty(object, name, value, attrs); }
-    inline bool Proto::deleteProperty(HandleObject object, const char *name) { return proto::deleteProperty(object, name); }
-    
-    //
     
     template<typename T>
     inline T Proto::get(HandleObject targetObject, const char *propertyName, const typename TypeTraits<T>::defaultType defaultValue)
@@ -280,29 +219,14 @@ namespace jsp
         return setProperty(targetObject, propertyName, rooted);
     }
     
-    inline bool Proto::defineProperty(HandleObject object, const char *name, HandleObject value, unsigned attrs)
+    template<typename T>
+    inline bool Proto::define(HandleObject targetObject, const char *propertyName, T &&value, unsigned attrs)
     {
-        return proto::defineProperty(object, name, value, attrs);
+        RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+        return defineProperty(targetObject, propertyName, rooted, attrs);
     }
     
     // ---
-    
-    inline JSObject* Proto::newArray(size_t length) { return proto::newArray(length); }
-    inline JSObject* Proto::newArray(const HandleValueArray& contents) { return proto::newArray(contents); }
-
-    inline bool Proto::hasElement(HandleObject array, int index) { return proto::hasElement(array, index); }
-    inline uint32_t Proto::getElementCount(HandleObject array) { return proto::getElementCount(array); }
-    
-    inline uint32_t Proto::getLength(HandleObject array) { return proto::getLength(array); }
-    inline bool Proto::setLength(HandleObject array, size_t length) { return proto::setLength(array, length); };
-    
-    inline bool Proto::getElement(HandleObject array, int index, MutableHandleValue result) { return proto::getElement(array, index, result); }
-    inline bool Proto::setElement(HandleObject array, int index, HandleValue value) { return proto::setElement(array, index, value); }
-    
-    inline bool Proto::defineElement(HandleObject array, int index, HandleValue value, unsigned attrs) { return proto::defineElement(array, index, value, attrs); }
-    inline bool Proto::deleteElement(HandleObject array, int index) { return proto::deleteElement(array, index); }
-    
-    //
     
     template<typename T>
     inline T Proto::get(HandleObject targetArray, int elementIndex, const typename TypeTraits<T>::defaultType defaultValue)
@@ -325,6 +249,13 @@ namespace jsp
         return setElement(targetArray, elementIndex, rooted);
     }
     
+    template<typename T>
+    inline bool Proto::define(HandleObject targetArray, int elementIndex, T &&value, unsigned attrs)
+    {
+        RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+        return defineElement(targetArray, elementIndex, rooted, attrs);
+    }
+    
     /*
      * THE OVER-COMPLEXITY OF THE FOLLOWING 2 IS A CONSEQUENCE OF THE PARTIAL SUPPORT OF std::vector<bool> IN C++11
      */
@@ -332,7 +263,7 @@ namespace jsp
     template<typename T>
     bool Proto::getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue)
     {
-        auto size = proto::getLength(array);
+        auto size = getLength(array);
         
         if (size > 0)
         {
@@ -371,7 +302,7 @@ namespace jsp
     template<typename T>
     bool Proto::setElements(HandleObject array, const std::vector<T> &elements)
     {
-        if ((elements.size() > 0) && proto::setLength(array, 0))
+        if ((elements.size() > 0) && setLength(array, 0))
         {
             int index = 0;
             int converted = 0;
@@ -392,10 +323,5 @@ namespace jsp
         }
         
         return false;
-    }
-    
-    inline bool Proto::defineElement(HandleObject array, int index, HandleObject value, unsigned attrs)
-    {
-        return proto::defineElement(array, index, value, attrs);
     }
 }

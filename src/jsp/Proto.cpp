@@ -50,7 +50,7 @@ namespace jsp
     {
         executeScript(utils::readText<string>(inputSource), inputSource->getFilePathHint());
     }
-
+    
     // ---
     
     bool Proto::eval(const string &source, const ReadOnlyCompileOptions &options, MutableHandleValue result)
@@ -154,232 +154,224 @@ namespace jsp
         
         throw EXCEPTION(Proto, "FUNCTION-CALL FAILED");
     }
-
+    
     // ---
     
-    namespace proto
+    JSObject* Proto::newPlainObject()
     {
-        JSObject* newPlainObject()
+        return JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+    }
+    
+    JSObject* Proto::newObject(const string &className, const HandleValueArray& args)
+    {
+        RootedValue value(cx);
+        
+        if (JS_GetProperty(cx, globalHandle(), className.data(), &value))
         {
-            return JS_NewObject(cx, nullptr, NullPtr(), NullPtr());
+            if (value.isObject())
+            {
+                RootedObject constructor(cx, &value.toObject());
+                
+                return JS_New(cx, constructor, args);
+            }
         }
         
-        JSObject* newObject(const string &className, const HandleValueArray& args)
+        return nullptr;
+    }
+    
+    bool Proto::hasProperty(HandleObject object, const char *name)
+    {
+        if (object)
         {
+            bool found;
+            
+            if (JS_HasProperty(cx, object, name, &found))
+            {
+                return found;
+            }
+        }
+        
+        return false;
+    }
+    
+    bool Proto::hasOwnProperty(HandleObject object, const char *name)
+    {
+        if (object)
+        {
+            bool found;
+            
+            if (JS_AlreadyHasOwnProperty(cx, object, name, &found))
+            {
+                return found;
+            }
+        }
+        
+        return false;
+    }
+    
+    bool Proto::getProperty(HandleObject object, const char *name, MutableHandleValue result)
+    {
+        if (object)
+        {
+            return JS_GetProperty(cx, object, name, result);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::setProperty(HandleObject object, const char *name, HandleValue value)
+    {
+        if (object)
+        {
+            return JS_SetProperty(cx, object, name, value);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs)
+    {
+        if (object)
+        {
+            return JS_DefineProperty(cx, object, name, value, attrs);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::deleteProperty(HandleObject object, const char *name)
+    {
+        if (object)
+        {
+            bool success;
+            
+            if (JS_DeleteProperty2(cx, object, name, &success))
+            {
+                return success;
+            }
+        }
+        
+        return false;
+    }
+    
+    // ---
+    
+    JSObject* Proto::newArray(size_t length)
+    {
+        return JS_NewArrayObject(cx, length);
+    }
+    
+    JSObject* Proto::newArray(const HandleValueArray& contents)
+    {
+        return JS_NewArrayObject(cx, contents);
+    }
+    
+    bool Proto::hasElement(HandleObject array, int index)
+    {
+        if (array)
+        {
+            bool found;
+            
+            if (JS_HasElement(cx, array, index, &found))
+            {
+                return found;
+            }
+        }
+        
+        return false;
+    }
+    
+    uint32_t Proto::getElementCount(HandleObject array)
+    {
+        uint32_t elementCount = 0;
+        
+        RootedValue iterable(cx, ObjectOrNullValue(array));
+        ForOfIterator it(cx);
+        
+        if (it.init(iterable))
+        {
+            bool done = false;
             RootedValue value(cx);
             
-            if (JS_GetProperty(cx, globalHandle(), className.data(), &value))
+            while (it.next(&value, &done) && !done)
             {
-                if (value.isObject())
+                if (!value.isUndefined())
                 {
-                    RootedObject constructor(cx, &value.toObject());
-                    
-                    return JS_New(cx, constructor, args);
+                    elementCount++;
                 }
             }
-            
-            return nullptr;
         }
         
-        bool hasProperty(HandleObject object, const char *name)
+        return elementCount;
+    }
+    
+    uint32_t Proto::getLength(HandleObject array)
+    {
+        if (array)
         {
-            if (object)
+            uint32_t length;
+            
+            if (JS_GetArrayLength(cx, array, &length))
             {
-                bool found;
-                
-                if (JS_HasProperty(cx, object, name, &found))
-                {
-                    return found;
-                }
+                return length;
             }
-            
-            return false;
         }
         
-        bool hasOwnProperty(HandleObject object, const char *name)
+        return 0;
+    }
+    
+    bool Proto::setLength(HandleObject array, size_t length)
+    {
+        if (array)
         {
-            if (object)
+            return JS_SetArrayLength(cx, array, length);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::getElement(HandleObject array, int index, MutableHandleValue result)
+    {
+        if (array && (index >= 0))
+        {
+            return JS_GetElement(cx, array, index, result);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::setElement(HandleObject array, int index, HandleValue value)
+    {
+        if (array && (index >= 0))
+        {
+            return JS_SetElement(cx, array, index, value);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
+    {
+        if (array && (index >= 0))
+        {
+            return JS_DefineElement(cx, array, index, value, nullptr, nullptr, attrs);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::deleteElement(HandleObject array, int index)
+    {
+        if (array && (index >= 0))
+        {
+            bool success;
+            
+            if (JS_DeleteElement2(cx, array, index, &success))
             {
-                bool found;
-                
-                if (JS_AlreadyHasOwnProperty(cx, object, name, &found))
-                {
-                    return found;
-                }
+                return success;
             }
-            
-            return false;
         }
         
-        bool getOwnPropertyDescriptor(HandleObject object, HandleId id, MutableHandle<JSPropertyDescriptor> desc)
-        {
-            return js::GetOwnPropertyDescriptor(cx, object, id, desc); // XXX: NON-PUBLIC
-        }
-        
-        bool getProperty(HandleObject object, const char *name, MutableHandleValue result)
-        {
-            if (object)
-            {
-                return JS_GetProperty(cx, object, name, result);
-            }
-            
-            return false;
-        }
-        
-        bool setProperty(HandleObject object, const char *name, HandleValue value)
-        {
-            if (object)
-            {
-                return JS_SetProperty(cx, object, name, value);
-            }
-            
-            return false;
-        }
-        
-        bool defineProperty(HandleObject object, const char *name, HandleValue value, unsigned attrs)
-        {
-            if (object)
-            {
-                return JS_DefineProperty(cx, object, name, value, attrs);
-            }
-            
-            return false;
-        }
-        
-        bool deleteProperty(HandleObject object, const char *name)
-        {
-            if (object)
-            {
-                bool success;
-                
-                if (JS_DeleteProperty2(cx, object, name, &success))
-                {
-                    return success;
-                }
-            }
-            
-            return false;
-        }
-        
-        // ---
-        
-        JSObject* newArray(size_t length)
-        {
-            return JS_NewArrayObject(cx, length);
-        }
-        
-        JSObject* newArray(const HandleValueArray& contents)
-        {
-            return JS_NewArrayObject(cx, contents);
-        }
-        
-        bool hasElement(HandleObject array, int index)
-        {
-            if (array)
-            {
-                bool found;
-                
-                if (JS_HasElement(cx, array, index, &found))
-                {
-                    return found;
-                }
-            }
-            
-            return false;
-        }
-        
-        uint32_t getElementCount(HandleObject array)
-        {
-            uint32_t elementCount = 0;
-            
-            RootedValue iterable(cx, ObjectOrNullValue(array));
-            ForOfIterator it(cx);
-            
-            if (it.init(iterable))
-            {
-                bool done = false;
-                RootedValue value(cx);
-                
-                while (it.next(&value, &done) && !done)
-                {
-                    if (!value.isUndefined())
-                    {
-                        elementCount++;
-                    }
-                }
-            }
-            
-            return elementCount;
-        }
-        
-        uint32_t getLength(HandleObject array)
-        {
-            if (array)
-            {
-                uint32_t length;
-                
-                if (JS_GetArrayLength(cx, array, &length))
-                {
-                    return length;
-                }
-            }
-            
-            return 0;
-        }
-        
-        bool setLength(HandleObject array, size_t length)
-        {
-            if (array)
-            {
-                return JS_SetArrayLength(cx, array, length);
-            }
-            
-            return false;
-        }
-        
-        bool getElement(HandleObject array, int index, MutableHandleValue result)
-        {
-            if (array && (index >= 0))
-            {
-                return JS_GetElement(cx, array, index, result);
-            }
-            
-            return false;
-        }
-        
-        bool setElement(HandleObject array, int index, HandleValue value)
-        {
-            if (array && (index >= 0))
-            {
-                return JS_SetElement(cx, array, index, value);
-            }
-            
-            return false;
-        }
-        
-        bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-        {
-            if (array && (index >= 0))
-            {
-                return JS_DefineElement(cx, array, index, value, nullptr, nullptr, attrs);
-            }
-            
-            return false;
-        }
-        
-        bool deleteElement(HandleObject array, int index)
-        {
-            if (array && (index >= 0))
-            {
-                bool success;
-                
-                if (JS_DeleteElement2(cx, array, index, &success))
-                {
-                    return success;
-                }
-            }
-            
-            return false;
-        }
+        return false;
     }
 }

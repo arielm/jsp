@@ -71,6 +71,12 @@ namespace jsp
         
         void dump(const char *prefix);
     };
+    
+    template <>
+    inline Value toValue(Heap<WrappedObject> &heap)
+    {
+        return ObjectOrNullValue(heap.get());
+    }
 }
 
 namespace js

@@ -355,7 +355,7 @@ namespace jsp
     {
         return ObjectOrNullValue(object);
     }
-
+    
     template<typename T>
     inline Value toValue(std::nullptr_t)
     {
@@ -419,6 +419,12 @@ namespace jsp
     inline Value toValue(JSObject &object)
     {
         return ObjectValue(object);
+    }
+    
+    template <>
+    inline Value toValue(RootedObject &object)
+    {
+        return ObjectOrNullValue(object);
     }
 
     template <>

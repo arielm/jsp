@@ -23,8 +23,8 @@ namespace jsp
         {
             statics = new Statics;
             
-            statics->peers = proto::newPlainObject();
-            proto::defineProperty(globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+            statics->peers = newPlainObject();
+            define(globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
         }
         
         return statics;
@@ -38,7 +38,7 @@ namespace jsp
             statics->instances.clear();
             
             statics->peers = nullptr;
-            proto::deleteProperty(globalHandle(), "peers");
+            deleteProperty(globalHandle(), "peers");
             
             delete statics;
             statics = nullptr;
@@ -52,7 +52,7 @@ namespace jsp
             const char *name = instance->peerProperties.name.data();
             
             RootedValue peerValue(cx);
-            proto::getProperty(statics->peers, name, &peerValue);
+            getProperty(statics->peers, name, &peerValue);
             
             bool peerIsDefined = !peerValue.isUndefined();
             bool peerIsArray = isArray(peerValue);
@@ -65,7 +65,7 @@ namespace jsp
                 if (instance->peerProperties.isSingleton)
                 {
                     instance->peer = instance->createPeer();
-                    proto::defineProperty(statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                    define(statics->peers, name, instance->peerHandle(), JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 else
                 {
@@ -75,16 +75,16 @@ namespace jsp
                     if (peerIsDefined)
                     {
                         peerArray = peerValue.toObjectOrNull();
-                        instance->peerElementIndex = proto::getLength(peerArray);
+                        instance->peerElementIndex = getLength(peerArray);
                     }
                     else
                     {
-                        peerArray = proto::newArray();
-                        proto::defineProperty(statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                        peerArray = newArray();
+                        define(statics->peers, name, peerArray, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                     }
                     
                     instance->peer = instance->createPeer();
-                    proto::defineElement(peerArray, instance->peerElementIndex, instance->peer, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                    define(peerArray, instance->peerElementIndex, instance->peerHandle(), JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 
                 statics->instances.emplace(++statics->lastInstanceId, instance);
@@ -103,23 +103,21 @@ namespace jsp
         {
             const char *name = instance->peerProperties.name.data();
             
-            RootedValue peerValue(cx);
-            proto::getProperty(statics->peers, name, &peerValue);
+            RootedObject peer(cx, get<OBJECT>(statics->peers, name));
          
-            if (peerValue.isObject())
+            if (peer)
             {
                 if (instance->peerProperties.isSingleton)
                 {
-                    proto::deleteProperty(statics->peers, name);
+                    deleteProperty(statics->peers, name);
                 }
                 else
                 {
-                    RootedObject peerArray(cx, peerValue.toObjectOrNull());
-                    proto::deleteElement(peerArray, instance->peerElementIndex);
+                    deleteElement(peer, instance->peerElementIndex);
                     
-                    if (proto::getElementCount(peerArray) == 0)
+                    if (getElementCount(peer) == 0)
                     {
-                        proto::deleteProperty(statics->peers, name);
+                        deleteProperty(statics->peers, name);
                     }
                 }
             }
@@ -154,18 +152,14 @@ namespace jsp
     
     JSObject* Proxy::createPeer()
     {
-        RootedObject object(cx, proto::newPlainObject());
+        RootedObject object(cx, newPlainObject());
         
-        RootedValue tmp(cx, toValue(peerProperties.name));
-        JS_DefineProperty(cx, object, "name", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
-        
-        tmp = toValue(peerProperties.isSingleton);
-        JS_DefineProperty(cx, object, "isSingleton", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+        define(object, "name", peerProperties.name, JSPROP_READONLY | JSPROP_PERMANENT);
+        define(object, "isSingleton", peerProperties.isSingleton, JSPROP_READONLY | JSPROP_PERMANENT);
         
         if (!peerProperties.isSingleton)
         {
-            tmp = toValue(peerElementIndex);
-            JS_DefineProperty(cx, object, "index", tmp, JSPROP_READONLY | JSPROP_PERMANENT);
+            define(object, "index", peerElementIndex, JSPROP_READONLY | JSPROP_PERMANENT);
         }
         
         return object;
@@ -215,19 +209,6 @@ namespace jsp
         removeInstance(instanceId);
     }
     
-    Proxy* Proxy::getHandler() const
-    {
-        return handler;
-    }
-    
-    void Proxy::setHandler(Proxy *handler)
-    {
-        if (handler != this)
-        {
-            this->handler = handler;
-        }
-    }
-    
     // ---
     
     int32_t Proxy::registerNativeCall(const string &name, const NativeCallFnType &fn)
@@ -257,7 +238,7 @@ namespace jsp
         
         if (nativeCallId != -1)
         {
-            proto::deleteProperty(peer, name.data());
+            deleteProperty(peer, name.data());
             nativeCalls.erase(nativeCallId);
             
             return true;
