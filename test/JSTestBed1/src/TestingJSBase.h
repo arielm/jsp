@@ -14,9 +14,9 @@
 #include "jsp/WrappedValue.h"
 #include "jsp/CloneBuffer.h"
 #include "jsp/Barker.h"
-#include "jsp/Proxy.h"
+#include "jsp/Proto.h"
 
-class TestingJSBase : public TestingBase, public jsp::Proxy
+class TestingJSBase : public TestingBase, public jsp::Proto
 {
 public:
     void setup() final;

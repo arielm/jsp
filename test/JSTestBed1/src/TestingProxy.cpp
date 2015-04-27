@@ -8,6 +8,8 @@
 
 #include "TestingProxy.h"
 
+#include "jsp/Proxy.h"
+
 #include "chronotext/Context.h"
 
 using namespace std;
@@ -40,10 +42,8 @@ void TestingProxy::performRun(bool force)
 void TestingProxy::testPeers1()
 {
     {
-        JSP_CHECK(getPeerId() == "peers.Proxy[0]");
-        
-        Proxy vanilla1;
-        JSP_CHECK(vanilla1.getPeerId() == "peers.Proxy[1]");
+        Proxy vanilla;
+        JSP_CHECK(vanilla.getPeerId() == "peers.Proxy[0]");
         
         Proxy singleton("ScriptManager", true);
         JSP_CHECK(singleton.getPeerId() == "peers.ScriptManager");
@@ -51,43 +51,35 @@ void TestingProxy::testPeers1()
         /*
          * ALLOWED
          */
-        executeScript("peers.Proxy[1].alien = new Barker('ALIEN1')");
+        executeScript("peers.Proxy[0].alien = new Barker('ALIEN1')");
         
         /*
          * INTENTIONALLY NOT ALLOWED
          */
-        executeScript("peers.Proxy[1] = 255; peers.ScriptManager = 456");
+        executeScript("peers.Proxy[0] = 255; peers.ScriptManager = 456"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
 
-        JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{}, {alien:(new Barker(\"ALIEN1\"))}], ScriptManager:{}})");
+        JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{alien:(new Barker(\"ALIEN1\"))}], ScriptManager:{}})");
     }
     
     /*
-     * AT THIS STAGE, THE JS-PEERS ASSOCIATED WITH vanilla1 AND singleton ARE:
+     * AT THIS STAGE, THE JS-PEERS ASSOCIATED WITH vanilla AND singleton ARE:
      *
      * - NOT ACCESSIBLE FROM JS ANYMORE
      * - FINALIZED
      */
-    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({Proxy:[{}, ,]})");
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "peers")) == "({})");
     
     JSP::forceGC();
-    JSP_CHECK(Barker::isFinalized("ALIEN1")); // PROOF THAT peers.Proxy[1] (ASSOCIATED WITH vanilla1) IS TRULY GONE
+    JSP_CHECK(Barker::isFinalized("ALIEN1")); // PROOF THAT peers.Proxy[0] (ASSOCIATED WITH vanilla) IS TRULY GONE
 }
 
 void TestingProxy::testPeers2()
 {
-    if (getPeerId() == "peers.Proxy[0]")
-    {
-        executeScript("peers.Proxy[0].callMeBack = function() { print('C++ PROXY IS CALLING BACK'); }");
-        
-        if (hasOwnProperty(peerHandle(), "callMeBack"))
-        {
-            call(peerHandle(), "callMeBack");
-        }
-    }
-    else
-    {
-        JSP_CHECK(false);
-    }
+    Proxy proxy;
+    
+    executeScript(proxy.getPeerId() + ".callMeBack = function() { print('PROXY IS CALLING BACK'); }");
+    
+    call(proxy.peerHandle(), "callMeBack"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
     
     // ---
     
@@ -113,17 +105,18 @@ void TestingProxy::testPeers2()
  */
 void TestingProxy::testPeers3()
 {
-    executeScript("peers.Proxy[0].alien = new Barker('ALIEN2')");
+    Proxy proxy;
+    
+    executeScript(proxy.getPeerId() + ".alien = new Barker('ALIEN2')");
     
     /*
      * SHOULD NOT BE ALLOWED
      */
-    executeScript("delete peers.Proxy[0]");
+    executeScript("delete " + proxy.getPeerId());
     
     /*
      * EVEN IF peers.Proxy[0] IS NOT ACCESSIBLE ANYMORE FROM JS:
-     * - IT IS STILL ROOTED (VIA Proxy::peer):
-     *   - AS LONG AS THIS C++ Proxy IS ALIVE
+     * - IT IS STILL ROOTED (VIA Proxy::peer), AS LONG AS proxy IS ALIVE
      */
     JSP::forceGC();
     JSP_CHECK(Barker::isHealthy("ALIEN2"));
@@ -140,8 +133,7 @@ void TestingProxy::testPeers3()
     
     /*
      * EVEN IF peers IS NOT ACCESSIBLE ANYMORE FROM JS:
-     * - IT IS STILL ROOTED (VIA Proxy::Statics::peers):
-     *   - UNTIL Proxy::uninit() IS CALLED
+     * - IT IS STILL ROOTED (VIA Proxy::Statics::peers), UNTIL Proxy::uninit() IS CALLED
      */
     JSP::forceGC();
     JSP_CHECK(Barker::isHealthy("ALIEN3"));
@@ -173,10 +165,16 @@ bool TestingProxy::instanceMethod1(const CallArgs &args)
 
 void TestingProxy::testNativeCalls1()
 {
-    registerNativeCall("staticMethod1", BIND_STATIC1(staticMethod1));
-    registerNativeCall("instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
+    Proxy proxy;
     
-    registerNativeCall("lambda1", [=](const CallArgs &args)->bool
+    executeScript("var target = " + proxy.getPeerId());
+
+    // ---
+    
+    proxy.registerNativeCall("staticMethod1", BIND_STATIC1(staticMethod1));
+    proxy.registerNativeCall("instanceMethod1", BIND_INSTANCE1(&TestingProxy::instanceMethod1, this));
+    
+    proxy.registerNativeCall("lambda1", [=](const CallArgs &args)->bool
     {
         if (args.hasDefined(0) && args[0].isNumber())
         {
@@ -187,10 +185,10 @@ void TestingProxy::testNativeCalls1()
         return false;
     });
     
-    executeScript("var target = peers.Proxy[0]; print(target.staticMethod1(77), target.instanceMethod1(11), target.lambda1(33))");
+    executeScript("print(target.staticMethod1(77), target.instanceMethod1(11), target.lambda1(33))"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
     
     // ---
 
-    unregisterNativeCall("staticMethod1");
-    executeScript("try { print(target.staticMethod1(33)); } catch(e) { print(e);}");
+    proxy.unregisterNativeCall("staticMethod1");
+    executeScript("try { print(target.staticMethod1(33)); } catch(e) { print(e);}"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
 }
