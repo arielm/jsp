@@ -12,7 +12,6 @@
 
 #include "jsapi.h"
 #include "jsfriendapi.h"
-
 #include "js/GCAPI.h"
 #include "js/TracingAPI.h"
 
@@ -25,7 +24,6 @@
 #endif
 
 #include <functional>
-#include <cassert>
 #include <map>
 #include <sstream>
 #include <vector>
@@ -54,504 +52,6 @@ namespace jsp
     inline JS::HandleObject globalHandle()
     {
         return JS::HandleObject::fromMarkedLocation(global.address());
-    }
-    
-    // ---
-    
-    std::string& appendToString(std::string &s, const jschar *chars, size_t len);
-    std::string& appendToString(std::string &s, JSString *str);
-    inline std::string& appendToString(std::string &s, HandleValue value) { return appendToString(s, ToString(cx, value)); }
-    
-    std::string toString(const jschar *chars, size_t len);
-    std::string toString(JSString *str);
-    inline std::string toString(HandleValue value) { return toString(ToString(cx, value)); }
-
-    JSFlatString* toJSString(const char *c);
-    inline JSFlatString* toJSString(const std::string &s) { return toJSString(s.data()); }
-
-    bool stringEquals(JSString *str1, const char *c2);
-    inline bool stringEquals(JSString *str1, const std::string &s2) { return stringEquals(str1, s2.data()); }
-    
-    bool stringEqualsASCII(JSString *str1, const char *c2);
-    inline bool stringEqualsASCII(JSString *str1, const std::string &s2) { return stringEqualsASCII(str1, s2.data()); }
-    
-    // ---
-    
-    template<class T>
-    bool convertMaybe(HandleValue, T&);
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, JSObject *&result)
-    {
-        if (value.isObjectOrNull())
-        {
-            result = value.toObjectOrNull();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, float &result)
-    {
-        if (value.isDouble())
-        {
-            result = float(value.toDouble());
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, double &result)
-    {
-        if (value.isDouble())
-        {
-            result = value.toDouble();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, int32_t &result)
-    {
-        if (value.isInt32())
-        {
-            result = value.toInt32();
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, uint32_t &result)
-    {
-        if (value.isInt32())
-        {
-            result = uint32_t(value.toInt32());
-            return true;
-        }
-        
-        if (value.isDouble())
-        {
-            result = uint32_t(value.toDouble());
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, bool &result)
-    {
-        if (!value.isUndefined())
-        {
-            result = ToBoolean(value); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
-            return true;
-        }
-        
-        return false;
-    }
-    
-    template <>
-    inline bool convertMaybe(HandleValue value, std::string &result)
-    {
-        if (!value.isUndefined())
-        {
-            result = toString(value); // INFAILIBLE, POSSIBLY SLOW
-            return true;
-        }
-        
-        return false;
-    }
-    
-    //
-    
-    template<class T>
-    struct Convert
-    {
-        inline static bool maybe(const HandleValue &v, typename std::vector<T>::iterator &result)
-        {
-            return convertMaybe(v, *result);
-        }
-    };
-    
-    template <>
-    struct Convert<bool>
-    {
-        inline static bool maybe(const HandleValue &v, std::vector<bool>::iterator &result)
-        {
-            if (!v.isUndefined())
-            {
-                *result = ToBoolean(v); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
-                return true;
-            }
-            
-            return false;
-        }
-    };
-
-    // ---
-    
-    template<class T>
-    inline T convertSafely(HandleValue value, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue())
-    {
-        T result;
-        
-        if (!convertMaybe(value, result))
-        {
-            result = defaultValue;
-        }
-        
-        return result; // RVO-COMPLIANT
-    }
-
-    // ---
-
-    inline bool compare(const Value &value, const Value &other)
-    {
-        if (value.isString() && other.isString())
-        {
-            bool result;
-            
-            if (js::EqualStrings(cx, value.toString(), other.toString(), &result)) // ASSERTION: CAN'T TRIGGER GC?
-            {
-                return result;
-            }
-            
-            return false;
-        }
-        
-        return value == other;
-    }
-
-    inline bool compare(const Value &value, const std::nullptr_t)
-    {
-        return value.isNull();
-    }
-    
-    inline bool compare(const Value &value, const JSObject *other)
-    {
-        if (value.isObject())
-        {
-            return other == value.toObjectOrNull();
-        }
-        
-        return false;
-    }
-    
-    inline bool compare(const Value &value, float other)
-    {
-        if (value.isDouble())
-        {
-            return other == float(value.toDouble());
-        }
-        
-        return false;
-    }
-    
-    inline bool compare(const Value &value, double other)
-    {
-        if (value.isDouble())
-        {
-            return other == value.toDouble();
-        }
-        
-        return false;
-    }
-    
-    inline bool compare(const Value &value, int32_t other)
-    {
-        if (value.isInt32())
-        {
-            return other == value.toInt32();
-        }
-        
-        return false;
-    }
-    
-    inline bool compare(const Value &value, uint32_t other)
-    {
-        if (value.isInt32())
-        {
-            return other == uint32_t(value.toInt32());
-        }
-        
-        if (value.isDouble())
-        {
-            return other == uint32_t(value.toDouble());
-        }
-        
-        return false;
-    }
-    
-    /*
-     * WARNING: THIS MAY BE PICKED BY DEFAULT IF NO METHOD IS DEFINED FOR A PARTICULAR TYPE
-     */
-    inline bool compare(const Value &value, bool other)
-    {
-        RootedValue rooted(cx, value);
-        return ToBoolean(rooted) == other; // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
-    }
-
-    inline bool compare(const Value &value, const std::string &other)
-    {
-        if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
-        {
-            RootedValue rooted(cx, value);
-            return stringEquals(ToString(cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
-        }
-        
-        return false;
-    }
-    
-    inline bool compare(const Value &value, const char *other)
-    {
-        if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
-        {
-            RootedValue rooted(cx, value);
-            return stringEquals(ToString(cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
-        }
-        
-        return false;
-    }
-    
-    // ---
-    
-    template<typename T>
-    inline Value toValue(JSObject *object)
-    {
-        return ObjectOrNullValue(object);
-    }
-    
-    template<typename T>
-    inline Value toValue(std::nullptr_t)
-    {
-        return NullValue();
-    }
-    
-    template<typename T>
-    inline Value toValue(float f)
-    {
-        return DoubleValue(f);
-    }
-    
-    template<typename T>
-    inline Value toValue(double d)
-    {
-        return DoubleValue(d);
-    }
-    
-    template<typename T>
-    inline Value toValue(int32_t i)
-    {
-        return Int32Value(i);
-    }
-    
-    template<typename T>
-    inline Value toValue(uint32_t ui)
-    {
-        return NumberValue(ui);
-    }
-    
-    template<typename T>
-    inline Value toValue(bool b)
-    {
-        return BooleanValue(b);
-    }
-
-    template <typename T>
-    inline Value toValue(const std::string &s)
-    {
-        return StringValue(toJSString(s));
-    }
-
-    template<typename T>
-    inline Value toValue(const char *c)
-    {
-        return StringValue(toJSString(c));
-    }
-    
-    //
-    
-    template<typename T>
-    Value toValue(T&&);
-
-    template <>
-    inline Value toValue(std::nullptr_t&&)
-    {
-        return NullValue();
-    }
-    
-    template <>
-    inline Value toValue(JSObject &object)
-    {
-        return ObjectValue(object);
-    }
-    
-    template <>
-    inline Value toValue(RootedObject &object)
-    {
-        return ObjectOrNullValue(object);
-    }
-
-    template <>
-    inline Value toValue(HandleObject &object)
-    {
-        return ObjectOrNullValue(object);
-    }
-
-    template <>
-    inline Value toValue(HandleObject &&object)
-    {
-        return ObjectOrNullValue(object);
-    }
-    
-    template <>
-    inline Value toValue(JSObject *&&object)
-    {
-        return ObjectOrNullValue(object);
-    }
-    
-    template <>
-    inline Value toValue(float &f)
-    {
-        return DoubleValue(f);
-    }
-    
-    template <>
-    inline Value toValue(float &&f)
-    {
-        return DoubleValue(f);
-    }
-    
-    template <>
-    inline Value toValue(double &d)
-    {
-        return DoubleValue(d);
-    }
-    
-    template <>
-    inline Value toValue(double &&d)
-    {
-        return DoubleValue(d);
-    }
-    
-    template <>
-    inline Value toValue(int32_t &i)
-    {
-        return Int32Value(i);
-    }
-    
-    template <>
-    inline Value toValue(int32_t &&i)
-    {
-        return Int32Value(i);
-    }
-
-    template <>
-    inline Value toValue(uint32_t &ui)
-    {
-        return NumberValue(ui);
-    }
-
-    template <>
-    inline Value toValue(uint32_t &&ui)
-    {
-        return NumberValue(ui);
-    }
-    
-    template <>
-    inline Value toValue(bool &b)
-    {
-        return BooleanValue(b);
-    }
-    
-    template <>
-    inline Value toValue(bool &&b)
-    {
-        return BooleanValue(b);
-    }
-
-    template <>
-    inline Value toValue(std::string &s)
-    {
-        return StringValue(toJSString(s));
-    }
-
-    template <>
-    inline Value toValue(const std::string &s)
-    {
-        return StringValue(toJSString(s));
-    }
-    
-    template <>
-    inline Value toValue(const char *&c)
-    {
-        return StringValue(toJSString(c));
-    }
-    
-    template <size_t N>
-    inline Value toValue(const char (&c)[N])
-    {
-        return StringValue(toJSString(c));
-    }
-    
-    // ---
-
-    inline void assignValue(Value &target, std::nullptr_t)
-    {
-        target.setNull();
-    }
-    
-    inline void assignValue(Value &target, JSObject *object)
-    {
-        target.setObjectOrNull(object);
-    }
-    
-    inline void assignValue(Value &target, float f)
-    {
-        target.setDouble(f);
-    }
-    
-    inline void assignValue(Value &target, double d)
-    {
-        target.setDouble(d);
-    }
-    
-    inline void assignValue(Value &target, int32_t i)
-    {
-        target.setInt32(i);
-    }
-    
-    inline void assignValue(Value &target, uint32_t ui)
-    {
-        target.setNumber(ui);
-    }
-    
-    inline void assignValue(Value &target, bool b)
-    {
-        target.setBoolean(b);
-    }
-    
-    inline void assignValue(Value &target, const std::string &s)
-    {
-        target.setString(toJSString(s));
-    }
-    
-    inline void assignValue(Value &target, const char *c)
-    {
-        target.setString(toJSString(c));
-    }
-    
-    inline void assignValue(Value &target, JSString *s)
-    {
-        target.setString(s);
     }
 }
 
@@ -596,6 +96,101 @@ public:
     
     static void addGCCallback(void *instance, const GCCallbackFnType &fn);
     static void removeGCCallback(void *instance);
+    
+    // ---
+    
+    static std::string& appendToString(std::string &target, const jschar *chars, size_t len);
+    static std::string& appendToString(std::string &target, JSString *str);
+    static std::string& appendToString(std::string &target, JS::HandleValue value);
+
+    static std::string toString(const jschar *chars, size_t len);
+    static std::string toString(JSString *str);
+    static std::string toString(JS::HandleValue value);
+
+    static JSFlatString* toJSString(const char *c);
+    static JSFlatString* toJSString(const std::string &s);
+
+    static bool stringEquals(JSString *str1, const char *c2);
+    static bool stringEquals(JSString *str1, const std::string &s2);
+
+    static bool stringEqualsASCII(JSString *str1, const char *c2);
+    static bool stringEqualsASCII(JSString *str1, const std::string &s2);
+
+    // ---
+    
+    template<class T>
+    static bool convertMaybe(JS::HandleValue, T&);
+    
+    template<class T>
+    struct Convert
+    {
+        inline static bool maybe(const JS::HandleValue &v, typename std::vector<T>::iterator &result)
+        {
+            return convertMaybe(v, *result);
+        }
+    };
+    
+    template<class T>
+    inline static T convertSafely(JS::HandleValue value, const typename jsp::TypeTraits<T>::defaultType defaultValue = jsp::TypeTraits<T>::defaultValue())
+    {
+        T result;
+        
+        if (!convertMaybe(value, result))
+        {
+            result = defaultValue;
+        }
+        
+        return result; // RVO-COMPLIANT
+    }
+    
+    // ---
+    
+    template<typename T> static JS::Value toValue(JSObject *object);
+    template<typename T> static JS::Value toValue(std::nullptr_t);
+    template<typename T> static JS::Value toValue(float f);
+    template<typename T> static JS::Value toValue(double d);
+    template<typename T> static JS::Value toValue(int32_t i);
+    template<typename T> static JS::Value toValue(uint32_t ui);
+    template<typename T> static JS::Value toValue(bool b);
+    template<typename T> static JS::Value toValue(const std::string &s);
+    template<typename T> static JS::Value toValue(const char *c);
+    
+    //
+    
+    template<typename T>
+    static JS::Value toValue(T&&);
+    
+    template <size_t N>
+    inline static JS::Value toValue(const char (&c)[N])
+    {
+        return JS::StringValue(toJSString(c));
+    }
+    
+    // ---
+    
+    static bool compare(const JS::Value &value, const JS::Value &other);
+    static bool compare(const JS::Value &value, const std::nullptr_t);
+    static bool compare(const JS::Value &value, const JSObject *other);
+    static bool compare(const JS::Value &value, float other);
+    static bool compare(const JS::Value &value, double other);
+    static bool compare(const JS::Value &value, int32_t other);
+    static bool compare(const JS::Value &value, uint32_t other);
+    static bool compare(const JS::Value &value, bool other); // WARNING: THIS WILL BE PICKED BY DEFAULT WHEN NO METHOD IS DEFINED FOR A PARTICULAR TYPE
+    static bool compare(const JS::Value &value, const std::string &other);
+    static bool compare(const JS::Value &value, const char *other);
+    
+    // ---
+    
+    static void assignValue(JS::Value &target, std::nullptr_t);
+    static void assignValue(JS::Value &target, JSObject *object);
+    static void assignValue(JS::Value &target, float f);
+    static void assignValue(JS::Value &target, double d);
+    static void assignValue(JS::Value &target, int32_t i);
+    static void assignValue(JS::Value &target, uint32_t ui);
+    static void assignValue(JS::Value &target, bool b);
+    static void assignValue(JS::Value &target, const std::string &s);
+    static void assignValue(JS::Value &target, const char *c);
+    static void assignValue(JS::Value &target, JSString *s);
     
     // ---
     
@@ -922,3 +517,470 @@ private:
     static bool defineHTMLColors();
     static bool lookupHTMLColor(const std::string &c, uint32_t *result);
 };
+
+// ---
+
+inline std::string& JSP::appendToString(std::string &target, JS::HandleValue value)
+{
+    return appendToString(target, ToString(jsp::cx, value));
+}
+
+inline std::string JSP::toString(JS::HandleValue value)
+{
+    return toString(ToString(jsp::cx, value));
+}
+
+inline JSFlatString* JSP::toJSString(const std::string &s)
+{
+    return toJSString(s.data());
+}
+
+inline bool JSP::stringEquals(JSString *str1, const std::string &s2)
+{
+    return stringEquals(str1, s2.data());
+}
+
+inline bool JSP::stringEqualsASCII(JSString *str1, const std::string &s2)
+{
+    return stringEqualsASCII(str1, s2.data());
+}
+
+// ---
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, JSObject *&result)
+{
+    if (value.isObjectOrNull())
+    {
+        result = value.toObjectOrNull();
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, float &result)
+{
+    if (value.isDouble())
+    {
+        result = float(value.toDouble());
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, double &result)
+{
+    if (value.isDouble())
+    {
+        result = value.toDouble();
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, int32_t &result)
+{
+    if (value.isInt32())
+    {
+        result = value.toInt32();
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, uint32_t &result)
+{
+    if (value.isInt32())
+    {
+        result = uint32_t(value.toInt32());
+        return true;
+    }
+    
+    if (value.isDouble())
+    {
+        result = uint32_t(value.toDouble());
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, bool &result)
+{
+    if (!value.isUndefined())
+    {
+        result = ToBoolean(value); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
+        return true;
+    }
+    
+    return false;
+}
+
+template <>
+inline bool JSP::convertMaybe(JS::HandleValue value, std::string &result)
+{
+    if (!value.isUndefined())
+    {
+        result = toString(value); // INFAILIBLE, POSSIBLY SLOW
+        return true;
+    }
+    
+    return false;
+}
+
+//
+
+template <>
+struct JSP::Convert<bool>
+{
+    inline static bool maybe(const JS::HandleValue &v, std::vector<bool>::iterator &result)
+    {
+        if (!v.isUndefined())
+        {
+            *result = ToBoolean(v); // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
+            return true;
+        }
+        
+        return false;
+    }
+};
+
+// ---
+
+template<typename T>
+inline JS::Value JSP::toValue(JSObject *object)
+{
+    return JS::ObjectOrNullValue(object);
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(std::nullptr_t)
+{
+    return JS::NullValue();
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(float f)
+{
+    return JS::DoubleValue(f);
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(double d)
+{
+    return JS::DoubleValue(d);
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(int32_t i)
+{
+    return JS::Int32Value(i);
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(uint32_t ui)
+{
+    return JS::NumberValue(ui);
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(bool b)
+{
+    return JS::BooleanValue(b);
+}
+
+template <typename T>
+inline JS::Value JSP::toValue(const std::string &s)
+{
+    return JS::StringValue(toJSString(s));
+}
+
+template<typename T>
+inline JS::Value JSP::toValue(const char *c)
+{
+    return JS::StringValue(toJSString(c));
+}
+
+//
+
+template <>
+inline JS::Value JSP::toValue(std::nullptr_t&&)
+{
+    return JS::NullValue();
+}
+
+template <>
+inline JS::Value JSP::toValue(JSObject &object)
+{
+    return JS::ObjectValue(object);
+}
+
+template <>
+inline JS::Value JSP::toValue(JS::RootedObject &object)
+{
+    return JS::ObjectOrNullValue(object);
+}
+
+template <>
+inline JS::Value JSP::toValue(JS::HandleObject &object)
+{
+    return JS::ObjectOrNullValue(object);
+}
+
+template <>
+inline JS::Value JSP::toValue(JS::HandleObject &&object)
+{
+    return JS::ObjectOrNullValue(object);
+}
+
+template <>
+inline JS::Value JSP::toValue(JSObject *&&object)
+{
+    return JS::ObjectOrNullValue(object);
+}
+
+template <>
+inline JS::Value JSP::toValue(float &f)
+{
+    return JS::DoubleValue(f);
+}
+
+template <>
+inline JS::Value JSP::toValue(float &&f)
+{
+    return JS::DoubleValue(f);
+}
+
+template <>
+inline JS::Value JSP::toValue(double &d)
+{
+    return JS::DoubleValue(d);
+}
+
+template <>
+inline JS::Value JSP::toValue(double &&d)
+{
+    return JS::DoubleValue(d);
+}
+
+template <>
+inline JS::Value JSP::toValue(int32_t &i)
+{
+    return JS::Int32Value(i);
+}
+
+template <>
+inline JS::Value JSP::toValue(int32_t &&i)
+{
+    return JS::Int32Value(i);
+}
+
+template <>
+inline JS::Value JSP::toValue(uint32_t &ui)
+{
+    return JS::NumberValue(ui);
+}
+
+template <>
+inline JS::Value JSP::toValue(uint32_t &&ui)
+{
+    return JS::NumberValue(ui);
+}
+
+template <>
+inline JS::Value JSP::toValue(bool &b)
+{
+    return JS::BooleanValue(b);
+}
+
+template <>
+inline JS::Value JSP::toValue(bool &&b)
+{
+    return JS::BooleanValue(b);
+}
+
+template <>
+inline JS::Value JSP::toValue(std::string &s)
+{
+    return JS::StringValue(toJSString(s));
+}
+
+template <>
+inline JS::Value JSP::toValue(const std::string &s)
+{
+    return JS::StringValue(toJSString(s));
+}
+
+template <>
+inline JS::Value JSP::toValue(const char *&c)
+{
+    return JS::StringValue(toJSString(c));
+}
+
+// ---
+
+inline bool JSP::compare(const JS::Value &value, const JS::Value &other)
+{
+    if (value.isString() && other.isString())
+    {
+        bool result;
+        
+        if (js::EqualStrings(jsp::cx, value.toString(), other.toString(), &result)) // ASSERTION: CAN'T TRIGGER GC?
+        {
+            return result;
+        }
+        
+        return false;
+    }
+    
+    return value == other;
+}
+
+inline bool JSP::compare(const JS::Value &value, const std::nullptr_t)
+{
+    return value.isNull();
+}
+
+inline bool JSP::compare(const JS::Value &value, const JSObject *other)
+{
+    if (value.isObject())
+    {
+        return other == value.toObjectOrNull();
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, float other)
+{
+    if (value.isDouble())
+    {
+        return other == float(value.toDouble());
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, double other)
+{
+    if (value.isDouble())
+    {
+        return other == value.toDouble();
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, int32_t other)
+{
+    if (value.isInt32())
+    {
+        return other == value.toInt32();
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, uint32_t other)
+{
+    if (value.isInt32())
+    {
+        return other == uint32_t(value.toInt32());
+    }
+    
+    if (value.isDouble())
+    {
+        return other == uint32_t(value.toDouble());
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, bool other)
+{
+    JS::RootedValue rooted(jsp::cx, value);
+    return ToBoolean(rooted) == other; // INFAILIBLE, ACCORDING TO JAVASCRIPT RULES
+}
+
+inline bool JSP::compare(const JS::Value &value, const std::string &other)
+{
+    if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
+    {
+        JS::RootedValue rooted(jsp::cx, value);
+        return stringEquals(ToString(jsp::cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
+    }
+    
+    return false;
+}
+
+inline bool JSP::compare(const JS::Value &value, const char *other)
+{
+    if (!value.isNullOrUndefined()) // ACCORDING TO JAVASCRIPT RULES
+    {
+        JS::RootedValue rooted(jsp::cx, value);
+        return stringEquals(ToString(jsp::cx, rooted), other); // INFAILIBLE, POSSIBLY SLOW
+    }
+    
+    return false;
+}
+
+// ---
+
+inline void JSP::assignValue(JS::Value &target, std::nullptr_t)
+{
+    target.setNull();
+}
+
+inline void JSP::assignValue(JS::Value &target, JSObject *object)
+{
+    target.setObjectOrNull(object);
+}
+
+inline void JSP::assignValue(JS::Value &target, float f)
+{
+    target.setDouble(f);
+}
+
+inline void JSP::assignValue(JS::Value &target, double d)
+{
+    target.setDouble(d);
+}
+
+inline void JSP::assignValue(JS::Value &target, int32_t i)
+{
+    target.setInt32(i);
+}
+
+inline void JSP::assignValue(JS::Value &target, uint32_t ui)
+{
+    target.setNumber(ui);
+}
+
+inline void JSP::assignValue(JS::Value &target, bool b)
+{
+    target.setBoolean(b);
+}
+
+inline void JSP::assignValue(JS::Value &target, const std::string &s)
+{
+    target.setString(toJSString(s));
+}
+
+inline void JSP::assignValue(JS::Value &target, const char *c)
+{
+    target.setString(toJSString(c));
+}
+
+inline void JSP::assignValue(JS::Value &target, JSString *s)
+{
+    target.setString(s);
+}

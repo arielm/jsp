@@ -81,7 +81,7 @@ string TestingJSBase::evaluateString(const string &source)
     
     if (eval(source, options, &result))
     {
-        return jsp::toString(result);
+        return toString(result);
     }
     
     throw EXCEPTION(TestingJSBase, "EVALUATION FAILED");

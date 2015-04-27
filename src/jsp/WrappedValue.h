@@ -41,14 +41,14 @@ namespace jsp
         template<typename T>
         WrappedValue(const T &v)
         {
-            assignValue(value, v);
+            JSP::assignValue(value, v);
             DUMP_WRAPPED_VALUE
         }
     
         template<typename T>
         WrappedValue& operator=(const T &newValue)
         {
-            assignValue(value, newValue);
+            JSP::assignValue(value, newValue);
             DUMP_WRAPPED_VALUE
             
             return *this;
@@ -68,13 +68,13 @@ namespace jsp
         template<typename T>
         bool operator==(const T &other) const
         {
-            return compare(value, other);
+            return JSP::compare(value, other);
         }
         
         template<typename T>
         bool operator!=(const T &other) const
         {
-            return !compare(value, other);
+            return !JSP::compare(value, other);
         }
 
         const Value& get() const { return value; }

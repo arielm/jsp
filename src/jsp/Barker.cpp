@@ -423,7 +423,7 @@ namespace jsp
     bool Barker::construct(JSContext *cx, unsigned argc, Value *vp)
     {
         auto args = CallArgsFromVp(argc, vp);
-        string name = (args.hasDefined(0) && args[0].isString()) ? toString(args[0]) : "";
+        string name = (args.hasDefined(0) && args[0].isString()) ? JSP::toString(args[0]) : "";
         
         args.rval().set(create(name));
         return true;
@@ -473,7 +473,7 @@ namespace jsp
         {
             bool found;
             JSObject *instance;
-            tie(found, instance) = barker::getInstance(toString(args[0]));
+            tie(found, instance) = barker::getInstance(JSP::toString(args[0]));
             
             if (found)
             {
@@ -491,7 +491,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(isFinalized(toString(args[0])));
+            args.rval().setBoolean(isFinalized(JSP::toString(args[0])));
             return true;
         }
         
@@ -504,7 +504,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(isHealthy(toString(args[0])));
+            args.rval().setBoolean(isHealthy(JSP::toString(args[0])));
             return true;
         }
         
@@ -517,7 +517,7 @@ namespace jsp
         
         if (args.hasDefined(0) && args[0].isString())
         {
-            args.rval().setBoolean(bark(toString(args[0])));
+            args.rval().setBoolean(bark(JSP::toString(args[0])));
             return true;
         }
         

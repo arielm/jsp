@@ -69,22 +69,22 @@ namespace jsp
     
     bool WrappedValue::operator==(const WrappedValue &other) const
     {
-        return compare(value, other.value);
+        return JSP::compare(value, other.value);
     }
     
     bool WrappedValue::operator!=(const WrappedValue &other) const
     {
-        return !compare(value, other.value);
+        return !JSP::compare(value, other.value);
     }
     
     bool WrappedValue::operator==(const Value &other) const
     {
-        return compare(value, other);
+        return JSP::compare(value, other);
     }
     
     bool WrappedValue::operator!=(const Value &other) const
     {
-        return !compare(value, other);
+        return !JSP::compare(value, other);
     }
     
     // ---

@@ -926,7 +926,7 @@ static bool setter1(JSContext *cx, unsigned argc, Value *vp)
     
     if (args.hasDefined(0))
     {
-        LOGI << "setter1 CALLED WITH: " << jsp::toString(args[0]) << endl;
+        LOGI << "setter1 CALLED WITH: " << JSP::toString(args[0]) << endl;
         
         args.rval().setUndefined();
         return true;
@@ -959,7 +959,7 @@ static bool getterSetter1(JSContext *cx, unsigned argc, Value *vp)
     
     if (args.hasDefined(0))
     {
-        LOGI << "getterSetter1: setter CALLED WITH: " << jsp::toString(args[0]) << endl;
+        LOGI << "getterSetter1: setter CALLED WITH: " << JSP::toString(args[0]) << endl;
 
         if (args[0].isInt32())
         {

@@ -102,7 +102,7 @@ namespace jsp
         
         stringstream errorBody;
         
-        string typeName = jsp::toString(JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(rt, report->exnType)));
+        string typeName = JSP::toString(JS_NewUCStringCopyZ(cx, js::GetErrorTypeName(rt, report->exnType)));
         
         if (!typeName.empty())
         {
@@ -134,7 +134,7 @@ namespace jsp
             if (rooted)
             {
                 if (i > 0) buffer += ' ';
-                appendToString(buffer, rooted);
+                JSP::appendToString(buffer, rooted);
             }
             else
             {

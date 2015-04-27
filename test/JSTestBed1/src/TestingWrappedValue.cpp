@@ -493,28 +493,28 @@ void TestingWrappedValue::testStringComparison2()
 void TestingWrappedValue::testStringCasting()
 {
     Rooted<WrappedValue> rootedWrapped(cx);
-    JSP_CHECK(jsp::toString(rootedWrapped) == "undefined");
+    JSP_CHECK(toString(rootedWrapped) == "undefined");
     
     rootedWrapped = 2.5f;
-    JSP_CHECK(jsp::toString(rootedWrapped) == "2.5");
+    JSP_CHECK(toString(rootedWrapped) == "2.5");
     
     rootedWrapped = 55.55;
-    JSP_CHECK(jsp::toString(rootedWrapped) == "55.55");
+    JSP_CHECK(toString(rootedWrapped) == "55.55");
 
     rootedWrapped = -255;
-    JSP_CHECK(jsp::toString(rootedWrapped) == "-255");
+    JSP_CHECK(toString(rootedWrapped) == "-255");
 
     rootedWrapped = 0xff123456;
-    JSP_CHECK(jsp::toString(rootedWrapped) == "4279383126");
+    JSP_CHECK(toString(rootedWrapped) == "4279383126");
 
     rootedWrapped = true;
-    JSP_CHECK(jsp::toString(rootedWrapped) == "true");
+    JSP_CHECK(toString(rootedWrapped) == "true");
     
     rootedWrapped.set(nullptr); // XXX: IMPOSSIBLE TO ASSIGN nullptr DIRECTLY TO A Rooted<WrappedValue> DUE TO AMBIGUITIES AT THE Rooted<T> LEVEL
-    JSP_CHECK(jsp::toString(rootedWrapped) == "null");
+    JSP_CHECK(toString(rootedWrapped) == "null");
     
     rootedWrapped = newPlainObject();
-    JSP_CHECK(jsp::toString(rootedWrapped) == "[object Object]");
+    JSP_CHECK(toString(rootedWrapped) == "[object Object]");
 }
 
 // ---
