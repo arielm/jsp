@@ -104,7 +104,7 @@ string TestingJSBase::write(const HandleValueArray& args)
         if (rooted)
         {
             if (i > 0) buffer += ' ';
-            appendToString(buffer, rooted);
+            appendString(buffer, rooted);
         }
         else
         {

@@ -118,12 +118,41 @@ void JSP::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
 
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
-string& JSP::appendToString(string &target, const jschar *chars, size_t len)
+/*
+ * SUB-OPTIMAL: THE DATA PRODUCED BY TwoByteCharsToNewUTF8CharsZ() IS CURRENTLY COPIED INTO std::string
+ *
+ * TODO: A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT ALLOWED BY THE CURRENT CharacterEncoding API)
+ */
+
+void JSP::assignString(string &target, const jschar *chars, size_t len)
+{
+    target.assign(TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str());
+}
+
+void JSP::assignString(string &target, JSString *str)
+{
+    if (str)
+    {
+        JSLinearString *linear = str->ensureLinear(cx); // ASSERTION: NO NEED TO PROTECT BECAUSE THE FOLLOWING CAN'T TRIGGER GC
+        
+        if (linear)
+        {
+            target.assign(TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str());
+            return;
+        }
+    }
+    
+    target.clear();
+}
+
+// ---
+
+string& JSP::appendString(string &target, const jschar *chars, size_t len)
 {
     return target.append(TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str());
 }
 
-string& JSP::appendToString(string &target, JSString *str)
+string& JSP::appendString(string &target, JSString *str)
 {
     if (str)
     {
@@ -146,9 +175,6 @@ string JSP::toString(const jschar *chars, size_t len)
     
     if (chars && len)
     {
-        /*
-         * SUB-OPTIMAL: A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
-         */
         result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(chars, len)).c_str();
     }
     
@@ -165,9 +191,6 @@ string JSP::toString(JSString *str)
         
         if (linear)
         {
-            /*
-             * SUB-OPTIMAL: A BETTER ALTERNATIVE WOULD BE TO DECODE "IN PLACE" (NOT FEASIBLE WITH THE CURRENT API)
-             */
             result = TwoByteCharsToNewUTF8CharsZ(cx, TwoByteChars(linear->chars(), linear->length())).c_str();
         }
     }
@@ -359,7 +382,7 @@ string JSP::toSource(HandleValue value)
 bool JSP::Stringifier::callback(const jschar *buf, uint32_t len, void *data)
 {
     auto buffer = reinterpret_cast<string*>(data);
-    appendToString(*buffer, buf, len);
+    appendString(*buffer, buf, len);
     
     return true;
 }

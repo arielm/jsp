@@ -190,7 +190,7 @@ namespace jsp
         
         /*
          * TODO INSTEAD:
-         * bool appendElements(HandleObject array, const std::vector<T> &elements)
+         * bool appendElements(HandleObject targetArray, const std::vector<T> &elements)
          */
         template<typename T>
         static bool setElements(HandleObject array, const std::vector<T> &elements);

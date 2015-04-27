@@ -27,6 +27,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -98,10 +99,14 @@ public:
     static void removeGCCallback(void *instance);
     
     // ---
-    
-    static std::string& appendToString(std::string &target, const jschar *chars, size_t len);
-    static std::string& appendToString(std::string &target, JSString *str);
-    static std::string& appendToString(std::string &target, JS::HandleValue value);
+
+    static void assignString(std::string &target, const jschar *chars, size_t len);
+    static void assignString(std::string &target, JSString *str);
+    static void assignString(std::string &target, JS::HandleValue value);
+
+    static std::string& appendString(std::string &target, const jschar *chars, size_t len);
+    static std::string& appendString(std::string &target, JSString *str);
+    static std::string& appendString(std::string &target, JS::HandleValue value);
 
     static std::string toString(const jschar *chars, size_t len);
     static std::string toString(JSString *str);
@@ -520,9 +525,14 @@ private:
 
 // ---
 
-inline std::string& JSP::appendToString(std::string &target, JS::HandleValue value)
+inline void JSP::assignString(std::string &target, JS::HandleValue value)
 {
-    return appendToString(target, ToString(jsp::cx, value));
+    return assignString(target, ToString(jsp::cx, value));
+}
+
+inline std::string& JSP::appendString(std::string &target, JS::HandleValue value)
+{
+    return appendString(target, ToString(jsp::cx, value));
 }
 
 inline std::string JSP::toString(JS::HandleValue value)
@@ -630,7 +640,7 @@ inline bool JSP::convertMaybe(JS::HandleValue value, std::string &result)
 {
     if (!value.isUndefined())
     {
-        result = toString(value); // INFAILIBLE, POSSIBLY SLOW
+        assignString(result, value); // INFAILIBLE, POSSIBLY SLOW
         return true;
     }
     

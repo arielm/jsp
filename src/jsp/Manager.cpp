@@ -134,7 +134,7 @@ namespace jsp
             if (rooted)
             {
                 if (i > 0) buffer += ' ';
-                JSP::appendToString(buffer, rooted);
+                JSP::appendString(buffer, rooted);
             }
             else
             {
