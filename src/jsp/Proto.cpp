@@ -391,10 +391,7 @@ namespace jsp
             {
                 if (elements.append(value))
                 {
-                    if (!value.isUndefined())
-                    {
-                        getCount++;
-                    }
+                    getCount++;
                 }
             }
         }
@@ -412,16 +409,8 @@ namespace jsp
             
             for (auto index2 = 0; index2 < elements.length(); index2++)
             {
-                if (elements[index2].isUndefined())
+                if (setElement(targetArray, index1++, elements[index2]))
                 {
-                    if (JS_SetArrayLength(cx, targetArray, index1 + 1))
-                    {
-                        index1++;
-                    }
-                }
-                else if (setElement(targetArray, index1, elements[index2]))
-                {
-                    index1++;
                     appendCount++;
                 }
             }

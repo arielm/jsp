@@ -567,31 +567,74 @@ void TestingJS::testBulkArrayOperations2()
 
 // ---
 
+/*
+ * CHECKING JAVASCRIPT'S POLICY WITH ARRAYS IN REGARD TO "HOLES" AND UNDEFINED-VALUES
+ *
+ * NOTE: "(void 0)" IS WHAT Array.toSource() WRITES FOR UNDEFINED-VALUES
+ */
 void TestingJS::testBulkArrayOperations3()
 {
-    RootedObject array1(cx, evaluateObject("([1, 33.33, {}, , [], null, 'foo'])"));
+    AutoValueVector contents(cx);
+
+    contents.append(UndefinedValue());
+    contents.append(NumberValue(123));
+    contents.append(UndefinedValue());
     
-    AutoValueVector elements(cx);
-    JSP_CHECK(getElements(array1, elements) == 6);
+    RootedObject array(cx, newArray(contents));
+    JSP_CHECK(toSource(array) == "[(void 0), 123, (void 0)]"); // WE COULD HAVE EXPECTED [, 123, ,]
     
-    RootedObject array2(cx, newArray());
-    JSP_CHECK(appendElements(array2, elements) == 6);
+    // ---
     
-    JSP_CHECK(toSource(array1) == toSource(array2));
+    executeScript("var array1 = []; array1.length = 3; array1[1] = 123;");
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "array1")) == "[, 123, ,]"); // AS EXPECTED
+    
+    executeScript("var array2 = []; for (var i = 0; i < array1.length; i++) array2[i] = array1[i];"); // NO WARNINGS
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "array2")) == "[(void 0), 123, (void 0)]"); // WE COULD HAVE EXPECTED [, 123, ,]
+    
+    //
+    
+    executeScript("array1.push(33.33); array1.push(array1[0])"); // PRODUCES A WARNING: ReferenceError: reference to undefined property array1[0]
+    JSP_CHECK(toSource(get<OBJECT>(globalHandle(), "array1")) == "[, 123, , 33.33, (void 0)]");
 }
 
+/*
+ * APPLYING THE PRINCIPLES VERIFIED IN testBulkArrayOperations3()
+ */
 void TestingJS::testBulkArrayOperations4()
 {
-    RootedObject array1(cx, newArray());
-    setLength(array1, 5);
+    RootedObject array1(cx, evaluateObject("([1, 33.33, {}, , [], null, 'foo'])")); // THE 4th ELEMENT IS A "HOLE"
     
-    AutoValueVector elements(cx);
-    JSP_CHECK(getElements(array1, elements) == 0);
+    AutoValueVector elements1(cx);
+    JSP_CHECK(getElements(array1, elements1) == 7);
     
-    RootedObject array2(cx, evaluateObject("([1, 2])"));
-    JSP_CHECK(appendElements(array2, elements) == 0);
+    RootedObject array2(cx, newArray());
+    JSP_CHECK(appendElements(array2, elements1) == 7);
+    
+    JSP_CHECK(toSource(array2) == "[1, 33.33, {}, (void 0), [], null, \"foo\"]"); // UNLIKE array1: THE 4th ELEMENT IS AN UNDEFINED-VALUE
 
-    JSP_CHECK(toSource(array2) == "[1, 2, , , , , ,]");
+    // ---
+    
+    RootedObject array3(cx, newArray());
+    setLength(array3, 1); // array3 CONTAINS A "HOLE"
+    
+    AutoValueVector elements3(cx);
+    JSP_CHECK(getElements(array3, elements3) == 1);
+    
+    RootedObject array4(cx, evaluateObject("([1, 2])"));
+    JSP_CHECK(appendElements(array4, elements3) == 1);
+
+    JSP_CHECK(toSource(array4) == "[1, 2, (void 0)]"); // THE APPENDED ELEMENT IS AN UNDEFINED-VALUE
+    
+    // ---
+    
+    set<FLOAT64>(array3, getLength(array3), 55.55); // SIMULATING Array.push() WITH A NUMBER-VALUE
+    
+    RootedValue value(cx, NumberValue(99));
+    JSP_CHECK(getElement(array3, 0, &value) && value.isUndefined()); // GETTING A "HOLE" PRODUCES AN UNDEFINED-VALUE
+    
+    JSP_CHECK(setElement(array3, getLength(array3), value)); // SIMULATING Array.push() WITH AN UNDEFINED-VALUE
+    
+    JSP_CHECK(toSource(array3) == "[, 55.55, (void 0)]");
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------
