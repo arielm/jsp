@@ -171,7 +171,6 @@ namespace jsp
             if (value.isObject())
             {
                 RootedObject constructor(cx, &value.toObject());
-                
                 return JS_New(cx, constructor, args);
             }
         }
@@ -340,41 +339,6 @@ namespace jsp
         return false;
     }
     
-    bool Proto::setElement(HandleObject array, int index, HandleValue value)
-    {
-        if (array && (index >= 0))
-        {
-            return JS_SetElement(cx, array, index, value);
-        }
-        
-        return false;
-    }
-    
-    bool Proto::defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
-    {
-        if (array && (index >= 0))
-        {
-            return JS_DefineElement(cx, array, index, value, nullptr, nullptr, attrs);
-        }
-        
-        return false;
-    }
-    
-    bool Proto::deleteElement(HandleObject array, int index)
-    {
-        if (array && (index >= 0))
-        {
-            bool success;
-            
-            if (JS_DeleteElement2(cx, array, index, &success))
-            {
-                return success;
-            }
-        }
-        
-        return false;
-    }
-    
     uint32_t Proto::getElements(HandleObject sourceArray, AutoValueVector &elements)
     {
         uint32_t getCount = 0;
@@ -399,6 +363,31 @@ namespace jsp
         return getCount;
     }
     
+    bool Proto::setElement(HandleObject array, int index, HandleValue value)
+    {
+        if (array && (index >= 0))
+        {
+            return JS_SetElement(cx, array, index, value);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::appendElement(HandleObject array, HandleValue value)
+    {
+        if (array)
+        {
+            uint32_t length;
+            
+            if (JS_GetArrayLength(cx, array, &length))
+            {
+                return JS_SetElement(cx, array, length, value);
+            }
+        }
+        
+        return false;
+    }
+    
     uint32_t Proto::appendElements(HandleObject targetArray, const HandleValueArray &elements)
     {
         uint32_t appendCount = 0;
@@ -419,15 +408,25 @@ namespace jsp
         return appendCount;
     }
     
-    bool Proto::appendElement(HandleObject array, HandleValue value)
+    bool Proto::defineElement(HandleObject array, int index, HandleValue value, unsigned attrs)
     {
-        if (array)
+        if (array && (index >= 0))
         {
-            uint32_t length;
+            return JS_DefineElement(cx, array, index, value, nullptr, nullptr, attrs);
+        }
+        
+        return false;
+    }
+    
+    bool Proto::deleteElement(HandleObject array, int index)
+    {
+        if (array && (index >= 0))
+        {
+            bool success;
             
-            if (JS_GetArrayLength(cx, array, &length))
+            if (JS_DeleteElement2(cx, array, index, &success))
             {
-                return JS_SetElement(cx, array, length, value);
+                return success;
             }
         }
         

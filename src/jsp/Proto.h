@@ -163,14 +163,14 @@ namespace jsp
         static bool setLength(HandleObject array, size_t length);
         
         static bool getElement(HandleObject array, int index, MutableHandleValue result);
+        static uint32_t getElements(HandleObject sourceArray, AutoValueVector &elements);
+        
         static bool setElement(HandleObject array, int index, HandleValue value);
         static bool appendElement(HandleObject array, HandleValue value);
+        static uint32_t appendElements(HandleObject targetArray, const HandleValueArray &elements);
         
         static bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
         static bool deleteElement(HandleObject array, int index);
-        
-        static uint32_t getElements(HandleObject sourceArray, AutoValueVector &elements);
-        static uint32_t appendElements(HandleObject targetArray, const HandleValueArray &elements);
 
         //
         
