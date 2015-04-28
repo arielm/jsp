@@ -140,21 +140,19 @@ namespace jsp
         // ---
         
         /*
-         * PURPOSELY NOT USING uint32_t FOR ARRAY INDICES:
+         * TODO:
+         *
+         * 1) C++11 ITERATORS?
+         * 2) INTEGRATION WITH JS TYPED-ARRAYS?
+         */
+
+        /*
+         * PURPOSELY USING int INSTEAD OF uint32_t FOR ARRAY-INDEX PARAMETERS:
          *
          * 1) BECAUSE OF THE AMBIGUITY WITH const char* WHEN INDEX IS 0
          * 2) BECAUSE "CAN'T GET ELEMENT AT INDEX -1" IS MORE EXPLICIT THAN "CAN'T GET ELEMENT AT INDEX 4294967295"
          */
-        
-        /*
-         * TODO:
-         *
-         * 1) template<typename T> bool append(HandleObject targetArray, T &&value)
-         * 2) uint32_t appendElements(HandleObject array, const HandleValueArray &values)
-         * 3) uint32_t appendElements(HandleObject array, const AutoValueVector &objects)
-         * 4) INTEGRATION WITH JS TYPED-ARRAYS
-         */
-        
+
         static JSObject* newArray(size_t length = 0);
         static JSObject* newArray(const HandleValueArray& contents);
         
@@ -170,6 +168,9 @@ namespace jsp
         static bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
         static bool deleteElement(HandleObject array, int index);
         
+        static uint32_t getElements(HandleObject sourceArray, AutoValueVector &elements);
+        static uint32_t appendElements(HandleObject targetArray, const HandleValueArray &elements);
+
         //
         
         template<typename T>
@@ -182,7 +183,7 @@ namespace jsp
         static bool define(HandleObject targetArray, int elementIndex, T &&value, unsigned attrs = 0);
 
         template<typename T>
-        static std::vector<T> getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        static std::vector<T> getElements(HandleObject sourceArray, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
         template<typename T>
         static uint32_t appendElements(HandleObject targetArray, const std::vector<T> &elements);
@@ -257,9 +258,9 @@ namespace jsp
      */
     
     template<typename T>
-    std::vector<T> Proto::getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue)
+    std::vector<T> Proto::getElements(HandleObject sourceArray, const typename TypeTraits<T>::defaultType defaultValue)
     {
-        auto size = getLength(array);
+        auto size = getLength(sourceArray);
         int index = 0;
 
         std::vector<T> elements;
@@ -269,7 +270,7 @@ namespace jsp
         
         for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
         {
-            if (getElement(array, index++, &value))
+            if (getElement(sourceArray, index++, &value))
             {
                 if (Convert<T>::maybe(value, it))
                 {

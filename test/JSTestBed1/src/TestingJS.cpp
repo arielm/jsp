@@ -108,8 +108,11 @@ void TestingJS::performRun(bool force)
     
     if (force || true)
     {
-        JSP_TEST(force || true, testGetElements3)
-        JSP_TEST(force || true, testSetElements3)
+        JSP_TEST(force || true, testBulkArrayOperations1)
+        JSP_TEST(force || true, testBulkArrayOperations2)
+        
+        JSP_TEST(force || true, testBulkArrayOperations3)
+        JSP_TEST(force || true, testBulkArrayOperations4)
     }
     
     if (force || true)
@@ -420,7 +423,7 @@ void TestingJS::setValues2(HandleObject array, const vector<int> &indices, Handl
 
 // ---
 
-void TestingJS::testGetElements3()
+void TestingJS::testBulkArrayOperations1()
 {
     {
         RootedObject array(cx, evaluateObject("([1.33, , 3.33])"));
@@ -452,10 +455,11 @@ void TestingJS::testGetElements3()
 
     {
         /*
-         * TODO: FORBID USAGE OF getElements<OBJECT>
+         * USAGE OF Proto::getElements<OBJECT>(HandleObject sourceArray) IS DISCOURAGED:
+         * - NOT GC-SAFE IN TERM OF OUTPUT-VALUES
          *
-         * REASON: NOT GC-SAFE IN TERM OF OUTPUT-VALUES
-         * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
+         * RECOMMENDED ALTERNATIVE:
+         * - Proto::getElements(HandleObject sourceArray, AutoValueVector &elements)
          */
 
         RootedObject array(cx, evaluateObject("([{}, , []])"));
@@ -483,7 +487,7 @@ void TestingJS::testGetElements3()
     JSP_CHECK(getElements<UINT32>(NullPtr()).empty());
 }
 
-void TestingJS::testSetElements3()
+void TestingJS::testBulkArrayOperations2()
 {
     {
         RootedObject array(cx, newArray());
@@ -522,10 +526,11 @@ void TestingJS::testSetElements3()
     
     {
         /*
-         * TODO: FORBID USAGE OF appendElements<JSObject*>
+         * USAGE OF Proto::appendElements<OBJECT>(HandleObject targetArray, const vector<OBJECT> &elements) IS DISCOURAGED:
+         * - NOT GC-SAFE IN TERM OF INPUT-VALUES
          *
-         * REASON: NOT GC-SAFE IN TERM OF INPUT-VALUES
-         * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
+         * RECOMMENDED ALTERNATIVE:
+         * - Proto::appendElements(HandleObject targetArray, const HandleValueArray &elements)
          */
         
         RootedObject array(cx, newArray());
@@ -558,6 +563,35 @@ void TestingJS::testSetElements3()
         JSP_CHECK(appendElements(array, vector<INT32> {4, 5}) == 2);
         JSP_CHECK(toSource(array) == "[1, 2, 3, 4, 5]");
     }
+}
+
+// ---
+
+void TestingJS::testBulkArrayOperations3()
+{
+    RootedObject array1(cx, evaluateObject("([1, 33.33, {}, , [], null, 'foo'])"));
+    
+    AutoValueVector elements(cx);
+    JSP_CHECK(getElements(array1, elements) == 6);
+    
+    RootedObject array2(cx, newArray());
+    JSP_CHECK(appendElements(array2, elements) == 6);
+    
+    JSP_CHECK(toSource(array1) == toSource(array2));
+}
+
+void TestingJS::testBulkArrayOperations4()
+{
+    RootedObject array1(cx, newArray());
+    setLength(array1, 5);
+    
+    AutoValueVector elements(cx);
+    JSP_CHECK(getElements(array1, elements) == 0);
+    
+    RootedObject array2(cx, evaluateObject("([1, 2])"));
+    JSP_CHECK(appendElements(array2, elements) == 0);
+
+    JSP_CHECK(toSource(array2) == "[1, 2, , , , , ,]");
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------

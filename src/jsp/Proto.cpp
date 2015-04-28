@@ -374,4 +374,59 @@ namespace jsp
         
         return false;
     }
+    
+    uint32_t Proto::getElements(HandleObject sourceArray, AutoValueVector &elements)
+    {
+        uint32_t getCount = 0;
+        
+        RootedValue iterable(cx, ObjectOrNullValue(sourceArray));
+        ForOfIterator it(cx);
+        
+        if (it.init(iterable))
+        {
+            bool done = false;
+            RootedValue value(cx);
+            
+            while (it.next(&value, &done) && !done)
+            {
+                if (elements.append(value))
+                {
+                    if (!value.isUndefined())
+                    {
+                        getCount++;
+                    }
+                }
+            }
+        }
+        
+        return getCount;
+    }
+    
+    uint32_t Proto::appendElements(HandleObject targetArray, const HandleValueArray &elements)
+    {
+        uint32_t appendCount = 0;
+        
+        if (isArray(targetArray))
+        {
+            int index1 = getLength(targetArray);
+            
+            for (auto index2 = 0; index2 < elements.length(); index2++)
+            {
+                if (elements[index2].isUndefined())
+                {
+                    if (JS_SetArrayLength(cx, targetArray, index1 + 1))
+                    {
+                        index1++;
+                    }
+                }
+                else if (setElement(targetArray, index1, elements[index2]))
+                {
+                    index1++;
+                    appendCount++;
+                }
+            }
+        }
+        
+        return appendCount;
+    }
 }

@@ -94,8 +94,11 @@ public:
     
     // ---
     
-    void testGetElements3();
-    void testSetElements3();
+    void testBulkArrayOperations1();
+    void testBulkArrayOperations2();
+    
+    void testBulkArrayOperations3();
+    void testBulkArrayOperations4();
     
     // ---
     
