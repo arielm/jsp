@@ -181,12 +181,8 @@ namespace jsp
         template<typename T>
         static bool define(HandleObject targetArray, int elementIndex, T &&value, unsigned attrs = 0);
 
-        /*
-         * TODO INSTEAD (ASSUMING IT IS RVO-COMPLIANT):
-         * std::vector<T> getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue = ...)
-         */
         template<typename T>
-        static bool getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
+        static std::vector<T> getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
         /*
          * TODO INSTEAD:
@@ -257,46 +253,38 @@ namespace jsp
     }
     
     /*
-     * THE OVER-COMPLEXITY OF THE FOLLOWING 2 IS A CONSEQUENCE OF THE PARTIAL SUPPORT OF std::vector<bool> IN C++11
+     * REGARDING THE USE OF vector<T>::iterator IN Proto::getElements() AND Proto::setElements():
+     * - IT IS NECESSARY BECAUSE std::vector<bool> IS NOT FULLY SUPPORTED IN C++11 (E.G. emplace_back() IS MISSING FOR THAT TYPE...)
+     *
+     * ANOTHER ADVANTAGE OF USING A VECTOR ITERATOR, SPECIFIC TO Proto::getElements():
+     * - RESIZING THE VECTOR UP-FRONT AND ASSIGNING VALUES "IN PLACE" REDUCES DATA-COPYING (MOSTLY RELEVANT FOR STRINGS...)
      */
     
     template<typename T>
-    bool Proto::getElements(HandleObject array, std::vector<T> &elements, const typename TypeTraits<T>::defaultType defaultValue)
+    std::vector<T> Proto::getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue)
     {
         auto size = getLength(array);
+        int index = 0;
+
+        std::vector<T> elements;
+        elements.resize(size);
         
-        if (size > 0)
+        RootedValue value(cx);
+        
+        for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
         {
-            elements.clear();
-            elements.resize(size, TypeTraits<T>::defaultValue());
-            
-            bool assignUnconverted = TypeTraits<T>::defaultValue() != defaultValue;
-            int index = 0;
-            int converted = 0;
-            
-            RootedValue value(cx);
-            
-            for (typename std::vector<T>::iterator it = elements.begin(); it != elements.end(); ++it)
+            if (getElement(array, index++, &value))
             {
-                if (getElement(array, index++, &value))
+                if (Convert<T>::maybe(value, it))
                 {
-                    if (Convert<T>::maybe(value, it))
-                    {
-                        converted++;
-                        continue;
-                    }
-                }
-                
-                if (assignUnconverted)
-                {
-                    *it = defaultValue;
+                    continue;
                 }
             }
             
-            return (index == converted);
+            *it = defaultValue;
         }
         
-        return false;
+        return elements; // RVO-COMPLIANT
     }
     
     template<typename T>

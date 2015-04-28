@@ -423,34 +423,30 @@ void TestingJS::setValues2(HandleObject array, const vector<int> &indices, Handl
 void TestingJS::testGetElements3()
 {
     {
-        vector<FLOAT64> elements;
         RootedObject array(cx, evaluateObject("([1.33, , 3.33])"));
         
-        JSP_CHECK(!getElements(array, elements));
+        auto elements = getElements<FLOAT64>(array);
         JSP_CHECK(write(elements) == "[1.33, 0, 3.33]");
     }
 
     {
-        vector<INT32> elements;
         RootedObject array(cx, evaluateObject("([-4096, , 8192])"));
         
-        JSP_CHECK(!getElements(array, elements, 555)); // USING A CUSTOM DEFAULT-VALUE
+        auto elements = getElements<INT32>(array, 555); // USING A CUSTOM DEFAULT-VALUE
         JSP_CHECK(write(elements) == "[-4096, 555, 8192]");
     }
     
     {
-        vector<UINT32> elements;
         RootedObject array(cx, evaluateObject("([0xff123456, , 8192])"));
         
-        JSP_CHECK(!getElements(array, elements));
+        auto elements = getElements<UINT32>(array);
         JSP_CHECK(write(elements) == "[4279383126, 0, 8192]");
     }
     
     {
-        vector<BOOLEAN> elements;
         RootedObject array(cx, evaluateObject("([true, , false])"));
 
-        JSP_CHECK(!getElements(array, elements));
+        auto elements = getElements<BOOLEAN>(array);
         JSP_CHECK(write(elements) == "[1, 0, 0]");
     }
 
@@ -462,37 +458,33 @@ void TestingJS::testGetElements3()
          * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
          */
 
-        vector<OBJECT> elements;
-        
         RootedObject array(cx, evaluateObject("([{}, , []])"));
-        JSP_CHECK(!getElements(array, elements));
+        auto elements = getElements<OBJECT>(array);
         
         JSP_CHECK(setElements(array, elements));
         JSP_CHECK(toSource(array) == "[{}, null, []]");
     }
     
     {
-        vector<STRING> elements;
         RootedObject array(cx, evaluateObject("(['one', , 'three'])"));
         
-        JSP_CHECK(!getElements(array, elements, "INVALID")); // USING A CUSTOM DEFAULT-VALUE
+        auto elements = getElements<STRING>(array, "INVALID"); // USING A CUSTOM DEFAULT-VALUE
         JSP_CHECK(write(elements) == "[one, INVALID, three]");
     }
     
     // ---
     
-    vector<UINT32> elements;
     RootedObject array(cx, newArray());
     
     /*
-     * RETURNS FALSE BECAUSE JS ARRAY IS NULL
+     * RETURNS EMPTY VECTOR BECAUSE JS ARRAY IS NULL
      */
-    JSP_CHECK(!getElements(NullPtr(), elements));
+    JSP_CHECK(getElements<UINT32>(NullPtr()).empty());
     
     /*
-     * RETURNS FALSE BECAUSE JS ARRAY IS EMPTY
+     * RETURNS EMPTY VECTOR BECAUSE JS ARRAY IS EMPTY
      */
-    JSP_CHECK(!getElements(array, elements));
+    JSP_CHECK(getElements<UINT32>(array).empty());
 }
 
 void TestingJS::testSetElements3()
@@ -535,7 +527,7 @@ void TestingJS::testSetElements3()
     
     
     /*
-     * RETURNS FALSE BECAUSE C++ ARRAY IS EMPTY
+     * RETURNS FALSE BECAUSE VECTOR IS EMPTY
      */
     JSP_CHECK(!setElements(array, vector<INT32> {}));
     
