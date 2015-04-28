@@ -25,7 +25,7 @@
  *    INSTEAD OF AS CURRENTLY: Barker.getInstance('some barker name')
  *    HINT: jsapi-tests/testClassGetter.cpp
  *
- * 2) COMPLETE UN-INITIALIZATION
+ * 2) TEST Barker::init() / Barker::uninit() FURTHER
  *
  * 3) ALLOW TO ENABLE/DISABLE LOGGING
  *

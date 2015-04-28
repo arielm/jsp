@@ -26,11 +26,13 @@ namespace jsp
     {
         bool initialized = false;
         
-        int32_t createCount = 0; // CLASS-INSTANCE IS NOT COUNTED
+        int32_t prototypeId = -1;
+        int32_t instanceCount = 0;
+        
         map<int32_t, string> names;
         map<int32_t, JSObject*> instances;
         
-        void setup(JSObject *instance, int32_t barkerId, const string &name = "");
+        int32_t addInstance(JSObject *instance, const string &name = "");
         
         /*
          * RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
@@ -51,17 +53,21 @@ namespace jsp
         pair<bool, JSObject*> getInstance(const string &name);
     }
     
-    void barker::setup(JSObject *instance, int32_t barkerId, const string &name)
+    int32_t barker::addInstance(JSObject *instance, const string &name)
     {
-        assert(barker::initialized || (barkerId == 0));
+        bool isPrototype = (instanceCount == prototypeId);
+        
+        JS_ASSERT(barker::initialized || isPrototype);
         
         for (auto &element : instances)
         {
             if (instance == element.second)
             {
-                assert(false); // THIS SHOULD NEVER HAPPEN, UNLESS BARKER-FINALIZATION IS BROKEN
+                JS_ASSERT(false); // THIS SHOULD NEVER HAPPEN, UNLESS BARKER-FINALIZATION IS BROKEN
             }
         }
+        
+        int32_t barkerId = instanceCount++;
         
         // ---
         
@@ -69,7 +75,14 @@ namespace jsp
         
         if (name.empty())
         {
-            finalName = "ANONYMOUS-" + ci::toString(barkerId);
+            if (isPrototype)
+            {
+                finalName = "PROTOTYPE";
+            }
+            else
+            {
+                finalName = "ANONYMOUS-" + ci::toString(barkerId);
+            }
         }
         else if (getId(name) >= 0)
         {
@@ -84,6 +97,10 @@ namespace jsp
         
         instances[barkerId] = instance;
         names[barkerId] = finalName;
+        
+        /*
+         * TODO: CHECK IF THE FOLLOWING PROPERTY-DEFINITION CAN BE DONE "ONCE" ON THE PROTOTYPE
+         */
         
         RootedObject rootedInstance(cx, instance);
         Proto::define(rootedInstance, "id", barkerId, JSPROP_READONLY | JSPROP_PERMANENT);
@@ -101,6 +118,8 @@ namespace jsp
         // ---
         
         LOGD << "Barker CONSTRUCTED: " << JSP::writeDetailed(instance) << " | " << finalName << endl; // LOG: VERBOSE
+        
+        return barkerId;
     }
     
     string barker::getName(int32_t barkerId)
@@ -255,7 +274,7 @@ namespace jsp
              */
             barker::instances[barkerId] = obj;
             
-            if (barkerId > 0) // EXCLUDING THE CLASS-INSTANCE
+            if (barkerId != barker::prototypeId) // EXCLUDING THE PROTOTYPE
             {
                 LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
             }
@@ -266,7 +285,7 @@ namespace jsp
     
     int32_t Barker::nextId()
     {
-        return barker::createCount + 1;
+        return barker::instanceCount;
     }
     
     int32_t Barker::getId(JSObject *instance)
@@ -388,25 +407,50 @@ namespace jsp
     {
         if (!barker::initialized)
         {
-            auto classInstance = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
-            barker::setup(classInstance, 0, "CLASS-INSTANCE");
+            auto prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
             
-            static bool unique;
-            JSP::addGCCallback(&unique, BIND_STATIC2(Barker::gcCallback));
-            
-            // ---
-            
-            barker::initialized = true;
+            if (prototype)
+            {
+                barker::prototypeId = nextId();
+                barker::addInstance(prototype);
+                
+                /*
+                 * THE USAGE OF Barker::clazz AS "UNIQUE" POINTER IS ARBITRARY...
+                 */
+                JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
+                
+                // ---
+                
+                barker::initialized = true;
+            }
         }
         
         return barker::initialized;
     }
     
-    /*
-     * TODO
-     */
     void Barker::uninit()
-    {}
+    {
+        if (barker::initialized)
+        {
+            JSP::removeGCCallback((void*)&clazz);
+
+            /*
+             * WILL DELETE THE CONSTRUCTOR AND THE PROTOTYPE
+             */
+            Proto::deleteProperty(globalHandle(), "Barker");
+            
+            barker::names.clear();
+            barker::instances.clear();
+            
+            barker::prototypeId = -1;
+            barker::initialized = false;
+            
+            /*
+             * PURPOSELY NOT RESETTING barker::instanceCount IN ORDER TO PREVENT INSTANCES
+             * THAT MAY STILL BE ALIVE AT THIS STAGE TO BE CONSIDERED AS VALID IN THE FUTURE...
+             */
+        }
+    }
     
     // ---
     
@@ -415,7 +459,7 @@ namespace jsp
         static Barker delegate;
 
         delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        barker::setup(delegate.object, ++barker::createCount, name);
+        barker::addInstance(delegate.object, name);
         
         return delegate;
     }
