@@ -904,8 +904,8 @@ bool TestingJS::CustomConstructor(JSContext *cx, unsigned argc, Value *vp)
  */
 void TestingJS::testCustomConstruction1()
 {
-    RootedObject constructor1(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor, 0, nullptr, nullptr, nullptr, nullptr));
-    dumpObject(constructor1);
+    RootedObject prototype(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass1, CustomConstructor, 0, nullptr, nullptr, nullptr, nullptr));
+    dumpObject(prototype);
     
     try
     {
@@ -944,8 +944,8 @@ void TestingJS::testCustomConstruction1()
  */
 void TestingJS::testCustomConstruction2()
 {
-    RootedObject constructor2(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
-    dumpObject(constructor2);
+    RootedObject prototype(cx, JS_InitClass(cx, globalHandle(), NullPtr(), &CustomClass2, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
+    dumpObject(prototype);
     
     /*
      * JUST TO ILLUSTRATE THE POSSIBILITY OF USING AutoValueArray...
@@ -961,7 +961,7 @@ void TestingJS::testCustomConstruction2()
      * REQUIRED IF JS_InitClass() WAS NOT CALLED WITH JSNative CONSTRUCTOR-ARGUMENT:
      * CustomConstructor DEFINED AS construct HOOK IN JSClass DECLARATION
      */
-    JSP_CHECK(JS_New(cx, constructor2, args));
+    JSP_CHECK(JS_New(cx, prototype, args));
     
     // ---
     

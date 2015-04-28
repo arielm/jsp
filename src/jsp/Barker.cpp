@@ -26,7 +26,7 @@ namespace jsp
     {
         bool initialized = false;
         
-        int32_t prototypeId = -1;
+        Heap<JSObject*> prototype;
         int32_t instanceCount = 0;
         
         map<int32_t, string> names;
@@ -55,10 +55,6 @@ namespace jsp
     
     int32_t barker::addInstance(JSObject *instance, const string &name)
     {
-        bool isPrototype = (instanceCount == prototypeId);
-        
-        JS_ASSERT(barker::initialized || isPrototype);
-        
         for (auto &element : instances)
         {
             if (instance == element.second)
@@ -75,14 +71,7 @@ namespace jsp
         
         if (name.empty())
         {
-            if (isPrototype)
-            {
-                finalName = "PROTOTYPE";
-            }
-            else
-            {
-                finalName = "ANONYMOUS-" + ci::toString(barkerId);
-            }
+            finalName = "ANONYMOUS-" + ci::toString(barkerId);
         }
         else if (getId(name) >= 0)
         {
@@ -97,10 +86,6 @@ namespace jsp
         
         instances[barkerId] = instance;
         names[barkerId] = finalName;
-        
-        /*
-         * TODO: CHECK IF THE FOLLOWING PROPERTY-DEFINITION CAN BE DONE "ONCE" ON THE PROTOTYPE
-         */
         
         RootedObject rootedInstance(cx, instance);
         Proto::define(rootedInstance, "id", barkerId, JSPROP_READONLY | JSPROP_PERMANENT);
@@ -265,17 +250,17 @@ namespace jsp
     
     void Barker::trace(JSTracer *trc, JSObject *obj)
     {
-        auto barkerId = getId(obj);
-        
-        if (barkerId >= 0)
+        if (obj != barker::prototype)
         {
-            /*
-             * NECESSARY IN CASE OF MOVED-POINTER
-             */
-            barker::instances[barkerId] = obj;
+            auto barkerId = getId(obj);
             
-            if (barkerId != barker::prototypeId) // EXCLUDING THE PROTOTYPE
+            if (barkerId >= 0)
             {
+                /*
+                 * NECESSARY IN CASE OF MOVED-POINTER
+                 */
+                barker::instances[barkerId] = obj;
+                
                 LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
             }
         }
@@ -407,22 +392,22 @@ namespace jsp
     {
         if (!barker::initialized)
         {
-            auto prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
+            /*
+             * ASSERTIONS REGARDING PROTOTYPE:
+             *
+             * - IT IS ROOTED (VIA GLOBAL OBJECT)
+             * - IT IS TENURED (I.E. GC-POINTER WON'T BE "MOVED")
+             */
+            barker::prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
             
-            if (prototype)
-            {
-                barker::prototypeId = nextId();
-                barker::addInstance(prototype);
-                
-                /*
-                 * THE USAGE OF Barker::clazz AS "UNIQUE" POINTER IS ARBITRARY...
-                 */
-                JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
-                
-                // ---
-                
-                barker::initialized = true;
-            }
+            /*
+             * THE USAGE OF Barker::clazz IS ARBITRARY (I.E. ANY "UNIQUE" POINTER WILL DO THE JOB)
+             */
+            JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
+            
+            // ---
+            
+            barker::initialized = true;
         }
         
         return barker::initialized;
@@ -432,23 +417,22 @@ namespace jsp
     {
         if (barker::initialized)
         {
+            /*
+             * PURPOSELY NOT RESETTING barker::instanceCount IN ORDER TO PREVENT INSTANCES
+             * POTENTIALLY ALIVE AT THIS STAGE TO BE CONSIDERED AS VALID IN THE FUTURE...
+             */
+
             JSP::removeGCCallback((void*)&clazz);
 
-            /*
-             * WILL DELETE THE CONSTRUCTOR AND THE PROTOTYPE
-             */
-            Proto::deleteProperty(globalHandle(), "Barker");
+            Proto::deleteProperty(globalHandle(), "Barker"); // WILL DELETE PROTOTYPE AND CONSTRUCTOR
+            barker::prototype = nullptr;
             
             barker::names.clear();
             barker::instances.clear();
+
+            // ---
             
-            barker::prototypeId = -1;
             barker::initialized = false;
-            
-            /*
-             * PURPOSELY NOT RESETTING barker::instanceCount IN ORDER TO PREVENT INSTANCES
-             * THAT MAY STILL BE ALIVE AT THIS STAGE TO BE CONSIDERED AS VALID IN THE FUTURE...
-             */
         }
     }
     

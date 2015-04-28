@@ -115,7 +115,6 @@ void JSP::gcCallback(JSRuntime *rt, JSGCStatus status, void *data)
     }
 }
 
-
 #pragma mark ---------------------------------------- STRING HELPERS ----------------------------------------
 
 /*
