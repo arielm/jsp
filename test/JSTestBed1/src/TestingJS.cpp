@@ -461,7 +461,8 @@ void TestingJS::testGetElements3()
         RootedObject array(cx, evaluateObject("([{}, , []])"));
         auto elements = getElements<OBJECT>(array);
         
-        JSP_CHECK(setElements(array, elements));
+        setLength(array, 0);
+        appendElements(array, elements);
         JSP_CHECK(toSource(array) == "[{}, null, []]");
     }
     
@@ -474,84 +475,89 @@ void TestingJS::testGetElements3()
     
     // ---
     
-    RootedObject array(cx, newArray());
+    {
+        RootedObject array(cx, newArray());
+        JSP_CHECK(getElements<UINT32>(array).empty());
+    }
     
-    /*
-     * RETURNS EMPTY VECTOR BECAUSE JS ARRAY IS NULL
-     */
     JSP_CHECK(getElements<UINT32>(NullPtr()).empty());
-    
-    /*
-     * RETURNS EMPTY VECTOR BECAUSE JS ARRAY IS EMPTY
-     */
-    JSP_CHECK(getElements<UINT32>(array).empty());
 }
 
 void TestingJS::testSetElements3()
 {
-    RootedObject array(cx, newArray());
+    {
+        RootedObject array(cx, newArray());
+        
+        JSP_CHECK(appendElements(array, vector<FLOAT32> {1.5f, 2.5f, 3.5f}) == 3);
+        JSP_CHECK(toSource(array) == "[1.5, 2.5, 3.5]");
+    }
     
-    JSP_CHECK(setElements(array, vector<FLOAT32> {1.5f, 2.5f, 3.5f}));
-    JSP_CHECK(toSource(array) == "[1.5, 2.5, 3.5]");
+    {
+        RootedObject array(cx, newArray());
+        
+        JSP_CHECK(appendElements(array, vector<FLOAT64> {1.33, 2.33, 3.33}) == 3);
+        JSP_CHECK(toSource(array) == "[1.33, 2.33, 3.33]");
+    }
     
-    JSP_CHECK(setElements(array, vector<FLOAT64> {1.33, 2.33, 3.33}));
-    JSP_CHECK(toSource(array) == "[1.33, 2.33, 3.33]");
+    {
+        RootedObject array(cx, newArray());
+        
+        JSP_CHECK(appendElements(array, vector<INT32> {-4096, 256, 8192}) == 3);
+        JSP_CHECK(toSource(array) == "[-4096, 256, 8192]");
+    }
     
-    JSP_CHECK(setElements(array, vector<INT32> {-4096, 256, 8192}));
-    JSP_CHECK(toSource(array) == "[-4096, 256, 8192]");
+    {
+        RootedObject array(cx, newArray());
+        
+        JSP_CHECK(appendElements(array, vector<UINT32> {0xff123456, 256, 8192}) == 3);
+        JSP_CHECK(toSource(array) == "[4279383126, 256, 8192]");
+    }
     
-    JSP_CHECK(setElements(array, vector<UINT32> {0xff123456, 256, 8192}));
-    JSP_CHECK(toSource(array) == "[4279383126, 256, 8192]");
+    {
+        RootedObject array(cx, newArray());
+        
+        JSP_CHECK(appendElements(array, vector<BOOLEAN> {true, false, false}) == 3);
+        JSP_CHECK(toSource(array) == "[true, false, false]");
+    }
     
-    JSP_CHECK(setElements(array, vector<BOOLEAN> {true, false, false}));
-    JSP_CHECK(toSource(array) == "[true, false, false]");
+    {
+        /*
+         * TODO: FORBID USAGE OF appendElements<JSObject*>
+         *
+         * REASON: NOT GC-SAFE IN TERM OF INPUT-VALUES
+         * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
+         */
+        
+        RootedObject array(cx, newArray());
+
+        JSP_CHECK(appendElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}) == 3);
+        JSP_CHECK(toSource(array) == "[{}, null, []]");
+    }
     
-    /*
-     * TODO: FORBID USAGE OF setElements<JSObject*>
-     *
-     * REASON: NOT GC-SAFE IN TERM OF INPUT-VALUES
-     * POSSIBLE ALTERNATIVE: USING AutoObjectVector INSTEAD OF vector<OBJECT>?
-     */
-    JSP_CHECK(setElements(array, vector<OBJECT> {newPlainObject(), nullptr, newArray()}));
-    JSP_CHECK(toSource(array) == "[{}, null, []]");
-    
-    JSP_CHECK(setElements(array, vector<STRING> {"one", "two", "three"}));
-    JSP_CHECK(toSource(array) == "[\"one\", \"two\", \"three\"]");
+    {
+        RootedObject array(cx, newArray());
+
+        JSP_CHECK(appendElements(array, vector<STRING> {"one", "two", "three"}) == 3);
+        JSP_CHECK(toSource(array) == "[\"one\", \"two\", \"three\"]");
+    }
     
     // ---
 
-    /*
-     * RETURNS FALSE BECAUSE JS ARRAY IS NULL
-     */
-    JSP_CHECK(!setElements(NullPtr(), vector<INT32> {1, 2, 3}));
+    {
+        RootedObject array(cx, newArray());
+        JSP_CHECK(!appendElements(array, vector<INT32> {}));
+    }
     
-    
-    /*
-     * RETURNS FALSE BECAUSE VECTOR IS EMPTY
-     */
-    JSP_CHECK(!setElements(array, vector<INT32> {}));
+    JSP_CHECK(!appendElements(NullPtr(), vector<INT32> {1, 2, 3}));
     
     // ---
     
-    setElements(array, vector<STRING> {"A", "B", "C", "D", "E", "F"});
-    
-    RootedValue value(cx, toValue(99));
-    JS_DefineElement(cx, array, 4, value, nullptr, nullptr, JSPROP_READONLY | JSPROP_PERMANENT);
-    
-    /*
-     * RETURNS FALSE BECAUSE JS ARRAY CAN'T BE RESET
-     *
-     * JS EXCEPTION: "TypeError: property 4 is non-configurable and can't be deleted"
-     */
-    JSP_CHECK(!setElements(array, vector<INT32> {1, 2, 3}));
-    
-    /*
-     * SOME OF THE ELEMENTS WERE CLEARED:
-     *
-     * - STARTING FROM THE END OF THE ARRAY
-     * - UNTIL THE FIRST "NON-CONFIGURABLE"
-     */
-    JSP_CHECK(toSource(array) == "[\"A\", \"B\", \"C\", \"D\", 99]");
+    {
+        RootedObject array(cx, evaluateObject("([1, 2, 3])"));
+        
+        JSP_CHECK(appendElements(array, vector<INT32> {4, 5}) == 2);
+        JSP_CHECK(toSource(array) == "[1, 2, 3, 4, 5]");
+    }
 }
 
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------

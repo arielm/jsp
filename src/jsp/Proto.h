@@ -150,8 +150,8 @@ namespace jsp
          * TODO:
          *
          * 1) template<typename T> bool append(HandleObject targetArray, T &&value)
-         * 2) bool appendElements(HandleObject array, const HandleValueArray &values)
-         * 3) bool appendElements(HandleObject array, const AutoValueVector &objects)
+         * 2) uint32_t appendElements(HandleObject array, const HandleValueArray &values)
+         * 3) uint32_t appendElements(HandleObject array, const AutoValueVector &objects)
          * 4) INTEGRATION WITH JS TYPED-ARRAYS
          */
         
@@ -184,12 +184,8 @@ namespace jsp
         template<typename T>
         static std::vector<T> getElements(HandleObject array, const typename TypeTraits<T>::defaultType defaultValue = TypeTraits<T>::defaultValue());
         
-        /*
-         * TODO INSTEAD:
-         * bool appendElements(HandleObject targetArray, const std::vector<T> &elements)
-         */
         template<typename T>
-        static bool setElements(HandleObject array, const std::vector<T> &elements);
+        static uint32_t appendElements(HandleObject targetArray, const std::vector<T> &elements);
     };
     
     // ---
@@ -288,12 +284,13 @@ namespace jsp
     }
     
     template<typename T>
-    bool Proto::setElements(HandleObject array, const std::vector<T> &elements)
+    uint32_t Proto::appendElements(HandleObject targetArray, const std::vector<T> &elements)
     {
-        if ((elements.size() > 0) && setLength(array, 0))
+        uint32_t appendCount = 0;
+        
+        if (isArray(targetArray))
         {
-            int index = 0;
-            int converted = 0;
+            int index = getLength(targetArray);
             
             RootedValue value(cx);
             
@@ -301,15 +298,13 @@ namespace jsp
             {
                 value = toValue<T>(*it);
                 
-                if (setElement(array, index++, value))
+                if (setElement(targetArray, index++, value))
                 {
-                    converted++;
+                    appendCount++;
                 }
             }
-            
-            return (index == converted);
         }
         
-        return false;
+        return appendCount;
     }
 }
