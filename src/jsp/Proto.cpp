@@ -418,4 +418,19 @@ namespace jsp
         
         return appendCount;
     }
+    
+    bool Proto::appendElement(HandleObject array, HandleValue value)
+    {
+        if (array)
+        {
+            uint32_t length;
+            
+            if (JS_GetArrayLength(cx, array, &length))
+            {
+                return JS_SetElement(cx, array, length, value);
+            }
+        }
+        
+        return false;
+    }
 }

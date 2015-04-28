@@ -164,6 +164,7 @@ namespace jsp
         
         static bool getElement(HandleObject array, int index, MutableHandleValue result);
         static bool setElement(HandleObject array, int index, HandleValue value);
+        static bool appendElement(HandleObject array, HandleValue value);
         
         static bool defineElement(HandleObject array, int index, HandleValue value, unsigned attrs = 0);
         static bool deleteElement(HandleObject array, int index);
@@ -178,6 +179,9 @@ namespace jsp
         
         template<typename T>
         static bool set(HandleObject targetArray, int elementIndex, T &&value);
+        
+        template<typename T>
+        static bool append(HandleObject targetArray, T &&value);
 
         template<typename T>
         static bool define(HandleObject targetArray, int elementIndex, T &&value, unsigned attrs = 0);
@@ -240,6 +244,13 @@ namespace jsp
     {
         RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
         return setElement(targetArray, elementIndex, rooted);
+    }
+    
+    template<typename T>
+    inline bool Proto::append(HandleObject targetArray, T &&value)
+    {
+        RootedValue rooted(cx, toValue<T>(std::forward<T>(value)));
+        return appendElement(targetArray, rooted);
     }
     
     template<typename T>

@@ -623,16 +623,15 @@ void TestingJS::testBulkArrayOperations4()
     RootedObject array4(cx, evaluateObject("([1, 2])"));
     JSP_CHECK(appendElements(array4, elements3) == 1);
 
-    JSP_CHECK(toSource(array4) == "[1, 2, (void 0)]"); // THE APPENDED ELEMENT IS AN UNDEFINED-VALUE
+    JSP_CHECK(toSource(array4) == "[1, 2, (void 0)]"); // THE ELEMENT APPENDED IS AN UNDEFINED-VALUE
     
     // ---
     
-    set<FLOAT64>(array3, getLength(array3), 55.55); // SIMULATING Array.push() WITH A NUMBER-VALUE
-    
     RootedValue value(cx, NumberValue(99));
-    JSP_CHECK(getElement(array3, 0, &value) && value.isUndefined()); // GETTING A "HOLE" PRODUCES AN UNDEFINED-VALUE
+    JSP_CHECK(getElement(array3, 0, &value) && value.isUndefined()); // ACCESSING A "HOLE" PRODUCES AN UNDEFINED-VALUE
     
-    JSP_CHECK(setElement(array3, getLength(array3), value)); // SIMULATING Array.push() WITH AN UNDEFINED-VALUE
+    append<FLOAT64>(array3, 55.55);
+    appendElement(array3, value);
     
     JSP_CHECK(toSource(array3) == "[, 55.55, (void 0)]");
 }
