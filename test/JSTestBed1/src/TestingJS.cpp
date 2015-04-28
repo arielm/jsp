@@ -88,8 +88,12 @@ void TestingJS::performRun(bool force)
     {
         JSP_TEST(force || true, testReadOnlyProperty1)
         JSP_TEST(force || true, testReadOnlyProperty2)
+        
         JSP_TEST(force || true, testPermanentProperty1)
         JSP_TEST(force || true, testPermanentProperty2)
+        
+        JSP_TEST(force || true, testObjectReset1)
+        JSP_TEST(force || true, testObjectReset2)
     }
     
     if (force || true)
@@ -639,9 +643,20 @@ void TestingJS::testBulkArrayOperations4()
 #pragma mark ---------------------------------------- READ-ONLY AND PERMANENT PROPERTIES ----------------------------------------
 
 /*
- * UNSOLVED AT THIS STAGE: HOW TO DEFINE A PROPERTY WHICH WOULD BE READ-ONLY AND PERMANENT ONLY FROM THE JS SIDE
+ * OPEN QUESTION: HOW TO DEFINE A PROPERTY WHICH WOULD BE READ-ONLY AND PERMANENT ONLY FROM THE JS SIDE?
  *
- * PROBABLY: VIA NATIVE SETTERS / GETTERS (TODO: INVESTIGATE FURTHER)
+ * 1) THE SOLUTION PROBABLY LIES AT THE "SHAPE" LEVEL...
+ 
+ * 2) USING JS_SetAllNonReservedSlotsToUndefined() PROVIDES SOME INSIGHTS:
+ *    - SEE testObjectReset1() AND testObjectReset2()
+ *
+ * 3) NOTE THAT JS_ClearNonGlobalObject() IS NOT RECOMMENDED:
+ *   - SEE https://bugzilla.mozilla.org/show_bug.cgi?id=1043281
+ *
+ * 4) INSIGHTFUL: http://perfectionkills.com/understanding-delete
+ *    - E.G.
+ *      - "var foo = 33" WILL CREATE A NON-DELETABLE PROPERTY
+ *      - BUT "bar = 55" WON'T!
  */
 
 /*
@@ -737,6 +752,61 @@ void TestingJS::testPermanentProperty2()
     }
     
     LOGI << "UNABLE TO SET REDEFINE (PERMANENT) PROPERTY VIA C++" << endl;
+}
+
+// ---
+
+void TestingJS::testObjectReset1()
+{
+    RootedObject object(cx);
+    
+    object = evaluateObject("({'foo': 456, bar: [1, {baz: 'xxx'}, 3]})");
+    define(object, "permanent", 123, JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
+
+    /*
+     * WILL SET (AMONG OTHERS) THE permanent (READ-ONLY) PROPERTY TO UNDEFINED
+     */
+    JS_SetAllNonReservedSlotsToUndefined(cx, object);
+    JSP_CHECK(toSource(object) == "({foo:(void 0), bar:(void 0), permanent:(void 0)})");
+    
+    /*
+     * HOWEVER: THE permanent PROPERTY STILL CAN'T BE DELETED
+     */
+    JSP_CHECK(!deleteProperty(object, "permanent"));
+
+}
+
+void TestingJS::testObjectReset2()
+{
+    if (false)
+    {
+        /*
+         * WARNING: THIS WILL WIPE-OUT MUCH MORE THAN EXPECTED, E.G.
+         * 
+         * CONSTRUCTORS LIKE: Object, Date, ETC.
+         * OBJECTS LIKE: JSON, ETC.
+         * FUNCTIONS LIKE: escape(), decodeURI(), ETC.
+         */
+        JS_SetAllNonReservedSlotsToUndefined(cx, globalHandle());
+
+        /*
+         * AND OF COURSE MUCH OF THE STUFF DEFINED WITHIN Manager::init(), AS FOLLOWS:
+         */
+        
+        try
+        {
+            executeScript("print(123)"); // TypeError: print is not a function
+        }
+        catch (exception &e)
+        {}
+        
+        try
+        {
+            executeScript("var barker = new Barker('xxx');"); // TypeError: Barker is not a constructor
+        }
+        catch (exception &e)
+        {}
+    }
 }
 
 #pragma mark ---------------------------------------- CUSTOM CONSTRUCTION ----------------------------------------

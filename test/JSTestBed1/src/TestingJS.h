@@ -71,6 +71,9 @@ public:
     void testPermanentProperty1();
     void testPermanentProperty2();
     
+    void testObjectReset1();
+    void testObjectReset2();
+    
     // ---
     
     void testGetProperty1();
