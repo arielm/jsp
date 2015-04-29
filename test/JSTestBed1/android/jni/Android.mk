@@ -35,7 +35,6 @@ LOCAL_CFLAGS += -ffast-math -O3
 
 LOCAL_LDLIBS := -llog -landroid
 LOCAL_STATIC_LIBRARIES := cinder android_native_app_glue boost_system boost_filesystem boost_thread
-LOCAL_STATIC_LIBRARIES += ft2 icu-common hb
 LOCAL_STATIC_LIBRARIES += spidermonkey
 
 LOCAL_MODULE := JSTestBed1
@@ -48,7 +47,6 @@ $(call import-module,android/native_app_glue)
 $(call import-add-path, $(CINDER_PATH)/android/prebuilt)
 $(call import-module,cinder)
 $(call import-module,boost)
-$(call import-module,../../blocks/hb-icu/android)
 
 $(call import-add-path, $(SPIDERMONKEY_SDK_PATH)/android/prebuilt)
 $(call import-module,spidermonkey)

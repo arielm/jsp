@@ -37,12 +37,12 @@ void Sketch::setup()
         manager.init();
         
 #if defined(CINDER_MAC) && defined(DEBUG)
-        TestingBase::execute<TestingWrappedValue>(false);
-        TestingBase::execute<TestingRooting2>(false);
+        TestingBase::execute<TestingWrappedValue>(true);
+        TestingBase::execute<TestingRooting2>(true);
 #endif
         
-        TestingBase::execute<TestingJS>(false);
-        TestingBase::execute<TestingCallbacks>(false);
+        TestingBase::execute<TestingJS>(true);
+        TestingBase::execute<TestingCallbacks>(true);
         TestingBase::execute<TestingProxy>(true);
         
         manager.shutdown();

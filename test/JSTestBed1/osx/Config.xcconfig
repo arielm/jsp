@@ -21,10 +21,10 @@ SPIDERMONKEY_DIST_PATH = $(SPIDERMONKEY_SDK_PATH)/js/src/build-osx/dist
 
 ALWAYS_SEARCH_USER_PATHS = YES
 USER_HEADER_SEARCH_PATHS = "$(CINDER_PATH)/boost" "$(CINDER_PATH)/blocks/new-chronotext-toolkit/src" "$(SPIDERMONKEY_SDK_PATH)/js/src"
-HEADER_SEARCH_PATHS = ../include "$(CINDER_PATH)/include" "$(CINDER_PATH)/src/libtess2" "$(CINDER_PATH)/blocks/jsp/src" "$(SPIDERMONKEY_DIST_PATH)/include" "$(CINDER_PATH)/blocks/Freetype/include" "$(CINDER_PATH)/blocks/hb-icu/include/icu/common" "$(CINDER_PATH)/blocks/hb-icu/include/hb"
+HEADER_SEARCH_PATHS = ../include "$(CINDER_PATH)/include" "$(CINDER_PATH)/src/libtess2" "$(CINDER_PATH)/blocks/jsp/src" "$(SPIDERMONKEY_DIST_PATH)/include"
 
-LIBRARY_SEARCH_PATHS = "$(SPIDERMONKEY_DIST_PATH)/lib" "$(CINDER_PATH)/blocks/Freetype/lib/osx" "$(CINDER_PATH)/blocks/hb-icu/lib/osx"
-BASE_OTHER_LDFLAGS = -lz -ljs_static -lfreetype -licu-common -lhb
+LIBRARY_SEARCH_PATHS = "$(SPIDERMONKEY_DIST_PATH)/lib"
+BASE_OTHER_LDFLAGS = -lz -ljs_static
 
 BASE_GCC_PREPROCESSOR_DEFINITIONS = JS_POSIX_NSPR=1 JSGC_USE_EXACT_ROOTING=1 JSGC_GENERATIONAL=1 JSP_USE_PRIVATE_APIS=1
 
