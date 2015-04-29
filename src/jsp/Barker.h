@@ -104,7 +104,7 @@ namespace jsp
         static int32_t lastInstanceId;
         
         static int32_t addInstance(JSObject *instance, const std::string &name = "");
-        static std::string getName(int32_t barkerId);
+        static std::string getName(int32_t instanceId);
         static int32_t getId(const std::string &name);
         static std::pair<bool, JSObject*> find(const std::string &name);
         
