@@ -66,8 +66,6 @@ namespace jsp
         static bool isFinalized(const std::string &name); // I.E. ONCE A BARKER, NOW DEAD
         static bool isHealthy(const std::string &name); // I.E. IT'S A BARKER, AND IT'S ALIVE!
         
-        // ---
-        
         /*
          * ONLY HEALTHY BARKERS CAN BARK
          */
@@ -82,10 +80,8 @@ namespace jsp
         
         /*
          * C++ FACTORY
-         *
-         * REMINISCENT OF INCREMENTAL-GC DAYS: SOME EXTRA-CARE TO AVOID "STRAY INSTANCES" ON THE C-HEAP
          */
-        MOZ_NEVER_INLINE static const Barker& create(const std::string &name = "");
+        static const Barker& create(const std::string &name = "");
         
     private:
         JSObject* object = nullptr;
@@ -117,30 +113,26 @@ namespace jsp
         static const JSClass clazz;
         static const JSFunctionSpec functions[];
         static const JSFunctionSpec static_functions[];
+
+        /*
+         * JS CONSTRUCTOR
+         */
+        static bool construct(JSContext *cx, unsigned argc, Value *vp);
+        
+        static bool function_toSource(JSContext *cx, unsigned argc, Value *vp);
+        static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
+        
+        static bool static_function_getInstance(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp);
+        static bool static_function_bark(JSContext *cx, unsigned argc, Value *vp);
+
+        // ---
         
         static void gcCallback(JSRuntime *rt, JSGCStatus status);
         static void finalize(JSFreeOp *fop, JSObject *obj);
         static void trace(JSTracer *trc, JSObject *obj);
         
         static bool maybeBark(JSObject *instance);
-        
-        /*
-         * JS CONSTRUCTOR
-         */
-        static bool construct(JSContext *cx, unsigned argc, Value *vp);
-        
-        /*
-         * JS FUNCTIONS
-         */
-        static bool function_toSource(JSContext *cx, unsigned argc, Value *vp);
-        static bool function_bark(JSContext *cx, unsigned argc, Value *vp);
-        
-        /*
-         * STATIC JS FUNCTIONS
-         */
-        static bool static_function_getInstance(JSContext *cx, unsigned argc, Value *vp);
-        static bool static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp);
-        static bool static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp);
-        static bool static_function_bark(JSContext *cx, unsigned argc, Value *vp);
     };
 }

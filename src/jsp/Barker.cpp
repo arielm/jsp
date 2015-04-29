@@ -23,6 +23,51 @@ namespace jsp
     Barker::Statics *Barker::statics = nullptr;
     int32_t Barker::lastInstanceId = -1;
 
+    bool Barker::init()
+    {
+        if (!statics)
+        {
+            statics = new Statics;
+            
+            /*
+             * ASSERTIONS REGARDING PROTOTYPE:
+             *
+             * - IT IS ROOTED (VIA CONSTRUCTOR / GLOBAL)
+             * - IT IS TENURED (I.E. GC-POINTER WON'T BE "MOVED")
+             */
+            statics->prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
+            
+            /*
+             * THE USAGE OF Barker::clazz IS ARBITRARY (I.E. ANY "UNIQUE" POINTER WILL DO THE JOB)
+             */
+            JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
+        }
+        
+        return bool(statics);
+    }
+    
+    void Barker::uninit()
+    {
+        if (statics)
+        {
+            /*
+             * PURPOSELY NOT RESETTING lastInstanceId IN ORDER TO PREVENT INSTANCES
+             * POTENTIALLY ALIVE AT THIS STAGE TO "INTERFER" IN THE FUTURE (TODO: TEST)
+             */
+            
+            JSP::removeGCCallback((void*)&clazz);
+            
+            statics->names.clear();
+            statics->instances.clear();
+            
+            statics->prototype = nullptr;
+            Proto::deleteProperty(globalHandle(), "Barker"); // WILL DELETE PROTOTYPE AND CONSTRUCTOR
+            
+            delete statics;
+            statics = nullptr;
+        }
+    }
+    
     int32_t Barker::addInstance(JSObject *instance, const string &name)
     {
         for (auto &element : statics->instances)
@@ -126,8 +171,20 @@ namespace jsp
         
         return make_pair(false, nullptr); // I.E. SUCH A BARKER NEVER EXISTED
     }
-    
+
     // ---
+    
+    const Barker& Barker::create(const string &name)
+    {
+        static Barker delegate;
+        
+        delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
+        addInstance(delegate.object, name);
+        
+        return delegate;
+    }
+    
+#pragma mark ---------------------------------------- JS ----------------------------------------
     
     /*
      * IN ORDER TO PROPERLY "WITNESS" GC-MOVING:
@@ -172,6 +229,108 @@ namespace jsp
     };
     
     // ---
+
+    bool Barker::construct(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        string name = (args.hasDefined(0) && args[0].isString()) ? JSP::toString(args[0]) : "";
+        
+        args.rval().set(create(name));
+        return true;
+    }
+    
+    bool Barker::function_toSource(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        auto instance = args.thisv().toObjectOrNull();
+        
+        string quotedName = '"' + getName(instance) + '"';
+        
+        js::StringBuffer sb(cx);
+        
+        if (sb.append("(new Barker(") && sb.appendInflated(quotedName.data(), quotedName.size()) && sb.append("))"))
+        {
+            JSString *str = sb.finishString();
+            
+            if (str)
+            {
+                args.rval().setString(str);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    bool Barker::function_bark(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        auto instance = args.thisv().toObjectOrNull();
+        
+        args.rval().setBoolean(maybeBark(instance));
+        return true;
+    }
+    
+    bool Barker::static_function_getInstance(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            bool found;
+            JSObject *instance;
+            tie(found, instance) = find(JSP::toString(args[0]));
+            
+            if (found)
+            {
+                args.rval().setObjectOrNull(instance);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    bool Barker::static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(isFinalized(JSP::toString(args[0])));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Barker::static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(isHealthy(JSP::toString(args[0])));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    bool Barker::static_function_bark(JSContext *cx, unsigned argc, Value *vp)
+    {
+        auto args = CallArgsFromVp(argc, vp);
+        
+        if (args.hasDefined(0) && args[0].isString())
+        {
+            args.rval().setBoolean(bark(JSP::toString(args[0])));
+            return true;
+        }
+        
+        return false;
+    }
+    
+#pragma mark ---------------------------------------- GC AND TRACING ----------------------------------------
     
     void Barker::gcCallback(JSRuntime *rt, JSGCStatus status)
     {
@@ -248,7 +407,7 @@ namespace jsp
         }
     }
     
-    // ---
+#pragma mark ---------------------------------------- MISC ----------------------------------------
     
     int32_t Barker::nextId()
     {
@@ -365,169 +524,6 @@ namespace jsp
         }
         
         LOGD << "ONLY HEALTHY BARKERS CAN BARK" << endl; // LOG: VERBOSE
-        return false;
-    }
-    
-    // ---
-    
-    bool Barker::init()
-    {
-        if (!statics)
-        {
-            statics = new Statics;
-            
-            /*
-             * ASSERTIONS REGARDING PROTOTYPE:
-             *
-             * - IT IS ROOTED (VIA CONSTRUCTOR / GLOBAL)
-             * - IT IS TENURED (I.E. GC-POINTER WON'T BE "MOVED")
-             */
-            statics->prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
-            
-            /*
-             * THE USAGE OF Barker::clazz IS ARBITRARY (I.E. ANY "UNIQUE" POINTER WILL DO THE JOB)
-             */
-            JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
-        }
-        
-        return bool(statics);
-    }
-    
-    void Barker::uninit()
-    {
-        if (statics)
-        {
-            /*
-             * PURPOSELY NOT RESETTING lastInstanceId IN ORDER TO PREVENT INSTANCES
-             * POTENTIALLY ALIVE AT THIS STAGE TO "INTERFER" IN THE FUTURE (TODO: TEST)
-             */
-            
-            JSP::removeGCCallback((void*)&clazz);
-            
-            statics->names.clear();
-            statics->instances.clear();
-            
-            statics->prototype = nullptr;
-            Proto::deleteProperty(globalHandle(), "Barker"); // WILL DELETE PROTOTYPE AND CONSTRUCTOR
-            
-            delete statics;
-            statics = nullptr;
-        }
-    }
-    
-    // ---
-    
-    const Barker& Barker::create(const string &name)
-    {
-        static Barker delegate;
-
-        delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        addInstance(delegate.object, name);
-        
-        return delegate;
-    }
-    
-    bool Barker::construct(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        string name = (args.hasDefined(0) && args[0].isString()) ? JSP::toString(args[0]) : "";
-        
-        args.rval().set(create(name));
-        return true;
-    }
-    
-    // ---
-    
-    bool Barker::function_toSource(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        auto instance = args.thisv().toObjectOrNull();
-        
-        string quotedName = '"' + getName(instance) + '"';
-        
-        js::StringBuffer sb(cx);
-        
-        if (sb.append("(new Barker(") && sb.appendInflated(quotedName.data(), quotedName.size()) && sb.append("))"))
-        {
-            JSString *str = sb.finishString();
-            
-            if (str)
-            {
-                args.rval().setString(str);
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    bool Barker::function_bark(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        auto instance = args.thisv().toObjectOrNull();
-        
-        args.rval().setBoolean(maybeBark(instance));
-        return true;
-    }
-    
-    // ---
-    
-    bool Barker::static_function_getInstance(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        
-        if (args.hasDefined(0) && args[0].isString())
-        {
-            bool found;
-            JSObject *instance;
-            tie(found, instance) = find(JSP::toString(args[0]));
-            
-            if (found)
-            {
-                args.rval().setObjectOrNull(instance);
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    bool Barker::static_function_isFinalized(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        
-        if (args.hasDefined(0) && args[0].isString())
-        {
-            args.rval().setBoolean(isFinalized(JSP::toString(args[0])));
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool Barker::static_function_isHealthy(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        
-        if (args.hasDefined(0) && args[0].isString())
-        {
-            args.rval().setBoolean(isHealthy(JSP::toString(args[0])));
-            return true;
-        }
-        
-        return false;
-    }
-    
-    bool Barker::static_function_bark(JSContext *cx, unsigned argc, Value *vp)
-    {
-        auto args = CallArgsFromVp(argc, vp);
-        
-        if (args.hasDefined(0) && args[0].isString())
-        {
-            args.rval().setBoolean(bark(JSP::toString(args[0])));
-            return true;
-        }
-        
         return false;
     }
 }
