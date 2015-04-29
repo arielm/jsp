@@ -16,6 +16,7 @@ using namespace chr;
 namespace jsp
 {
     Proxy::Statics *Proxy::statics = nullptr;
+    int32_t Proxy::lastInstanceId = -1;
 
     bool Proxy::init()
     {
@@ -27,14 +28,18 @@ namespace jsp
             define(globalHandle(), "peers", statics->peers, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
         }
         
-        return statics;
+        return bool(statics);
     }
     
     void Proxy::uninit()
     {
         if (statics)
         {
-            statics->lastInstanceId = -1;
+            /*
+             * PURPOSELY NOT RESETTING lastInstanceId IN ORDER TO PREVENT INSTANCES
+             * POTENTIALLY ALIVE AT THIS STAGE TO "INTERFER" IN THE FUTURE (TODO: TEST)
+             */
+            
             statics->instances.clear();
             
             statics->peers = nullptr;
@@ -65,7 +70,7 @@ namespace jsp
                 if (instance->peerProperties.isSingleton)
                 {
                     instance->peer = instance->createPeer();
-                    define(statics->peers, name, instance->peerHandle(), JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                    define(statics->peers, name, instance->peer, JSPROP_ENUMERATE | JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 else
                 {
@@ -84,11 +89,13 @@ namespace jsp
                     }
                     
                     instance->peer = instance->createPeer();
-                    define(peerArray, instance->peerElementIndex, instance->peerHandle(), JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
+                    define(peerArray, instance->peerElementIndex, instance->peer, JSPROP_READONLY); // XXX: CAN'T BE MADE "PERMANENT"
                 }
                 
-                statics->instances.emplace(++statics->lastInstanceId, instance);
-                return statics->lastInstanceId;
+                int32_t instanceId = ++lastInstanceId;
+                statics->instances.emplace(instanceId, instance);
+                
+                return instanceId;
             }
         }
         
@@ -142,6 +149,28 @@ namespace jsp
         
         return nullptr;
     }
+    // ---
+
+    Proxy::Proxy()
+    :
+    peerProperties(defaultPeerProperties())
+    {
+        instanceId = addInstance(this);
+        assert(instanceId > -1); // TODO INSTEAD: ALLOW PEER-LESS PROXIES
+    }
+    
+    Proxy::Proxy(const string &peerName, bool isSingleton)
+    :
+    peerProperties(PeerProperties(peerName, isSingleton))
+    {
+        instanceId = addInstance(this);
+        assert(instanceId > -1); // TODO INSTEAD: ALLOW PEER-LESS PROXIES
+    }
+
+    Proxy::~Proxy()
+    {
+        removeInstance(instanceId);
+    }
     
     // ---
     
@@ -165,7 +194,7 @@ namespace jsp
         return object;
     }
     
-    std::string Proxy::getPeerId()
+    std::string Proxy::getPeerAccessor()
     {
         string result = "peers";
         
@@ -184,29 +213,6 @@ namespace jsp
         }
         
         return result;
-    }
-
-    // ---
-
-    Proxy::Proxy()
-    :
-    peerProperties(defaultPeerProperties())
-    {
-        instanceId = addInstance(this);
-        assert(instanceId > -1);
-    }
-    
-    Proxy::Proxy(const string &peerName, bool isSingleton)
-    :
-    peerProperties(PeerProperties(peerName, isSingleton))
-    {
-        instanceId = addInstance(this);
-        assert(instanceId > -1);
-    }
-
-    Proxy::~Proxy()
-    {
-        removeInstance(instanceId);
     }
     
     // ---
@@ -279,8 +285,6 @@ namespace jsp
         
         return false;
     }
-    
-    // ---
     
     const NativeCall* Proxy::getNativeCall(int32_t nativeCallId) const
     {

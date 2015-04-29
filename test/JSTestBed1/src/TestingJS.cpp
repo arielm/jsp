@@ -653,10 +653,12 @@ void TestingJS::testBulkArrayOperations4()
  * 3) NOTE THAT JS_ClearNonGlobalObject() IS NOT RECOMMENDED:
  *   - SEE https://bugzilla.mozilla.org/show_bug.cgi?id=1043281
  *
- * 4) INSIGHTFUL: http://perfectionkills.com/understanding-delete
- *    - E.G.
- *      - "var foo = 33" WILL CREATE A NON-DELETABLE PROPERTY
- *      - BUT "bar = 55" WON'T!
+ * 4) INSIGHTFUL:
+ *    - http://perfectionkills.com/understanding-delete
+ *      - E.G.
+ *        - "var foo = 33" WILL CREATE A NON-DELETABLE PROPERTY
+ *        - BUT "bar = 55" WON'T!
+ *    - http://www.2ality.com/2013/08/protecting-objects.html
  */
 
 /*

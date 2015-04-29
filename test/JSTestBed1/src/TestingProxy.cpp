@@ -43,10 +43,10 @@ void TestingProxy::testPeers1()
 {
     {
         Proxy vanilla;
-        JSP_CHECK(vanilla.getPeerId() == "peers.Proxy[0]");
+        JSP_CHECK(vanilla.getPeerAccessor() == "peers.Proxy[0]");
         
         Proxy singleton("ScriptManager", true);
-        JSP_CHECK(singleton.getPeerId() == "peers.ScriptManager");
+        JSP_CHECK(singleton.getPeerAccessor() == "peers.ScriptManager");
         
         /*
          * ALLOWED
@@ -77,9 +77,9 @@ void TestingProxy::testPeers2()
 {
     Proxy proxy;
     
-    executeScript(proxy.getPeerId() + ".callMeBack = function() { print('PROXY IS CALLING BACK'); }");
+    executeScript(proxy.getPeerAccessor() + ".callMeBack = function() { print('PROXY IS CALLING BACK'); }");
     
-    call(proxy.peerHandle(), "callMeBack"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
+    call(proxy.peer, "callMeBack"); // TODO: JSP_CHECK "CAPTURED" OUTPUT
     
     // ---
     
@@ -88,10 +88,10 @@ void TestingProxy::testPeers2()
      */
     
     Proxy customNamed1("Contains spaces");
-    JSP_CHECK(customNamed1.getPeerId() == "peers[\"Contains spaces\"][0]");
+    JSP_CHECK(customNamed1.getPeerAccessor() == "peers[\"Contains spaces\"][0]");
     
     Proxy customNamed2("Script Manager", true);
-    JSP_CHECK(customNamed2.getPeerId() == "peers[\"Script Manager\"]");
+    JSP_CHECK(customNamed2.getPeerAccessor() == "peers[\"Script Manager\"]");
 }
 
 /*
@@ -107,12 +107,12 @@ void TestingProxy::testPeers3()
 {
     Proxy proxy;
     
-    executeScript(proxy.getPeerId() + ".alien = new Barker('ALIEN2')");
+    executeScript(proxy.getPeerAccessor() + ".alien = new Barker('ALIEN2')");
     
     /*
      * SHOULD NOT BE ALLOWED
      */
-    executeScript("delete " + proxy.getPeerId());
+    executeScript("delete " + proxy.getPeerAccessor());
     
     /*
      * EVEN IF peers.Proxy[0] IS NOT ACCESSIBLE ANYMORE FROM JS:
@@ -167,7 +167,7 @@ void TestingProxy::testNativeCalls1()
 {
     Proxy proxy;
     
-    executeScript("var target = " + proxy.getPeerId());
+    executeScript("var target = " + proxy.getPeerAccessor());
 
     // ---
     

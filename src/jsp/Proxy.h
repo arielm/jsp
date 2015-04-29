@@ -11,25 +11,22 @@
  *
  * 1) IT SHOULD BE POSSIBLE TO CREATE A (C++)PROXY WITHOUT ANY (JS)PEER, E.G.
  *    - WHEN PEER-NAME IS ALREADY TAKEN (I.E. FOR SINGLETONS)
- *    - WHEN PEER-NAME IS NOT A JS-IDENTIFIER, ETC.
- *    - OR WHEN THE PROXY INTENDED TO ACT SOLELY AS A "HANDLER"
- *      - QUESTION: HOW TO CONSTRUCT SUCH A PROXY?
+ *    - WHEN PEER-NAME IS NOT A JS-IDENTIFIER
  *
  * 2) PEERS COULD HAVE A "NAMESPACE" (IN ADDITION TO THEIR NAME), E.G.
  *    - v1.FileManager
  *
  * 3) PEERS COULD HAVE A STRING-BASED "SIGNATURE" (INSTEAD OF THE PeerProperties STRUCT), E.G.
- *    - Proxy[] (I.E. ARRAY-BASED)
- *    - FileManager (I.E. SINGLETON)
- *    - v1.FileDownloader[] (I.E. ARRAY-BASED, WITH NAMESPACE)
+ *    - "Proxy[]" (I.E. MULTIPLE INSTANCES ENABLED)
+ *    - "FileManager" (I.E. SINGLETON)
  *
  * 4) SHOULD IT BE POSSIBLE TO CREATE A (C++)PROXY FROM THE JS-SIDE?, E.G.
- *    var peer = new Peer("v1.FileDownloader", "http:://foo.com/bar.txt");
+ *    var peer = new Peer("FileDownloader", "http:://foo.com/bar.txt");
  *    peer.onReady = function(data) { print(data); };
  *    peer.start();
  *
- * 5) THERE COULD BE A STATIC Proxy::peersHandle() METHOD, I.E.
- *    - INSTEAD OF USING get<OBJECT>(globalHandle(), "peers")
+ * 5) CONSIDER BRINGING-BACK THE TARGET/HANDLER CAPABILITIES
+ *    - OTHERWISE: IT DOES NOT MAKE SENSE TO KEEP NAMING THIS CLASS Proxy
  */
 
 #pragma once
@@ -68,28 +65,25 @@ namespace jsp
     class Proxy : public Proto
     {
     public:
-        static bool init();
-        static void uninit();
-        
-        // ---
-        
+        Heap<WrappedObject> peer;
+
         Proxy();
         Proxy(const std::string &peerName, bool isSingleton = false);
         
         virtual ~Proxy();
 
         // ---
-
-        inline JS::HandleObject peerHandle() const
-        {
-            return JS::Handle<JSObject*>::fromMarkedLocation(reinterpret_cast<JSObject* const*>(peer.address())); // XXX
-        }
         
-        std::string getPeerId();
+        virtual std::string getPeerAccessor();
 
         virtual int32_t registerNativeCall(const std::string &name, const NativeCallFnType &fn);
         virtual bool unregisterNativeCall(const std::string &name);
         virtual bool apply(const NativeCall &nativeCall, const CallArgs &args);
+
+        // ---
+        
+        static bool init();
+        static void uninit();
 
     protected:
         PeerProperties peerProperties;
@@ -101,29 +95,26 @@ namespace jsp
         static bool forwardNativeCall(JSContext *cx, unsigned argc, Value *vp);
         
     private:
-        struct Statics
-        {
-            int32_t lastInstanceId = -1;
-            std::map<int32_t, Proxy*> instances;
-            
-            Heap<WrappedObject> peers;
-        };
-        
-        static Statics *statics;
-        
-        static int32_t addInstance(Proxy *instance);
-        static bool removeInstance(int32_t instanceId);
-        static Proxy* getInstance(int32_t instanceId);
-        
-        // ---
-        
-        Heap<WrappedObject> peer;
-        
         int32_t instanceId = -1;
         int32_t lastNativeCallId = -1;
         std::map<int32_t, NativeCall> nativeCalls;
         
         const NativeCall* getNativeCall(int32_t nativeCallId) const;
         int32_t getNativeCallId(const std::string &name) const;
+        
+        // ---
+        
+        struct Statics
+        {
+            std::map<int32_t, Proxy*> instances;
+            Heap<WrappedObject> peers;
+        };
+        
+        static Statics *statics;
+        static int32_t lastInstanceId;
+        
+        static int32_t addInstance(Proxy *instance);
+        static bool removeInstance(int32_t instanceId);
+        static Proxy* getInstance(int32_t instanceId);
     };
 }
