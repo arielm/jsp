@@ -20,42 +20,12 @@ using namespace chr;
 
 namespace jsp
 {
-#pragma mark ---------------------------------------- barker NAMESPACE ----------------------------------------
-    
-    namespace barker
-    {
-        bool initialized = false;
-        
-        Heap<JSObject*> prototype;
-        int32_t instanceCount = 0;
-        
-        map<int32_t, string> names;
-        map<int32_t, JSObject*> instances;
-        
-        int32_t addInstance(JSObject *instance, const string &name = "");
-        
-        /*
-         * RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
-         * OTHERWISE: MAY RETURN THE NAME OF A NON-HEALTHY BARKER
-         */
-        string getName(int32_t barkerId);
+    Barker::Statics *Barker::statics = nullptr;
+    int32_t Barker::lastInstanceId = -1;
 
-        /*
-         * RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
-         * OTHERWISE: MAY RETURN THE ID OF A NON-HEALTHY BARKER
-         */
-        int32_t getId(const string &name);
-        
-        /*
-         * IF THE RETURNED bool IS FALSE: SUCH A BARKER NEVER EXISTED
-         * OTHERWISE: THE RETURNED INSTANCE MAY NOT NECESSARILY BE HEALTHY
-         */
-        pair<bool, JSObject*> getInstance(const string &name);
-    }
-    
-    int32_t barker::addInstance(JSObject *instance, const string &name)
+    int32_t Barker::addInstance(JSObject *instance, const string &name)
     {
-        for (auto &element : instances)
+        for (auto &element : statics->instances)
         {
             if (instance == element.second)
             {
@@ -63,7 +33,7 @@ namespace jsp
             }
         }
         
-        int32_t barkerId = instanceCount++;
+        int32_t barkerId = ++lastInstanceId;
         
         // ---
         
@@ -84,8 +54,8 @@ namespace jsp
         
         // ---
         
-        instances[barkerId] = instance;
-        names[barkerId] = finalName;
+        statics->instances[barkerId] = instance;
+        statics->names[barkerId] = finalName;
         
         RootedObject rootedInstance(cx, instance);
         Proto::define(rootedInstance, "id", barkerId, JSPROP_READONLY | JSPROP_PERMANENT);
@@ -93,7 +63,7 @@ namespace jsp
         
         /*
          * RELYING SOLELY ON THE id PROPERTY (PREVIOUSLY DEFINED) IS NOT WORKING:
-         * - IT WOULD CRASH WHEN THE PROPERTY IS ACCESSED DURING TRACING IN Barker::getId()
+         * - IT WOULD CRASH WHEN THE PROPERTY IS ACCESSED DURING TRACING VIA Barker::getId(JSObject*)
          *
          * RELYING ON THE INSTANCE'S "PRIVATE" WOULD WORK, BUT:
          * - IT'S MORE SUITED TO STORE ptrdiff_t VALUES
@@ -107,11 +77,15 @@ namespace jsp
         return barkerId;
     }
     
-    string barker::getName(int32_t barkerId)
+    /*
+     * RETURNS AN EMPTY-STRING IF THERE IS NO SUCH A LIVING BARKER
+     * OTHERWISE: MAY RETURN THE NAME OF A NON-HEALTHY BARKER
+     */
+    string Barker::getName(int32_t barkerId)
     {
-        auto element = names.find(barkerId);
+        auto element = statics->names.find(barkerId);
         
-        if (element != names.end())
+        if (element != statics->names.end())
         {
             return element->second;
         }
@@ -119,9 +93,13 @@ namespace jsp
         return ""; // I.E. SUCH A BARKER NEVER EXISTED
     }
     
-    int32_t barker::getId(const string &name)
+    /*
+     * RETURNS -1 IF THERE IS NO SUCH A LIVING BARKER
+     * OTHERWISE: MAY RETURN THE ID OF A NON-HEALTHY BARKER
+     */
+    int32_t Barker::getId(const string &name)
     {
-        for (auto &element : names)
+        for (auto &element : statics->names)
         {
             if (element.second == name)
             {
@@ -132,20 +110,24 @@ namespace jsp
         return -1; // I.E. SUCH A BARKER NEVER EXISTED
     }
     
-    pair<bool, JSObject*> barker::getInstance(const string &name)
+    /*
+     * IF THE RETURNED bool IS FALSE: SUCH A BARKER NEVER EXISTED
+     * OTHERWISE: THE RETURNED INSTANCE MAY NOT NECESSARILY BE HEALTHY
+     */
+    pair<bool, JSObject*> Barker::find(const string &name)
     {
         auto barkerId = getId(name);
         
         if (barkerId >= 0)
         {
-            auto instance = instances.at(barkerId); // NULL AFTER FINALIZATION
+            auto instance = statics->instances.at(barkerId); // NULL AFTER FINALIZATION
             return make_pair(true, instance);
         }
         
         return make_pair(false, nullptr); // I.E. SUCH A BARKER NEVER EXISTED
     }
     
-#pragma mark ---------------------------------------- Barker NAMESPACE ----------------------------------------
+    // ---
     
     /*
      * IN ORDER TO PROPERLY "WITNESS" GC-MOVING:
@@ -202,7 +184,7 @@ namespace jsp
             {
                 auto freeOp = rt->defaultFreeOp(); // NOT USED IN PRACTICE...
                 
-                for (auto &element : barker::instances)
+                for (auto &element : statics->instances)
                 {
                     if (element.second)
                     {
@@ -224,7 +206,7 @@ namespace jsp
         
         if (obj)
         {
-            for (auto &element : barker::instances)
+            for (auto &element : statics->instances)
             {
                 if (obj == element.second)
                 {
@@ -239,18 +221,18 @@ namespace jsp
             /*
              * NECESSARY FOR BARKER-FORENSICS:
              *
-             * - NULLING (I.E. NOT ERASING) ENTRY IN barker::instances
-             * - PRESERVING ENTRY IN barker::names
+             * - NULLING (I.E. NOT ERASING) ENTRY IN statics->instances
+             * - PRESERVING ENTRY IN statics->names
              */
-            barker::instances[barkerId] = nullptr;
+            statics->instances[barkerId] = nullptr;
             
-            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
+            LOGD << "Barker FINALIZED: " << JSP::writeDetailed(obj) << " | " << getName(barkerId) << endl; // LOG: VERBOSE
         }
     }
     
     void Barker::trace(JSTracer *trc, JSObject *obj)
     {
-        if (obj != barker::prototype)
+        if (obj != statics->prototype)
         {
             auto barkerId = getId(obj);
             
@@ -259,9 +241,9 @@ namespace jsp
                 /*
                  * NECESSARY IN CASE OF MOVED-POINTER
                  */
-                barker::instances[barkerId] = obj;
+                statics->instances[barkerId] = obj;
                 
-                LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
+                LOGD << "Barker TRACED: " << JSP::writeDetailed(obj) << " | " << getName(barkerId) << endl; // LOG: VERBOSE
             }
         }
     }
@@ -270,7 +252,7 @@ namespace jsp
     
     int32_t Barker::nextId()
     {
-        return barker::instanceCount;
+        return lastInstanceId + 1;
     }
     
     int32_t Barker::getId(JSObject *instance)
@@ -281,7 +263,7 @@ namespace jsp
             {
                 auto barkerId = JS_GetReservedSlot(instance, 0).toInt32();
                 
-                if (barker::instances.count(barkerId))
+                if (statics->instances.count(barkerId))
                 {
                     return barkerId;
                 }
@@ -293,14 +275,14 @@ namespace jsp
     
     string Barker::getName(JSObject *instance)
     {
-        return barker::getName(getId(instance));
+        return getName(getId(instance));
     }
     
     JSObject* Barker::getInstance(const string &name)
     {
         bool found;
         JSObject *instance;
-        tie(found, instance) = barker::getInstance(name);
+        tie(found, instance) = find(name);
         
         if (found)
         {
@@ -317,7 +299,7 @@ namespace jsp
     {
         bool found;
         JSObject *instance;
-        tie(found, instance) = barker::getInstance(name);
+        tie(found, instance) = find(name);
         
         if (found)
         {
@@ -331,7 +313,7 @@ namespace jsp
     {
         bool found;
         JSObject *instance;
-        tie(found, instance) = barker::getInstance(name);
+        tie(found, instance) = find(name);
         
         if (found)
         {
@@ -362,7 +344,7 @@ namespace jsp
     {
         bool found;
         JSObject *instance;
-        tie(found, instance) = barker::getInstance(name);
+        tie(found, instance) = find(name);
         
         if (found)
         {
@@ -378,7 +360,7 @@ namespace jsp
         
         if (barkerId >= 0)
         {
-            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << barker::getName(barkerId) << endl; // LOG: VERBOSE
+            LOGD << "Barker BARKED: " << JSP::writeDetailed(instance) << " | " << getName(barkerId) << endl; // LOG: VERBOSE
             return true;
         }
         
@@ -390,49 +372,46 @@ namespace jsp
     
     bool Barker::init()
     {
-        if (!barker::initialized)
+        if (!statics)
         {
+            statics = new Statics;
+            
             /*
              * ASSERTIONS REGARDING PROTOTYPE:
              *
-             * - IT IS ROOTED (VIA GLOBAL OBJECT)
+             * - IT IS ROOTED (VIA CONSTRUCTOR / GLOBAL)
              * - IT IS TENURED (I.E. GC-POINTER WON'T BE "MOVED")
              */
-            barker::prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
+            statics->prototype = JS_InitClass(cx, globalHandle(), NullPtr(), &clazz, construct, 0, nullptr, functions, nullptr, static_functions);
             
             /*
              * THE USAGE OF Barker::clazz IS ARBITRARY (I.E. ANY "UNIQUE" POINTER WILL DO THE JOB)
              */
             JSP::addGCCallback((void*)&clazz, BIND_STATIC2(Barker::gcCallback));
-            
-            // ---
-            
-            barker::initialized = true;
         }
         
-        return barker::initialized;
+        return bool(statics);
     }
     
     void Barker::uninit()
     {
-        if (barker::initialized)
+        if (statics)
         {
             /*
-             * PURPOSELY NOT RESETTING barker::instanceCount IN ORDER TO PREVENT INSTANCES
-             * POTENTIALLY ALIVE AT THIS STAGE TO BE CONSIDERED AS VALID IN THE FUTURE...
+             * PURPOSELY NOT RESETTING lastInstanceId IN ORDER TO PREVENT INSTANCES
+             * POTENTIALLY ALIVE AT THIS STAGE TO "INTERFER" IN THE FUTURE (TODO: TEST)
              */
-
+            
             JSP::removeGCCallback((void*)&clazz);
-
+            
+            statics->names.clear();
+            statics->instances.clear();
+            
+            statics->prototype = nullptr;
             Proto::deleteProperty(globalHandle(), "Barker"); // WILL DELETE PROTOTYPE AND CONSTRUCTOR
-            barker::prototype = nullptr;
             
-            barker::names.clear();
-            barker::instances.clear();
-
-            // ---
-            
-            barker::initialized = false;
+            delete statics;
+            statics = nullptr;
         }
     }
     
@@ -443,7 +422,7 @@ namespace jsp
         static Barker delegate;
 
         delegate.object = JS_NewObject(cx, &clazz, NullPtr(), NullPtr());
-        barker::addInstance(delegate.object, name);
+        addInstance(delegate.object, name);
         
         return delegate;
     }
@@ -501,7 +480,7 @@ namespace jsp
         {
             bool found;
             JSObject *instance;
-            tie(found, instance) = barker::getInstance(JSP::toString(args[0]));
+            tie(found, instance) = find(JSP::toString(args[0]));
             
             if (found)
             {

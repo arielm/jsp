@@ -71,7 +71,6 @@ namespace jsp
         /*
          * ONLY HEALTHY BARKERS CAN BARK
          */
-        
         static bool bark(JSObject *object);
         static bool bark(const Value &value);
         static bool bark(const std::string &name);
@@ -88,20 +87,40 @@ namespace jsp
          */
         MOZ_NEVER_INLINE static const Barker& create(const std::string &name = "");
         
-    protected:
-        static const JSClass clazz;
-        static const JSFunctionSpec functions[];
-        static const JSFunctionSpec static_functions[];
-        
+    private:
         JSObject* object = nullptr;
-        
-        static void gcCallback(JSRuntime *rt, JSGCStatus status);
-        static void finalize(JSFreeOp *fop, JSObject *obj);
-        static void trace(JSTracer *trc, JSObject *obj);
         
         Barker() = default;
         Barker(const Barker &other) = delete;
         void operator=(const Barker &other) = delete;
+
+        // ---
+        
+        struct Statics
+        {
+            JS::Heap<JSObject*> prototype;
+            
+            std::map<int32_t, std::string> names;
+            std::map<int32_t, JSObject*> instances;
+        };
+        
+        static Statics *statics;
+        static int32_t lastInstanceId;
+        
+        static int32_t addInstance(JSObject *instance, const std::string &name = "");
+        static std::string getName(int32_t barkerId);
+        static int32_t getId(const std::string &name);
+        static std::pair<bool, JSObject*> find(const std::string &name);
+        
+        // ---
+        
+        static const JSClass clazz;
+        static const JSFunctionSpec functions[];
+        static const JSFunctionSpec static_functions[];
+        
+        static void gcCallback(JSRuntime *rt, JSGCStatus status);
+        static void finalize(JSFreeOp *fop, JSObject *obj);
+        static void trace(JSTracer *trc, JSObject *obj);
         
         static bool maybeBark(JSObject *instance);
         
