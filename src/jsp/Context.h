@@ -246,12 +246,6 @@ public:
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
     
     /*
-     * MOSTLY FOR INTERNAL USAGE (RESULTS ARE NOT AS-OBVIOUS-AS STATED IN THE NAMING)
-     */
-    template<typename T>
-    static bool isAboutToBeFinalized(T **thing);
-
-    /*
      * BORROWED FROM: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L101-130
      *
      * THIS IS THE ONLY VALID WAY OF CHECKING FOR POISONING, AT LEAST UNDER GENERATIONAL-GC
@@ -405,15 +399,6 @@ public:
             
             // ---
             
-            T *forwarded = thing;
-            
-            if (isAboutToBeFinalized(&forwarded))
-            {
-                return 'f';
-            }
-            
-            // ---
-            
             auto markDescriptor = writeMarkDescriptor(thing);
             
             if ((markDescriptor != 'B') && (markDescriptor != 'W'))
@@ -437,12 +422,6 @@ public:
     static std::string writeTraceThingInfo(T *thing, bool details = true);
 
 #else
-    
-    template<typename T>
-    static bool isAboutToBeFinalized(T **thing)
-    {
-        return false;
-    }
     
     template<typename T>
     static inline bool isPoisoned(T *thing)

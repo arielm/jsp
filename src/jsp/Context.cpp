@@ -650,24 +650,6 @@ string JSP::writeDetailed(const Value &value) { return ""; }
 
 #if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
 
-template <>
-bool JSP::isAboutToBeFinalized(JSObject **thing)
-{
-    return js::gc::IsObjectAboutToBeFinalized(thing);
-}
-
-template <>
-bool JSP::isAboutToBeFinalized(JSFunction **thing)
-{
-    return js::gc::IsObjectAboutToBeFinalized(thing);
-}
-
-template <>
-bool JSP::isAboutToBeFinalized(JSString **thing)
-{
-    return js::gc::IsStringAboutToBeFinalized(thing);
-}
-
 bool JSP::isPoisoned(const Value &value)
 {
     if (value.isString())
