@@ -27,7 +27,6 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <iostream>
 
 #define BIND_STATIC1(CALLABLE) std::bind(CALLABLE, std::placeholders::_1)
 #define BIND_STATIC2(CALLABLE) std::bind(CALLABLE, std::placeholders::_1, std::placeholders::_2)
@@ -488,14 +487,6 @@ public:
     static void forceGC();
     static void setGCZeal(uint8_t zeal, uint32_t frequency = 100);
     
-    // ---
-    
-    /*
-     * TODO: PROBABLY OUT-OF-SCOPE (CONSIDER MOVING THESE 2 TO SOME ColorHelper CLASS)
-     */
-    static const uint32_t toHTMLColor(const std::string &colorName, const uint32_t defaultValue = 0x000000);
-    static const uint32_t toHTMLColor(JS::HandleValue value, const uint32_t defaultValue = 0x000000); // INFAILIBLE
-    
 private:
     struct Stringifier
     {
@@ -514,13 +505,6 @@ private:
     
     static constexpr size_t TRACE_BUFFER_SIZE = 256;
     static char traceBuffer[TRACE_BUFFER_SIZE];
-    
-    // ---
-    
-    static std::map<std::string, uint32_t> htmlColors;
-    
-    static bool defineHTMLColors();
-    static bool lookupHTMLColor(const std::string &c, uint32_t *result);
 };
 
 // ---

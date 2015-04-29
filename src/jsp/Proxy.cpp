@@ -149,6 +149,7 @@ namespace jsp
         
         return nullptr;
     }
+    
     // ---
 
     Proxy::Proxy()

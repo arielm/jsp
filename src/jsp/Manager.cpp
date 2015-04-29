@@ -8,12 +8,10 @@
 
 /*
  * SPIDERMONKEY LIFE-CYCLE BASED ON:
- *
  * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/jsapi-tests/tests.h
  */
 
 #include "jsp/Manager.h"
-
 #include "jsp/Barker.h"
 #include "jsp/Proxy.h"
 

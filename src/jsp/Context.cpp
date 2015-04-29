@@ -36,8 +36,6 @@ map<void*, JSP::GCCallbackFnType> JSP::gcCallbacks;
 
 char JSP::traceBuffer[TRACE_BUFFER_SIZE];
 
-map<string, uint32_t> JSP::htmlColors;
-
 // ---
 
 bool JSP::init()
@@ -761,79 +759,4 @@ void JSP::setGCZeal(uint8_t zeal, uint32_t frequency)
 #if defined(JS_GC_ZEAL)
     JS_SetGCZeal(cx, zeal, frequency);
 #endif
-}
-
-#pragma mark ---------------------------------------- HTML COLORS ----------------------------------------
-
-/*
- * REFERENCE FOR FUTURE WORK: https://github.com/mrdoob/three.js/blob/master/src/math/Color.js
- */
-
-bool JSP::defineHTMLColors()
-{
-    if (htmlColors.empty())
-    {
-        htmlColors["black"] = 0x000000;
-        htmlColors["blue"] = 0x0000ff;
-        htmlColors["gray"] = 0x808080;
-        htmlColors["green"] = 0x00ff00;
-        htmlColors["orange"] = 0xffa500;
-        htmlColors["purple"] = 0x800080;
-        htmlColors["red"] = 0xff0000;
-        htmlColors["white"] = 0xffffff;
-        htmlColors["yellow"] = 0xffff00;
-    }
-    
-    return true;
-}
-
-bool JSP::lookupHTMLColor(const string &colorName, uint32_t *result)
-{
-    if (defineHTMLColors())
-    {
-        auto color = htmlColors.find(colorName);
-        
-        if (color != htmlColors.end())
-        {
-            *result = color->second;
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-const uint32_t JSP::toHTMLColor(const string &colorName, const uint32_t defaultValue)
-{
-    uint32_t result;
-    return lookupHTMLColor(colorName, &result) ? result : defaultValue;
-}
-
-const uint32_t JSP::toHTMLColor(HandleValue value, const uint32_t defaultValue)
-{
-    if (value.isString())
-    {
-        string tmp = toString(value);
-        
-        if (!tmp.empty())
-        {
-            if ((tmp[0] == '#') && (tmp.size() == 7))
-            {
-                uint32_t result;
-                stringstream ss;
-                ss << hex << tmp.substr(1, string::npos);
-                ss >> result;
-                
-                return result;
-            }
-            
-            return toHTMLColor(tmp, defaultValue);
-        }
-    }
-    else
-    {
-        return convertSafely<uint32_t>(value, defaultValue);
-    }
-    
-    return defaultValue;
 }
