@@ -230,6 +230,8 @@ public:
 
     static std::string write(const JS::Value &value);
     static std::string write(jsid id);
+    
+    // ---
 
     static char writeMarkDescriptor(void *thing);
 
@@ -241,9 +243,11 @@ public:
 
     static bool isPoisoned(const JS::Value &value);
     static bool isHealthy(const JS::Value &value);
-    static bool isInsideNursery(const JS::Value &value);
     
-#if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
+    static bool isInsideNursery(const JS::Value &value);
+    static bool isInsideNursery(void *thing);
+    
+#if defined(DEBUG) && defined(JS_DEBUG)
     
     /*
      * BORROWED FROM: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L101-130
@@ -297,7 +301,7 @@ public:
     }
     
     /*
-     * USING JSP::isPoisoned(T*) STANDALONE IS ACTUALLY NOT ENOUGH:
+     * USING JSP::isPoisoned(T *thing) STANDALONE IS ACTUALLY NOT ENOUGH:
      *
      * 1) THE thing COULD BE NULL
      *
@@ -305,7 +309,6 @@ public:
      *    - HENCE THE COMPLICATED STUFF TAKING PLACE IN isHealthy(T*)
      *    - ALL THE COMPLEX SITUATIONS SEEM TO BE HANDLED
      *      - MOST COMPLEX CASE: JSString INSIDE JS::Value
-     *      - TODO: FOLLOW-UP
      */
     template<typename T>
     static bool isHealthy(T *thing)
@@ -337,18 +340,6 @@ public:
             }
             
             return !isPoisoned(thing);
-        }
-        
-        return false;
-    }
-    
-    template<typename T>
-    static bool isInsideNursery(T *thing)
-    {
-        if (thing)
-        {
-            auto cell = static_cast<js::gc::Cell*>(thing);
-            return !cell->isTenured();
         }
         
         return false;
@@ -397,8 +388,6 @@ public:
                 return 'n';
             }
             
-            // ---
-            
             auto markDescriptor = writeMarkDescriptor(thing);
             
             if ((markDescriptor != 'B') && (markDescriptor != 'W'))
@@ -419,7 +408,16 @@ public:
      * MOSTLY FOR INTERNAL USAGE
      */
     template<typename T>
-    static std::string writeTraceThingInfo(T *thing, bool details = true);
+    static std::string writeTraceThingInfo(T *thing, bool details)
+    {
+        if (isHealthy(thing))
+        {
+            JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, thing, GetGCThingTraceKind(thing), details);
+            return traceBuffer;
+        }
+        
+        return "";
+    }
 
 #else
     
@@ -431,12 +429,6 @@ public:
     
     template<typename T>
     static bool isHealthy(T *thing)
-    {
-        return false;
-    }
-    
-    template<typename T>
-    static bool isInsideNursery(T *thing)
     {
         return false;
     }

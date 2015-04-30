@@ -491,7 +491,7 @@ void JSP::dumpObject(JSObject *obj) {}
 
 #endif
 
-#if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
+#if defined(DEBUG) && defined(JS_DEBUG)
 
 string JSP::write(const Value &value)
 {
@@ -513,7 +513,7 @@ string JSP::write(jsid id)
  * https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L193-200
  *
  * IN PRACTICE:
- * MarkDescriptor(void *thing) IN jsfriendapi.cpp SEEMS TO RETURN ONLY 'B' OR 'W'
+ * MarkDescriptor(void*) IN jsfriendapi.cpp SEEMS TO RETURN ONLY 'B' OR 'W'
  *
  * SEE ALSO: isHealthy(T*)
  */
@@ -546,7 +546,7 @@ char JSP::writeGCDescriptor(const Value &value)
     {
         if (value.isObject())
         {
-            gcDescriptor = writeGCDescriptor(value.toObjectOrNull());
+            gcDescriptor = writeGCDescriptor(&value.toObject());
         }
         else if (value.isString())
         {
@@ -555,42 +555,6 @@ char JSP::writeGCDescriptor(const Value &value)
     }
     
     return gcDescriptor;
-}
-
-template <>
-string JSP::writeTraceThingInfo(JSObject *object, bool details)
-{
-    if (isHealthy(object))
-    {
-        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, object, JSTRACE_OBJECT, details);
-        return traceBuffer;
-    }
-    
-    return "";
-}
-
-template <>
-string JSP::writeTraceThingInfo(JSFunction *function, bool details)
-{
-    if (isHealthy(function))
-    {
-        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, function, JSTRACE_OBJECT, details);
-        return traceBuffer;
-    }
-    
-    return "";
-}
-
-template <>
-string JSP::writeTraceThingInfo(JSString *s, bool details)
-{
-    if (isHealthy(s))
-    {
-        JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, s, JSTRACE_STRING, details);
-        return traceBuffer;
-    }
-    
-    return "";
 }
 
 string JSP::writeTraceThingInfo(const Value &value, bool details)
@@ -640,7 +604,6 @@ string JSP::write(const Value &value) { return ""; }
 string JSP::write(jsid id) { return ""; }
 
 char JSP::writeMarkDescriptor(void *thing) { return '?'; }
-
 char JSP::writeGCDescriptor(const Value &value) { return '?'; }
 string JSP::writeDetailed(const Value &value) { return ""; }
 
@@ -648,7 +611,7 @@ string JSP::writeDetailed(const Value &value) { return ""; }
 
 #pragma mark ---------------------------------------- DEBUG / INFO ----------------------------------------
 
-#if defined(DEBUG) && defined(JS_DEBUG) && defined(JSP_USE_PRIVATE_APIS)
+#if defined(DEBUG) && defined(JS_DEBUG)
 
 bool JSP::isPoisoned(const Value &value)
 {
@@ -689,17 +652,18 @@ bool JSP::isInsideNursery(const Value &value)
 {
     if (value.isMarkable())
     {
-        void *thing = value.toGCThing();
-        
-        if (value.isString())
-        {
-            return isInsideNursery((JSString*)thing); // XXX: MOST LIKELY ALWAYS FALSE
-        }
-        
-        if (value.isObject())
-        {
-            return isInsideNursery((JSObject*)thing);
-        }
+        return isInsideNursery(value.toGCThing()); // XXX: MOST LIKELY ALWAYS FALSE FOR STRINGS
+    }
+    
+    return false;
+}
+
+bool JSP::isInsideNursery(void *thing)
+{
+    if (thing)
+    {
+        auto cell = static_cast<js::gc::Cell*>(thing);
+        return !cell->isTenured();
     }
     
     return false;
@@ -718,6 +682,11 @@ bool JSP::isHealthy(const Value &value)
 }
 
 bool JSP::isInsideNursery(const Value &value)
+{
+    return false;
+}
+
+bool JSP::isInsideNursery(void *thing)
 {
     return false;
 }
