@@ -158,7 +158,7 @@ void TestingRooting2::testBarkerJSFunctionality()
                       var nameMatch = Barker.getInstance(name).name == name;\
                       var barked = Barker.bark(name);\
                       forceGC();\
-                      return idMatch && nameMatch && Barker.isFinalized(name);\
+                      return idMatch && nameMatch && barked && Barker.isFinalized(name);\
                       }");
         
         AutoValueVector args(cx);
@@ -192,7 +192,7 @@ void TestingRooting2::testBarkerMixedFunctionality()
     string name = "CPP-CREATED UNROOTED 1";
     
     JSP_CHECK(Barker::getId(Barker::create(name)) == nextId);
-    JSP_CHECK(Barker::getName(Barker::getInstance(name.data())) == name);
+    JSP_CHECK(Barker::getName(Barker::getInstance(name)) == name);
     
     try
     {

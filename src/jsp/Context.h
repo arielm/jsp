@@ -223,32 +223,31 @@ public:
     static JSObject* parse(const jschar *chars, size_t len);
     
     // ---
-    
-    static void dumpString(JSString *str);
-    static void dumpAtom(JSAtom *atom);
-    static void dumpObject(JSObject *obj);
 
-    static std::string write(const JS::Value &value);
-    static std::string write(jsid id);
-    
+    static bool isInsideNursery(void *thing);
+    static bool isInsideNursery(const JS::Value &value);
+
+    static bool isPoisoned(const JS::Value &value);
+    static bool isHealthy(const JS::Value &value);
+
     // ---
-
+    
     static char writeMarkDescriptor(void *thing);
 
     static char writeGCDescriptor(const JS::Value &value);
     static std::string writeTraceThingInfo(const JS::Value &value, bool details = true);
     static std::string writeDetailed(const JS::Value &value);
     
-    // ---
-
-    static bool isPoisoned(const JS::Value &value);
-    static bool isHealthy(const JS::Value &value);
-    
-    static bool isInsideNursery(const JS::Value &value);
-    static bool isInsideNursery(void *thing);
-    
 #if defined(DEBUG) && defined(JS_DEBUG)
     
+    /*
+     * OPERATIONS THAT TRULY WORKS ONLY WHILE IN DEBUG MODE:
+     *
+     * - DETECTING IF A GC-POINTER IS POISONED
+     * - DETECTING IF A GC-THING IS IN THE NURSERY
+     * - ETC.
+     */
+
     /*
      * BORROWED FROM: https://github.com/mozilla/gecko-dev/blob/esr31/js/src/gc/Marking.cpp#L101-130
      *
@@ -345,34 +344,8 @@ public:
         return false;
     }
     
-    template<typename T>
-    static std::string writeDetailed(T *thing)
-    {
-        if (thing)
-        {
-            std::stringstream ss;
-            ss << thing;
-            
-            const auto traceThingInfo = writeTraceThingInfo(thing, true);
-            
-            if (!traceThingInfo.empty())
-            {
-                ss << " {" << traceThingInfo << "}";
-            }
-            
-            auto gcDescriptor = writeGCDescriptor(thing);
-            
-            if (gcDescriptor != '?')
-            {
-                ss << " [" << gcDescriptor << "]";
-            }
-            
-            return ss.str();
-        }
-        
-        return "";
-    }
-
+    // ---
+    
     template<typename T>
     static char writeGCDescriptor(T *thing)
     {
@@ -403,7 +376,7 @@ public:
         
         return '?';
     }
-
+    
     /*
      * MOSTLY FOR INTERNAL USAGE
      */
@@ -414,6 +387,34 @@ public:
         {
             JS_GetTraceThingInfo(traceBuffer, TRACE_BUFFER_SIZE, nullptr, thing, GetGCThingTraceKind(thing), details);
             return traceBuffer;
+        }
+        
+        return "";
+    }
+    
+    template<typename T>
+    static std::string writeDetailed(T *thing)
+    {
+        if (thing)
+        {
+            std::stringstream ss;
+            ss << thing;
+            
+            const auto traceThingInfo = writeTraceThingInfo(thing, true);
+            
+            if (!traceThingInfo.empty())
+            {
+                ss << " {" << traceThingInfo << "}";
+            }
+            
+            auto gcDescriptor = writeGCDescriptor(thing);
+            
+            if (gcDescriptor != '?')
+            {
+                ss << " [" << gcDescriptor << "]";
+            }
+            
+            return ss.str();
         }
         
         return "";
@@ -432,32 +433,50 @@ public:
     {
         return false;
     }
-    
-    template<typename T>
-    static std::string writeDetailed(T *thing)
-    {
-        return "";
-    }
+
+    // ---
     
     template<typename T>
     static char writeGCDescriptor(T *thing)
     {
         return '?';
     }
-    
+
     template<typename T>
     static std::string writeTraceThingInfo(T *thing, bool details = true)
     {
         return "";
     }
+
+    template<typename T>
+    static std::string writeDetailed(T *thing)
+    {
+        if (thing)
+        {
+            std::stringstream ss;
+            ss << thing;
+            return ss.str();
+        }
+        
+        return "";
+    }
     
 #endif
 
-    // ---
+    //
     
     static void forceGC();
     static void setGCZeal(uint8_t zeal, uint32_t frequency = 100);
     
+    // ---
+    
+    static void dumpString(JSString *str);
+    static void dumpAtom(JSAtom *atom);
+    static void dumpObject(JSObject *obj);
+    
+    static std::string write(const JS::Value &value);
+    static std::string write(jsid id);
+
 private:
     struct Stringifier
     {

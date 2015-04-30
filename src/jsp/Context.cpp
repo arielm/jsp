@@ -464,48 +464,93 @@ JSObject* JSP::parse(const jschar *chars, size_t len)
     return nullptr;
 }
 
-#pragma mark ---------------------------------------- DEBUG / DUMP ----------------------------------------
+#pragma mark ---------------------------------------- GC + ROOTING / INFO ----------------------------------------
 
-#if defined(JS_DEBUG)
+#if defined(DEBUG) && defined(JS_DEBUG)
 
-void JSP::dumpString(JSString *str)
+bool JSP::isInsideNursery(void *thing)
 {
-    js_DumpString(str);
+    if (thing)
+    {
+        auto cell = static_cast<js::gc::Cell*>(thing);
+        return !cell->isTenured();
+    }
+    
+    return false;
 }
 
-void JSP::dumpAtom(JSAtom *atom)
+bool JSP::isInsideNursery(const Value &value)
 {
-    js_DumpAtom(atom);
+    if (value.isMarkable())
+    {
+        return isInsideNursery(value.toGCThing()); // XXX: MOST LIKELY ALWAYS FALSE FOR STRINGS
+    }
+    
+    return false;
 }
 
-void JSP::dumpObject(JSObject *obj)
+bool JSP::isPoisoned(const Value &value)
 {
-    js_DumpObject(obj);
+    if (value.isString())
+    {
+        return isPoisoned(value.toString());
+    }
+    
+    if (value.isObject())
+    {
+        return isPoisoned(&value.toObject());
+    }
+    
+    return false;
+}
+
+bool JSP::isHealthy(const Value &value)
+{
+    if (value.isMarkable())
+    {
+        void *thing = value.toGCThing();
+        
+        if (value.isString())
+        {
+            return isHealthy((JSString*)thing);
+        }
+        
+        if (value.isObject())
+        {
+            return isHealthy((JSObject*)thing);
+        }
+    }
+    
+    return false;
 }
 
 #else
 
-void JSP::dumpString(JSString *str) {}
-void JSP::dumpAtom(JSAtom *atom) {}
-void JSP::dumpObject(JSObject *obj) {}
+bool JSP::isInsideNursery(void *thing)
+{
+    return false;
+}
+
+bool JSP::isInsideNursery(const Value &value)
+{
+    return false;
+}
+
+bool JSP::isPoisoned(const Value &value)
+{
+    return false;
+}
+
+bool JSP::isHealthy(const Value &value)
+{
+    return false;
+}
 
 #endif
 
+#pragma mark ---------------------------------------- GC + ROOTING / DUMP ----------------------------------------
+
 #if defined(DEBUG) && defined(JS_DEBUG)
-
-string JSP::write(const Value &value)
-{
-    FileCapture capture(stderr);
-    js_DumpValue(value);
-    return capture.flushAsString(true);
-}
-
-string JSP::write(jsid id)
-{
-    FileCapture capture(stderr);
-    js_DumpId(id);
-    return capture.flushAsString(true);
-}
 
 /*
  * REFERENCES:
@@ -600,100 +645,24 @@ string JSP::writeDetailed(const Value &value)
 
 #else
 
-string JSP::write(const Value &value) { return ""; }
-string JSP::write(jsid id) { return ""; }
-
 char JSP::writeMarkDescriptor(void *thing) { return '?'; }
 char JSP::writeGCDescriptor(const Value &value) { return '?'; }
-string JSP::writeDetailed(const Value &value) { return ""; }
 
-#endif
-
-#pragma mark ---------------------------------------- DEBUG / INFO ----------------------------------------
-
-#if defined(DEBUG) && defined(JS_DEBUG)
-
-bool JSP::isPoisoned(const Value &value)
-{
-    if (value.isString())
-    {
-        return isPoisoned(value.toString());
-    }
-    
-    if (value.isObject())
-    {
-        return isPoisoned(&value.toObject());
-    }
-    
-    return false;
-}
-
-bool JSP::isHealthy(const Value &value)
+string JSP::writeDetailed(const Value &value)
 {
     if (value.isMarkable())
     {
-        void *thing = value.toGCThing();
-        
-        if (value.isString())
-        {
-            return isHealthy((JSString*)thing);
-        }
-        
-        if (value.isObject())
-        {
-            return isHealthy((JSObject*)thing);
-        }
+        stringstream ss;
+        ss << value.toGCThing();
+        return ss.str();
     }
     
-    return false;
-}
-
-bool JSP::isInsideNursery(const Value &value)
-{
-    if (value.isMarkable())
-    {
-        return isInsideNursery(value.toGCThing()); // XXX: MOST LIKELY ALWAYS FALSE FOR STRINGS
-    }
-    
-    return false;
-}
-
-bool JSP::isInsideNursery(void *thing)
-{
-    if (thing)
-    {
-        auto cell = static_cast<js::gc::Cell*>(thing);
-        return !cell->isTenured();
-    }
-    
-    return false;
-}
-
-#else
-
-bool JSP::isPoisoned(const Value &value)
-{
-    return false;
-}
-
-bool JSP::isHealthy(const Value &value)
-{
-    return false;
-}
-
-bool JSP::isInsideNursery(const Value &value)
-{
-    return false;
-}
-
-bool JSP::isInsideNursery(void *thing)
-{
-    return false;
+    return write(value);
 }
 
 #endif
 
-#pragma mark ---------------------------------------- GC AND ROOTING ----------------------------------------
+#pragma mark ---------------------------------------- GC + ROOTING / MISC ----------------------------------------
 
 void JSP::forceGC()
 {
@@ -711,3 +680,58 @@ void JSP::setGCZeal(uint8_t zeal, uint32_t frequency)
     JS_SetGCZeal(cx, zeal, frequency);
 #endif
 }
+
+#pragma mark ---------------------------------------- DUMP ----------------------------------------
+
+#if defined(JS_DEBUG)
+
+void JSP::dumpString(JSString *str)
+{
+    js_DumpString(str);
+}
+
+void JSP::dumpAtom(JSAtom *atom)
+{
+    js_DumpAtom(atom);
+}
+
+void JSP::dumpObject(JSObject *obj)
+{
+    js_DumpObject(obj);
+}
+
+// ---
+
+string JSP::write(const Value &value)
+{
+    FileCapture capture(stderr);
+    js_DumpValue(value);
+    return capture.flushAsString(true);
+}
+
+string JSP::write(jsid id)
+{
+    FileCapture capture(stderr);
+    js_DumpId(id);
+    return capture.flushAsString(true);
+}
+
+#else
+
+void JSP::dumpString(JSString *str) {}
+void JSP::dumpAtom(JSAtom *atom) {}
+void JSP::dumpObject(JSObject *obj) {}
+
+string JSP::write(const Value &value)
+{
+    RootedValue rooted(cx, value);
+    return toString(rooted);
+}
+
+string JSP::write(jsid id)
+{
+    RootedValue rooted(cx, js::IdToValue(id));
+    return toString(rooted);
+}
+
+#endif
